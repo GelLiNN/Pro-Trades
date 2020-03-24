@@ -1,13 +1,19 @@
 ﻿<Properties StartupConfiguration="{92EFE2DC-2C85-4680-BE9E-79761F76E2A8}|Default">
-  <MonoDevelop.Ide.Workbench ActiveDocument="Startup.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="appsettings.json">
     <Files>
-      <File FileName="Startup.cs" Line="21" Column="10" />
+      <File FileName="Program.cs" Line="15" Column="6" />
+      <File FileName="Startup.cs" Line="17" Column="1" />
+      <File FileName="Middleware/EmailSender.cs" Line="15" Column="28" />
+      <File FileName="Controllers/HomeController.cs" Line="28" Column="19" />
+      <File FileName="appsettings.json" Line="1" Column="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
-          <Node name="Sociosearch.NET" expanded="True" selected="True">
-            <Node name="Sociosearch.NET" expanded="True" />
+          <Node name="Sociosearch.NET" expanded="True">
+            <Node name="Sociosearch.NET" expanded="True">
+              <Node name="appsettings.json" selected="True" />
+            </Node>
           </Node>
         </State>
       </Pad>

@@ -444,6 +444,18 @@
           "lib/netstandard2.0/Newtonsoft.Json.dll": {}
         }
       },
+      "SendGrid/9.13.1": {
+        "type": "package",
+        "dependencies": {
+          "Newtonsoft.Json": "9.0.1"
+        },
+        "compile": {
+          "lib/netstandard2.0/SendGrid.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/SendGrid.dll": {}
+        }
+      },
       "SQLitePCLRaw.bundle_e_sqlite3/2.0.2": {
         "type": "package",
         "dependencies": {
@@ -1319,6 +1331,26 @@
         "newtonsoft.json.nuspec"
       ]
     },
+    "SendGrid/9.13.1": {
+      "sha512": "a0RA3c4wcjwucH8HTwOtw3Wd/ea71P4hbHxWgJ3mojsyPx2vJigMjl0xVgVOwnaaPPyB7Mfg3hlNahi9Y5IpqQ==",
+      "type": "package",
+      "path": "sendgrid/9.13.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net452/SendGrid.dll",
+        "lib/net452/SendGrid.pdb",
+        "lib/net452/SendGrid.xml",
+        "lib/netstandard1.3/SendGrid.dll",
+        "lib/netstandard1.3/SendGrid.pdb",
+        "lib/netstandard1.3/SendGrid.xml",
+        "lib/netstandard2.0/SendGrid.dll",
+        "lib/netstandard2.0/SendGrid.pdb",
+        "lib/netstandard2.0/SendGrid.xml",
+        "sendgrid.9.13.1.nupkg.sha512",
+        "sendgrid.nuspec"
+      ]
+    },
     "SQLitePCLRaw.bundle_e_sqlite3/2.0.2": {
       "sha512": "OVPI/nh5AqfLCIKhAYqjCa6AHhc7oKApGcGM3UhMRSerFiBx58nSpGwxVFdMgjOCWZR+fA49nzsnKlWp5hFo8w==",
       "type": "package",
@@ -1578,7 +1610,8 @@
       "Microsoft.AspNetCore.Identity.EntityFrameworkCore >= 3.1.2",
       "Microsoft.AspNetCore.Identity.UI >= 3.1.2",
       "Microsoft.EntityFrameworkCore.Sqlite >= 3.1.2",
-      "Microsoft.EntityFrameworkCore.Tools >= 3.1.2"
+      "Microsoft.EntityFrameworkCore.Tools >= 3.1.2",
+      "SendGrid >= 9.13.1"
     ]
   },
   "packageFolders": {
@@ -1587,14 +1620,14 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/user/Dev/Sociosearch.NET/Sociosearch.NET.csproj",
+      "projectUniqueName": "/Users/user/Dev/sociosearch.NET/Sociosearch.NET.csproj",
       "projectName": "Sociosearch.NET",
-      "projectPath": "/Users/user/Dev/Sociosearch.NET/Sociosearch.NET.csproj",
+      "projectPath": "/Users/user/Dev/sociosearch.NET/Sociosearch.NET.csproj",
       "packagesPath": "/Users/user/.nuget/packages/",
-      "outputPath": "/Users/user/Dev/Sociosearch.NET/obj/",
+      "outputPath": "/Users/user/Dev/sociosearch.NET/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/Users/user/.config/NuGet/NuGet.Config"
+        "/Users/user/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "netcoreapp3.1"
@@ -1635,6 +1668,10 @@
           "Microsoft.EntityFrameworkCore.Tools": {
             "target": "Package",
             "version": "[3.1.2, )"
+          },
+          "SendGrid": {
+            "target": "Package",
+            "version": "[9.13.1, )"
           }
         },
         "imports": [
@@ -1655,7 +1692,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/3.1.200/RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/3.1.201/RuntimeIdentifierGraph.json"
       }
     }
   }

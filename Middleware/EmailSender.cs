@@ -1,0 +1,65 @@
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.Configuration;
+using SendGrid;
+using SendGrid.Helpers.Mail;
+
+namespace Sociosearch.NET.Middleware
+{
+    public class EmailSender : IEmailSender
+    {
+        public string SendGridApiKey { get; }
+        public string SendGridSendingUser { get; }
+
+        public EmailSender()
+        {
+            SendGridApiKey = Program.Config.GetValue<string>("SendGridApiKey");
+            SendGridSendingUser = "NOREPLY";
+        }
+
+        public Task SendEmailAsync(string email, string subject, string message)
+        {
+            return Execute(SendGridApiKey, subject, message, email);
+        }
+
+        public Task Execute(string apiKey, string subject, string message, string email)
+        {
+            var client = new SendGridClient(apiKey);
+            var msg = new SendGridMessage()
+            {
+                From = new EmailAddress("noreply@sociosearch.com", SendGridSendingUser),
+                Subject = subject,
+                PlainTextContent = message,
+                HtmlContent = message
+            };
+            msg.AddTo(new EmailAddress(email));
+
+            //Disable click tracking, see https://sendgrid.com/docs/User_Guide/Settings/tracking.html
+            msg.SetClickTracking(false, false);
+
+            return client.SendEmailAsync(msg);
+        }
+    }
+
+    public static class EmailTest
+    {
+        public static void Send()
+        {
+            Execute().Wait();
+        }
+
+        private static async Task Execute()
+        {
+            var apiKey = "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";
+            var client = new SendGridClient(apiKey);
+            var from = new EmailAddress("noreply@sociosearch.com", "NOREPLY");
+            var subject = "Sending with SendGrid is Fun";
+            var to = new EmailAddress("Kellan.Nealy@gmail.com", "Kellan Nealy");
+            var plainTextContent = "and easy to do anywhere, even with C#";
+            var htmlContent = "<strong>and easy to do anywhere, even with C#</strong>";
+            var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+            var response = await client.SendEmailAsync(msg);
+        }
+    }
+}

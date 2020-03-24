@@ -1,5 +1,6 @@
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/appsettings.Development.json
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/appsettings.json
+/Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/appsettings.secrets.json
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/Properties/launchSettings.json
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/Sociosearch.NET.StaticWebAssets.xml
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/app.db
@@ -43,6 +44,7 @@
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/Microsoft.Extensions.Options.dll
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/Microsoft.Extensions.Primitives.dll
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/Newtonsoft.Json.dll
+/Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/SendGrid.dll
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/SQLitePCLRaw.batteries_v2.dll
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/SQLitePCLRaw.nativelibrary.dll
 /Users/user/Dev/sociosearch.NET/bin/Debug/netcoreapp3.1/SQLitePCLRaw.core.dll

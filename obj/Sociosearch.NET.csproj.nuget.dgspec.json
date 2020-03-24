@@ -14,7 +14,7 @@
         "outputPath": "/Users/user/Dev/sociosearch.NET/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/user/.config/NuGet/NuGet.Config"
+          "/Users/user/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "netcoreapp3.1"
@@ -55,6 +55,10 @@
             "Microsoft.EntityFrameworkCore.Tools": {
               "target": "Package",
               "version": "[3.1.2, )"
+            },
+            "SendGrid": {
+              "target": "Package",
+              "version": "[9.13.1, )"
             }
           },
           "imports": [
@@ -75,7 +79,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/3.1.200/RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/3.1.201/RuntimeIdentifierGraph.json"
         }
       }
     }

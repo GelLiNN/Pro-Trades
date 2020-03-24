@@ -29,6 +29,7 @@
           "Microsoft.AspNetCore.Identity.UI": "3.1.2",
           "Microsoft.EntityFrameworkCore.Sqlite": "3.1.2",
           "Microsoft.EntityFrameworkCore.Tools": "3.1.2",
+          "SendGrid": "9.13.1",
           "Microsoft.AspNetCore.Antiforgery": "3.1.0.0",
           "Microsoft.AspNetCore.Authentication.Abstractions": "3.1.0.0",
           "Microsoft.AspNetCore.Authentication.Cookies": "3.1.0.0",
@@ -747,6 +748,20 @@
         },
         "compile": {
           "lib/netstandard2.0/Newtonsoft.Json.dll": {}
+        }
+      },
+      "SendGrid/9.13.1": {
+        "dependencies": {
+          "Newtonsoft.Json": "12.0.2"
+        },
+        "runtime": {
+          "lib/netstandard2.0/SendGrid.dll": {
+            "assemblyVersion": "9.13.1.0",
+            "fileVersion": "9.13.1.0"
+          }
+        },
+        "compile": {
+          "lib/netstandard2.0/SendGrid.dll": {}
         }
       },
       "SQLitePCLRaw.bundle_e_sqlite3/2.0.2": {
@@ -2671,6 +2686,13 @@
       "sha512": "sha512-rTK0s2EKlfHsQsH6Yx2smvcTCeyoDNgCW7FEYyV01drPlh2T243PR2DiDXqtC5N4GDm4Ma/lkxfW5a/4793vbA==",
       "path": "newtonsoft.json/12.0.2",
       "hashPath": "newtonsoft.json.12.0.2.nupkg.sha512"
+    },
+    "SendGrid/9.13.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-a0RA3c4wcjwucH8HTwOtw3Wd/ea71P4hbHxWgJ3mojsyPx2vJigMjl0xVgVOwnaaPPyB7Mfg3hlNahi9Y5IpqQ==",
+      "path": "sendgrid/9.13.1",
+      "hashPath": "sendgrid.9.13.1.nupkg.sha512"
     },
     "SQLitePCLRaw.bundle_e_sqlite3/2.0.2": {
       "type": "package",

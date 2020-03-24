@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Sociosearch.NET.Middleware;
 using Sociosearch.NET.Models;
 
 namespace Sociosearch.NET.Controllers
@@ -18,14 +19,21 @@ namespace Sociosearch.NET.Controllers
             _logger = logger;
         }
 
+        [HttpGet("/")]
         public IActionResult Index()
         {
             return View();
         }
 
-        public IActionResult Privacy()
+        [HttpGet("/TestEmail")]
+        public IActionResult TestEmail()
         {
-            return View();
+            EmailTest.Send();
+            return new ContentResult
+            {
+                StatusCode = 200,
+                Content = "Success!"
+            };
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
