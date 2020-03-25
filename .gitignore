@@ -59,7 +59,7 @@ x64/
 *.scc
 
 # OS generated files #
-.DS_Store*
+*.DS_Store*
 Icon?
 
 # Visual C++ cache files
@@ -187,7 +187,7 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Mac desktop service store files
-.DS_Store
+*.DS_Store
 
 # SASS Compiler cache
 .sass-cache
