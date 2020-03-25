@@ -1,0 +1,68 @@
+﻿/*
+* SocioSearch Styles
+*/
+
+/*
+* BEGIN About Page Styles
+*/
+.image-bg-fluid-height,
+.image-bg-fixed-height {
+    text-align: center;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    background-size: cover;
+    -o-background-size: cover;
+}
+
+.image-bg-fluid-height {
+    background: url('/img/about_bg1.jpeg') no-repeat center center scroll;
+    padding: 100px 0;
+}
+
+.image-bg-fixed-height {
+    background: url('/img/about_bg2.jpg') no-repeat center center scroll;
+    height: 450px;
+}
+
+.img-center {
+    margin: 0 auto;
+}
+/*
+* END About Page Styles
+*/
+
+/*
+* BEGIN Bootstrap Modifications
+*/
+#main-content {
+    border-radius: 3px;
+    background-color: #e3e7ed;
+    box-shadow: 0px 0px 15px black;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 75px; /*this may create issues somewhere*/
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.42857143;
+    color: #333;
+    background: linear-gradient(45deg, rgba(255,255,255,0) 48%, rgba(255,255,255,.05) 50%, rgba(255,255,255,0) 52%), linear-gradient(-45deg, rgba(255,255,255,0) 48%, rgba(255,255,255,.05) 50%, rgba(255,255,255,0) 52%);
+    background-size: 1em 1em;
+    background-color: #616f87;
+}
+
+.well {
+    width: 95%;
+    margin-left: auto;
+    margin-right: auto;
+}
+/*
+* END Bootstrap Modifications
+*/

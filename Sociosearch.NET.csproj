@@ -21,5 +21,7 @@
 
   <ItemGroup>
     <Folder Include="Middleware\" />
+    <Folder Include="Views\Search\" />
+    <Folder Include="Views\About\" />
   </ItemGroup>
 </Project>

@@ -20,9 +20,16 @@ namespace Sociosearch.NET.Controllers
         }
 
         [HttpGet("/")]
-        public IActionResult Index()
+        [HttpGet("/Home")]
+        public IActionResult Home()
         {
-            return View();
+            return View("Home");
+        }
+
+        [HttpGet("/Privacy")]
+        public IActionResult Privacy()
+        {
+            return View("Privacy");
         }
 
         [HttpGet("/TestEmail")]
