@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
@@ -7,10 +8,14 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
+using StockSharp.Algo;
+using StockSharp.Algo.Candles;
+using StockSharp.Algo.Strategies;
+using VSLee.IEXSharp;
 
 namespace Sociosearch.NET.Middleware
 {
-    public static class Common
+    public static class Utility
     {
         private static readonly string AlphaVantageUri = "https://www.alphavantage.co/query?";
         private static readonly HttpClient HttpClient = new HttpClient();
@@ -170,6 +175,51 @@ namespace Sociosearch.NET.Middleware
 
             }
             return compositeScore;
+        }
+    }
+
+    //API Key console https://iexcloud.io/console
+    //API docs https://iexcloud.io/docs/api/#testing-sandbox
+    //Client docs https://github.com/vslee/IEXSharp
+    public class IEX
+    {
+        public string GetData(string symbol)
+        {
+            string pToken = Program.Config.GetValue<string>("IexPublishableToken");
+            string sToken = Program.Config.GetValue<string>("IexSecretToken");
+
+            IEXCloudClient iexClient = new IEXCloudClient(pToken, sToken, signRequest: false, useSandBox: false);
+            //iexClient.
+            return string.Empty;
+        }
+    }
+
+    //From StockSharp - IDK yet if we will use it
+    public class SimpleStrategy : Strategy
+    {
+        [Display(Name = "CandleSeries",
+             GroupName = "Base settings")]
+        public CandleSeries CandleSeries { get; set; }
+        public SimpleStrategy() { }
+
+        protected override void OnStarted()
+        {
+            var connector = (Connector)Connector;
+            connector.WhenCandlesFinished(CandleSeries).Do(CandlesFinished).Apply(this);
+            connector.SubscribeCandles(CandleSeries);
+            base.OnStarted();
+        }
+
+        private void CandlesFinished(Candle candle)
+        {
+            if (candle.OpenPrice < candle.ClosePrice && Position <= 0)
+            {
+                RegisterOrder(this.BuyAtMarket(Volume + Math.Abs(Position)));
+            }
+            else if (candle.OpenPrice > candle.ClosePrice && Position >= 0)
+            {
+                RegisterOrder(this.SellAtMarket(Volume + Math.Abs(Position)));
+            }
         }
     }
 }

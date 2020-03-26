@@ -22,11 +22,12 @@ namespace Sociosearch.NET.Controllers
             return View("Search");
         }
 
-        [HttpGet("/GetIndicatorForSymbol/{function}/{symbol}")] //indicator == function
-        public IActionResult GetIndicatorForSymbol(string function, string symbol)
+        [HttpGet("/GetIndicatorForSymbol/{function}/{symbol}/{days}")] //indicator == function
+        public IActionResult GetIndicatorForSymbol(string function, string symbol, string days)
         {
-            string avResponse = Common.CompleteAlphaVantageRequest(function, symbol).Result;
-            decimal avCompositeScore = Common.GetCompositeScore(avResponse, function, 5);
+            int numOfDays = Int32.Parse(days);
+            string avResponse = Utility.CompleteAlphaVantageRequest(function, symbol).Result;
+            decimal avCompositeScore = Utility.GetCompositeScore(avResponse, function, numOfDays);
             return new ContentResult
             {
                 StatusCode = 200,
@@ -37,10 +38,10 @@ namespace Sociosearch.NET.Controllers
         [HttpGet("/GetCompositeScoreForSymbol/{symbol}")]
         public CompositeScoreResult GetCompositeScoreForSymbol(string symbol)
         {
-            string adxResponse = Common.CompleteAlphaVantageRequest("ADX", symbol).Result;
-            decimal adxCompositeScore = Common.GetCompositeScore("ADX", adxResponse, 5);
-            string aroonResponse = Common.CompleteAlphaVantageRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = Common.GetCompositeScore("AROON", aroonResponse, 20);
+            string adxResponse = Utility.CompleteAlphaVantageRequest("ADX", symbol).Result;
+            decimal adxCompositeScore = Utility.GetCompositeScore("ADX", adxResponse, 5);
+            string aroonResponse = Utility.CompleteAlphaVantageRequest("AROON", symbol).Result;
+            decimal aroonCompositeScore = Utility.GetCompositeScore("AROON", aroonResponse, 20);
             return new CompositeScoreResult
             {
                 ADXComposite = adxCompositeScore,
