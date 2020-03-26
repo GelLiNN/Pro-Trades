@@ -51,7 +51,7 @@ namespace Sociosearch.NET.Middleware
 
         private static async Task Execute()
         {
-            var apiKey = "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";
+            var apiKey = Program.Config.GetValue<string>("SendGridApiKey");
             var client = new SendGridClient(apiKey);
             var from = new EmailAddress("noreply@sociosearch.com", "NOREPLY");
             var subject = "Sending with SendGrid is Fun";
