@@ -2,16 +2,18 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
-using StockSharp.Algo;
-using StockSharp.Algo.Candles;
-using StockSharp.Algo.Strategies;
+using Sociosearch.NET.Models;
 using VSLee.IEXSharp;
+using VSLee.IEXSharp.Model.Stock.Request;
+using VSLee.IEXSharp.Model.Stock.Response;
 
 namespace Sociosearch.NET.Middleware
 {
@@ -34,7 +36,7 @@ namespace Sociosearch.NET.Middleware
                 switch (function.ToUpper())
                 {
                     case "ADX":
-                        string adxInterval = "60min";
+                        string adxInterval = "30min";
                         string adxPeriod = "100";
                         response = await HttpClient
                             .GetAsync(String.Format(AlphaVantageUri + "function={0}&symbol={1}&interval={2}&time_period={3}&apikey={4}",
@@ -183,43 +185,240 @@ namespace Sociosearch.NET.Middleware
     //Client docs https://github.com/vslee/IEXSharp
     public class IEX
     {
-        public string GetData(string symbol)
-        {
-            string pToken = Program.Config.GetValue<string>("IexPublishableToken");
-            string sToken = Program.Config.GetValue<string>("IexSecretToken");
+        private static readonly string PToken = Program.Config.GetValue<string>("IexPublishableToken");
+        private static readonly string SToken = Program.Config.GetValue<string>("IexSecretToken");
+        public static IEXCloudClient IEXClient = new IEXCloudClient(PToken, SToken, signRequest: false, useSandBox: false);
 
-            IEXCloudClient iexClient = new IEXCloudClient(pToken, sToken, signRequest: false, useSandBox: false);
-            //iexClient.
-            return string.Empty;
+        public static async Task<string> GetHistoricalPricesAsync(string symbol, ChartRange range)
+        {
+            var response = await IEXClient.Stock.HistoricalPriceAsync(symbol, range);
+            IEnumerable<HistoricalPriceResponse> prices = response.Data;
+            decimal highestHigh = 0;
+            decimal lowestLow = 0;
+            string result = "";
+            foreach (HistoricalPriceResponse price in prices)
+            {
+                decimal high = price.high;
+                decimal low = price.low;
+                long changePercent = price.changePercent;
+                long changeOverTime = price.changeOverTime;
+                decimal open = price.open;
+                decimal close = price.close;
+                long volumen = price.volume;
+                result += "{date: " + price.date + ", price: " + close + "},";
+            }
+            return await Task.FromResult(result);
+        }
+
+        public static async Task<CompanyStats> GetCompanyStatsAsync(string symbol)
+        {
+            var keyStatsResponse = await IEXClient.Stock.KeyStatsAsync(symbol);
+            //var financialResponse = await IEXClient.Stock.FinancialAsync(symbol, 1);
+            //var largestTradesResponse = await IEXClient.Stock.LargestTradesAsync(symbol);
+            KeyStatsResponse iexStat = keyStatsResponse.Data;
+            FinancialResponse iexFinancial = null; //apparently paid service now ...?
+            IEnumerable<LargestTradeResponse> iexTrades = null; //apparently paid service now ...?
+            CompanyStats companyStat = new CompanyStats();
+
+            if (iexStat != null)
+            {
+                decimal high = iexStat.week52high;
+                decimal low = iexStat.week52low;
+                decimal medianPrice52w = (high + low) / 2;
+                companyStat.High52w = high;
+                companyStat.Low52w = low;
+                companyStat.MedianPrice = medianPrice52w;
+
+                decimal change1m = iexStat.month1ChangePercent;
+                decimal change3m = iexStat.month3ChangePercent;
+                decimal change6m = iexStat.month6ChangePercent;
+                companyStat.PercentChangeAvg = (change1m + change3m + change6m) / 3;
+                companyStat.PercentChange1m = change1m;
+
+                decimal volume10d = iexStat.avg10Volume;
+                decimal volume30d = iexStat.avg30Volume;
+                decimal avgVolume = (volume10d + volume30d) / 2;
+                companyStat.Volume10d = volume10d;
+                companyStat.VolumeAvg = avgVolume;
+
+                //average daily liguid money trading around for this symbol
+                companyStat.VolumeAvgUSD = avgVolume * companyStat.MedianPrice;
+
+                decimal movingAvg50d = iexStat.day50MovingAvg;
+                long peRatio = iexStat.peRatio;
+                string companyName = iexStat.companyName;
+                long numEmployees = iexStat.employees;
+                long marketCap = iexStat.marketcap;
+                long sharesOutstanding = iexStat.sharesOutstanding;
+                companyStat.MovingAvg50d = movingAvg50d;
+                companyStat.PeRatio = peRatio;
+                companyStat.CompanyName = companyName;
+
+                //dividends
+                Dividends dividends = new Dividends
+                {
+                    DividendRate = iexStat.ttmDividendRate,
+                    DividendYield = iexStat.dividendYield,
+                    LastDividendDate = iexStat.exDividendDate
+                };
+                companyStat.Dividends = dividends;
+
+                //market capitalization per employee (capita)
+                companyStat.MarketCapPerCapita = marketCap / numEmployees;
+            }
+
+            if (iexFinancial != null) //apparently paid service now ...?
+            {
+                var fins = iexFinancial.financials;
+                var fin = fins.FirstOrDefault();
+                if (fin != null)
+                {
+                    companyStat.GrossProfit = fin.grossProfit;
+                    companyStat.ShareHolderEquity = fin.shareholderEquity;
+                    companyStat.TotalAssets = fin.totalAssets;
+                    companyStat.TotalCash = fin.totalCash;
+                    companyStat.TotalDebt = fin.totalDebt;
+                    companyStat.TotalLiabilities = fin.totalLiabilities;
+                    companyStat.TotalRevenue = fin.totalRevenue;
+                    companyStat.LastFinancialReportDate = fin.reportDate;
+                }
+            }
+
+            if (iexTrades != null) //apparently paid service now ...?
+            {
+                foreach (var item in iexTrades)
+                {
+                    Console.WriteLine(item);
+                }
+            }
+            return await Task.FromResult(companyStat);
+        }
+
+        public static async Task<VSLee.IEXSharp.Model.Shared.Response.Quote> GetQuoteAsync(string symbol)
+        {
+            var response = await IEXClient.Stock.QuoteAsync(symbol);
+            VSLee.IEXSharp.Model.Shared.Response.Quote quote = response.Data;
+            return quote;
         }
     }
 
-    //From StockSharp - IDK yet if we will use it
-    public class SimpleStrategy : Strategy
+    //Module for getting all or most company symbols and names from all exchanges
+    //Nasdaq FTP data dump files for loading large datasets
+    //ftp://ftp.nasdaqtrader.com and ftp://ftp.nasdaqtrader.com/SymbolDirectory and
+    //OTCMarkets raw securities download from https://www.otcmarkets.com/research/stock-screener/api/downloadCSV
+    public class Companies
     {
-        [Display(Name = "CandleSeries",
-             GroupName = "Base settings")]
-        public CandleSeries CandleSeries { get; set; }
-        public SimpleStrategy() { }
+        private static readonly string nasdaqSymbolsUri = @"ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqtraded.txt";
+        private static readonly string otcSymbolsUri = @"ftp://ftp.nasdaqtrader.com/SymbolDirectory/otclist.txt";
+        private static readonly string otcMarketsUri = @"https://www.otcmarkets.com/research/stock-screener/api/downloadCSV";
 
-        protected override void OnStarted()
+        public static async Task<AllCompanies> GetAllCompaniesAsync()
         {
-            var connector = (Connector)Connector;
-            connector.WhenCandlesFinished(CandleSeries).Do(CandlesFinished).Apply(this);
-            connector.SubscribeCandles(CandleSeries);
-            base.OnStarted();
+            AllCompanies companies = new AllCompanies()
+            {
+                SymbolsToCompanies = new Dictionary<string, Company>()
+            };
+
+            string nasdaqData = GetFromFtpUri(nasdaqSymbolsUri);
+            string[] nasdaqDataLines = nasdaqData.Split( new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
+            {
+                string line = nasdaqDataLines[i];
+                string[] data = line.Split('|');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[1];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol))
+                    {
+                        bool isNasdaq = data[0] == "Y";
+                        if (isNasdaq)
+                        {
+                            Company company = new Company
+                            {
+                                Name = data[2],
+                                Exchange = "Nasdaq"
+                            };
+                            companies.SymbolsToCompanies.Add(symbol, company);
+                        }
+                    }
+                }
+            }
+
+            string otcData = GetFromFtpUri(otcSymbolsUri);
+            string[] otcDataLines = otcData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int j = 1; j < otcDataLines.Length - 1; j++) //trim first and last row
+            {
+                string line = otcDataLines[j];
+                string[] data = line.Split('|');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[0];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol))
+                    {
+                        Company company = new Company
+                        {
+                            Name = data[1],
+                            Exchange = "OTC"
+                        };
+                        companies.SymbolsToCompanies.Add(symbol, company);
+                    }
+                }
+            }
+
+            string otcMarketsData = GetFromUri(otcMarketsUri);
+            string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int k = 1; k < otcMarketsDataLines.Length; k++) //trim first row
+            {
+                string line = otcMarketsDataLines[k];
+                string[] data = line.Split(',');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[0];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol))
+                    {
+                        Company company = new Company
+                        {
+                            Name = data[1],
+                            Exchange = data[2]
+                        };
+                        companies.SymbolsToCompanies.Add(symbol, company);
+                    }
+                }
+            }
+            return await Task.FromResult(companies);
         }
 
-        private void CandlesFinished(Candle candle)
+        public static string GetFromFtpUri(string uri)
         {
-            if (candle.OpenPrice < candle.ClosePrice && Position <= 0)
+            FtpWebRequest request = (FtpWebRequest)WebRequest.Create(uri);
+            request.UseBinary = true;
+            request.Method = WebRequestMethods.Ftp.DownloadFile;
+            string responseStr = string.Empty;
+
+            //Read the file from the server & write to destination                
+            using (FtpWebResponse response = (FtpWebResponse)request.GetResponse()) // Error here
+            using (Stream responseStream = response.GetResponseStream())
+            using (StreamReader reader = new StreamReader(responseStream))
             {
-                RegisterOrder(this.BuyAtMarket(Volume + Math.Abs(Position)));
+                responseStr = reader.ReadToEnd();
             }
-            else if (candle.OpenPrice > candle.ClosePrice && Position >= 0)
+            return responseStr;
+        }
+
+        public static string GetFromUri(string uri)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+            request.Method = "GET";
+            string responseStr = string.Empty;
+
+            //Read the file from the server & write to destination                
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse()) // Error here
+            using (Stream responseStream = response.GetResponseStream())
+            using (StreamReader reader = new StreamReader(responseStream))
             {
-                RegisterOrder(this.SellAtMarket(Volume + Math.Abs(Position)));
+                responseStr = reader.ReadToEnd();
             }
+            return responseStr;
         }
     }
 }

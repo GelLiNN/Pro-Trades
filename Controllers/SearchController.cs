@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Sociosearch.NET.Middleware;
@@ -42,12 +44,37 @@ namespace Sociosearch.NET.Controllers
             decimal adxCompositeScore = Utility.GetCompositeScore("ADX", adxResponse, 5);
             string aroonResponse = Utility.CompleteAlphaVantageRequest("AROON", symbol).Result;
             decimal aroonCompositeScore = Utility.GetCompositeScore("AROON", aroonResponse, 20);
+
             return new CompositeScoreResult
             {
                 ADXComposite = adxCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 CompositeScore = (adxCompositeScore + aroonCompositeScore) / 2
             };
+        }
+
+        [HttpGet("/GetCompanyStatsForSymbol/{symbol}")]
+        public CompanyStats GetCompanyStatsForSymbol(string symbol)
+        {
+            return IEX.GetCompanyStatsAsync(symbol).Result;
+        }
+
+        [HttpGet("/GetQuoteForSymbol/{symbol}")]
+        public VSLee.IEXSharp.Model.Shared.Response.Quote GetQuoteForSymbol(string symbol)
+        {
+            return IEX.GetQuoteAsync(symbol).Result;
+        }
+
+        [HttpGet("/GetAllCompanies")]
+        public AllCompanies GetAllCompanies()
+        {
+            return Companies.GetAllCompaniesAsync().Result;
+        }
+
+        [HttpGet("/Test")]
+        public string Test()
+        {
+            return string.Empty;
         }
     }
 }

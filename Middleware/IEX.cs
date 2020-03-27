@@ -443,6 +443,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+        //flag
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -465,6 +466,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+        //flag
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -477,6 +479,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
+        //flag
 		[Test]
 		[TestCase("mostactive")]
 		[TestCase("gainers")]
@@ -514,6 +517,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
+        //flag
 		[Test]
 		[TestCase("AAPL", 10)]
 		[TestCase("FB", 20)]
@@ -537,6 +541,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+        //flag
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -571,6 +576,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+        //flag
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -582,6 +588,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+        //flag
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -604,6 +611,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+        //flag
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -616,6 +624,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
+        //flag
 		[Test]
 		public async Task SectorPerformanceAsync()
 		{
@@ -644,6 +653,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
+        //flag
 		[Test]
 		[TestCase("AAPL", UpcomingEventType.Dividends)]
 		[TestCase("AAPL", UpcomingEventType.Earnings)]
