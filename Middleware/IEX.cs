@@ -3,7 +3,6 @@ using VSLee.IEXSharp;
 using VSLee.IEXSharp.Model.Stock.Request;
 using NUnit.Framework;
 using VSLee.IEXSharp.Helper;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,6 +24,7 @@ namespace Sociosearch.NET.Middleware
 			sandBoxClient = new IEXCloudClient(publishableToken: pToken, secretToken: sToken, signRequest: false, useSandBox: true);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL", Period.Quarter, 1)]
 		[TestCase("FB", Period.Quarter, 2)]
@@ -38,6 +38,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.balancesheet.Count, 1);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL", "currentCash", Period.Quarter, 1)]
 		[TestCase("FB", "currentCash", Period.Quarter, 2)]
@@ -74,6 +75,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data[symbols.ToList()[0]]);
 		}
 
+        //Flagged for bid and ask data
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -86,6 +88,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data.quote);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL", Period.Quarter, 1)]
 		[TestCase("AAPL", Period.Annual, 2)]
@@ -108,6 +111,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+        //Flagged for screening
 		[Test]
 		[TestCase(CollectionType.List, "iexvolume")]
 		[TestCase(CollectionType.Sector, "Health Care")]
@@ -121,6 +125,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
+        //Flagged for company information
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -160,6 +165,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+        //Flagged for potential link to financials data which is unavailable
 		[Test]
 		[TestCase("AAPL", 1)]
 		[TestCase("FB", 2)]
@@ -202,6 +208,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL", 1)]
 		[TestCase("FB", 2)]
@@ -214,6 +221,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.estimates.Count, 1);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL", "consensusEPS", 1)]
 		[TestCase("FB", "consensusEPS", 2)]
@@ -225,6 +233,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL", 1)]
 		[TestCase("FB", 2)]
@@ -237,6 +246,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.financials.Count, 1);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL", "grossProfit", 1)]
 		[TestCase("FB", "grossProfit", 2)]
@@ -248,7 +258,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
-		// Not supported for free account
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -260,6 +270,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+		//Flagged for running through a predictive model IA
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("AAPL", ChartRange._1y)]
@@ -321,16 +332,6 @@ namespace Sociosearch.NET.Middleware
 			return latestWeekday;
 		}
 
-		//public async Task HistoricalPriceAsyncQsbTest()
-		//{
-		//	var qsb = new QueryStringBuilder();
-		//	qsb.Add("chartByDay", "true");
-		//	var response = await sandBoxClient.Stock.HistoricalPriceByDateAsync("AAPL", ChartRange._1m, null, qsb);
-
-		//	Assert.IsNotNull(response);
-		//	Assert.GreaterOrEqual(response.Count(), 0);
-		//}
-
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -344,6 +345,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.data.Count, 1);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL", Period.Annual, 1)]
 		[TestCase("FB", Period.Quarter, 2)]
@@ -357,10 +359,11 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.income.Count, 1);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL", "costOfRevenue", Period.Quarter, 1)]
 		[TestCase("AAPL", "costOfRevenue", Period.Annual, 2)]
-		public async Task InComeStatementFieldAsyncTest(string symbol, string field, Period period = Period.Quarter, int last = 1)
+		public async Task IncomeStatementFieldAsyncTest(string symbol, string field, Period period = Period.Quarter, int last = 1)
 		{
 			var response = await sandBoxClient.Stock.IncomeStatementFieldAsync(symbol, field, period, last);
 
@@ -368,7 +371,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
-		// Not supported for free account
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -381,7 +384,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
-		// Not supported for free account
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -394,7 +397,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
-		// Not supported for free account
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -407,7 +410,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
-		// Not supported for free account
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -420,6 +423,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
+        //Flagged for more granular report of today's trades
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -443,7 +447,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
-        //flag
+        //Flagged
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -458,7 +462,7 @@ namespace Sociosearch.NET.Middleware
 		[Test]
 		[TestCase("AAPL", "nextDividendDate")]
 		[TestCase("FB", "nextDividendDate")]
-		public async Task KeyStatsStatAsync(string symbol, string stat)
+		public async Task KeyStatsStatAsyncTest(string symbol, string stat)
 		{
 			var response = await sandBoxClient.Stock.KeyStatsStatAsync(symbol, stat);
 
@@ -466,7 +470,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
-        //flag
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -479,7 +483,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
-        //flag
+        //Flagged for screening
 		[Test]
 		[TestCase("mostactive")]
 		[TestCase("gainers")]
@@ -517,7 +521,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
-        //flag
+        //Flagged for sentiment analysis
 		[Test]
 		[TestCase("AAPL", 10)]
 		[TestCase("FB", 20)]
@@ -530,6 +534,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -541,7 +546,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
-        //flag
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -576,7 +581,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
-        //flag
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -588,7 +593,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
-        //flag
+        //Flagged
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -611,7 +616,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
-        //flag
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]
@@ -624,7 +629,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
-        //flag
+		//Not supported for free account
 		[Test]
 		public async Task SectorPerformanceAsync()
 		{
@@ -653,7 +658,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.GreaterOrEqual(response.Data.Count(), 1);
 		}
 
-        //flag
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL", UpcomingEventType.Dividends)]
 		[TestCase("AAPL", UpcomingEventType.Earnings)]
@@ -668,7 +673,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
-		// Not supported for free account
+		//Not supported for free account
 		[Test]
 		[TestCase(UpcomingEventType.Dividends)]
 		[TestCase(UpcomingEventType.Earnings)]
@@ -683,6 +688,7 @@ namespace Sociosearch.NET.Middleware
 			Assert.IsNotNull(response.Data);
 		}
 
+		//Not supported for free account
 		[Test]
 		[TestCase("AAPL")]
 		[TestCase("FB")]

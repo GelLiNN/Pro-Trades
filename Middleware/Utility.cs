@@ -22,10 +22,6 @@ namespace Sociosearch.NET.Middleware
         private static readonly string AlphaVantageUri = "https://www.alphavantage.co/query?";
         private static readonly HttpClient HttpClient = new HttpClient();
 
-        //If I want to use defaults
-        private static readonly string Interval = "daily";
-        private static readonly string Period = "100";
-
         public static async Task<string> CompleteAlphaVantageRequest(string function, string symbol)
         {
             try
@@ -160,6 +156,8 @@ namespace Sociosearch.NET.Middleware
                     break;
                 case "RSI":
                     break;
+                case "OBV":
+                    break;
                 case "MACD":
                     break;
                 case "CCI":
@@ -193,8 +191,6 @@ namespace Sociosearch.NET.Middleware
         {
             var response = await IEXClient.Stock.HistoricalPriceAsync(symbol, range);
             IEnumerable<HistoricalPriceResponse> prices = response.Data;
-            decimal highestHigh = 0;
-            decimal lowestLow = 0;
             string result = "";
             foreach (HistoricalPriceResponse price in prices)
             {
@@ -204,7 +200,7 @@ namespace Sociosearch.NET.Middleware
                 long changeOverTime = price.changeOverTime;
                 decimal open = price.open;
                 decimal close = price.close;
-                long volumen = price.volume;
+                long volume = price.volume;
                 result += "{date: " + price.date + ", price: " + close + "},";
             }
             return await Task.FromResult(result);
@@ -213,11 +209,12 @@ namespace Sociosearch.NET.Middleware
         public static async Task<CompanyStats> GetCompanyStatsAsync(string symbol)
         {
             var keyStatsResponse = await IEXClient.Stock.KeyStatsAsync(symbol);
-            //var financialResponse = await IEXClient.Stock.FinancialAsync(symbol, 1);
-            //var largestTradesResponse = await IEXClient.Stock.LargestTradesAsync(symbol);
+            var earningResponse = await IEXClient.Stock.EarningAsync(symbol);
+            var tradesResponse = await IEXClient.Stock.IntradayPriceAsync(symbol);
             KeyStatsResponse iexStat = keyStatsResponse.Data;
-            FinancialResponse iexFinancial = null; //apparently paid service now ...?
-            IEnumerable<LargestTradeResponse> iexTrades = null; //apparently paid service now ...?
+            EarningResponse iexFinancial = earningResponse.Data;
+            IEnumerable<IntradayPriceResponse> iexTrades = tradesResponse.Data;
+
             CompanyStats companyStat = new CompanyStats();
 
             if (iexStat != null)
@@ -225,9 +222,9 @@ namespace Sociosearch.NET.Middleware
                 decimal high = iexStat.week52high;
                 decimal low = iexStat.week52low;
                 decimal medianPrice52w = (high + low) / 2;
-                companyStat.High52w = high;
-                companyStat.Low52w = low;
-                companyStat.MedianPrice = medianPrice52w;
+                companyStat.PriceHigh52w = high;
+                companyStat.PriceLow52w = low;
+                companyStat.PriceMedian52w = medianPrice52w;
 
                 decimal change1m = iexStat.month1ChangePercent;
                 decimal change3m = iexStat.month3ChangePercent;
@@ -239,20 +236,20 @@ namespace Sociosearch.NET.Middleware
                 decimal volume30d = iexStat.avg30Volume;
                 decimal avgVolume = (volume10d + volume30d) / 2;
                 companyStat.Volume10d = volume10d;
+
+                //VERY APPROXIMATE volume estimates for this symbol
                 companyStat.VolumeAvg = avgVolume;
+                companyStat.VolumeAvgUSD = avgVolume * companyStat.PriceMedian52w;
 
-                //average daily liguid money trading around for this symbol
-                companyStat.VolumeAvgUSD = avgVolume * companyStat.MedianPrice;
+                companyStat.CompanyName = iexStat.companyName;
+                companyStat.NumberOfEmployees = iexStat.employees;
+                companyStat.SharesOutstanding = iexStat.sharesOutstanding;
+                companyStat.MarketCap = iexStat.marketcap;
+                companyStat.MovingAvg50d = iexStat.day50MovingAvg;
+                companyStat.PeRatio = iexStat.peRatio;
 
-                decimal movingAvg50d = iexStat.day50MovingAvg;
-                long peRatio = iexStat.peRatio;
-                string companyName = iexStat.companyName;
-                long numEmployees = iexStat.employees;
-                long marketCap = iexStat.marketcap;
-                long sharesOutstanding = iexStat.sharesOutstanding;
-                companyStat.MovingAvg50d = movingAvg50d;
-                companyStat.PeRatio = peRatio;
-                companyStat.CompanyName = companyName;
+                //market capitalization per employee (capita)
+                companyStat.MarketCapPerCapita = companyStat.MarketCap / companyStat.NumberOfEmployees;
 
                 //dividends
                 Dividends dividends = new Dividends
@@ -262,34 +259,48 @@ namespace Sociosearch.NET.Middleware
                     LastDividendDate = iexStat.exDividendDate
                 };
                 companyStat.Dividends = dividends;
-
-                //market capitalization per employee (capita)
-                companyStat.MarketCapPerCapita = marketCap / numEmployees;
             }
 
-            if (iexFinancial != null) //apparently paid service now ...?
+            if (iexFinancial != null)
             {
-                var fins = iexFinancial.financials;
-                var fin = fins.FirstOrDefault();
+                List<VSLee.IEXSharp.Model.Shared.Response.Earning> fins = iexFinancial.earnings;
+                VSLee.IEXSharp.Model.Shared.Response.Earning fin = fins.FirstOrDefault();
                 if (fin != null)
                 {
-                    companyStat.GrossProfit = fin.grossProfit;
-                    companyStat.ShareHolderEquity = fin.shareholderEquity;
-                    companyStat.TotalAssets = fin.totalAssets;
-                    companyStat.TotalCash = fin.totalCash;
-                    companyStat.TotalDebt = fin.totalDebt;
-                    companyStat.TotalLiabilities = fin.totalLiabilities;
-                    companyStat.TotalRevenue = fin.totalRevenue;
-                    companyStat.LastFinancialReportDate = fin.reportDate;
+                    //re-enable if I can get financials from somewhere
+                    /*Financials financials = new Financials
+                    {
+                        //Get TotalRevenue somewhere?
+                        RetainedEarnings = fin.,
+                        ShareHolderEquity = fin.shareholderEquity,
+                        ShortTermInvestments = fin.shortTermInvestments,
+                        CapitalSurplus = fin.capitalSurplus,
+                        TotalAssets = fin.totalAssets,
+                        TotalCash = fin.currentCash,
+                        TotalDebt = fin.longTermDebt,
+                        TotalLiabilities = fin.totalLiabilities,
+                        LastFinancialReportDate = fin.reportDate
+                    };*/
+                    companyStat.Earnings = fin;
                 }
             }
 
-            if (iexTrades != null) //apparently paid service now ...?
+            if (iexTrades != null) //data from intraday-prices
             {
+                TradeData td = new TradeData();
                 foreach (var item in iexTrades)
                 {
-                    Console.WriteLine(item);
+                    td.RealVolume += item.volume;
+                    td.RealVolumeUSD += item.volume * item.average;
+                    td.TotalTrades += item.numberOfTrades;
+                    td.NotionalValueTotal += item.notional;
                 }
+                //https://www.investopedia.com/terms/n/notionalvalue.asp
+                td.NotionalValuePerShare = td.NotionalValueTotal / td.RealVolume; //idk
+                td.AvgTradeSize = td.RealVolume / td.TotalTrades;
+                td.AvgTradeSizeUSD = td.RealVolumeUSD / td.TotalTrades;
+                td.Source = "IEX";
+                companyStat.TradeData = td;
             }
             return await Task.FromResult(companyStat);
         }
