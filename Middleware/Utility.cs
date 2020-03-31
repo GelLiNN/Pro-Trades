@@ -17,9 +17,10 @@ using VSLee.IEXSharp.Model.Stock.Response;
 
 namespace Sociosearch.NET.Middleware
 {
-    public static class Utility
+    //API Documentation https://www.alphavantage.co/documentation/
+    public static class AV
     {
-        private static readonly string AlphaVantageUri = "https://www.alphavantage.co/query?";
+        private static readonly string AVURI = "https://www.alphavantage.co/query?";
         private static readonly HttpClient HttpClient = new HttpClient();
 
         public static async Task<string> CompleteAlphaVantageRequest(string function, string symbol)
@@ -35,14 +36,14 @@ namespace Sociosearch.NET.Middleware
                         string adxInterval = "30min";
                         string adxPeriod = "100";
                         response = await HttpClient
-                            .GetAsync(String.Format(AlphaVantageUri + "function={0}&symbol={1}&interval={2}&time_period={3}&apikey={4}",
+                            .GetAsync(String.Format(AVURI + "function={0}&symbol={1}&interval={2}&time_period={3}&apikey={4}",
                             function, symbol, adxInterval, adxPeriod, Program.Config.GetValue<string>("AlphaVantageApiKey")));
                         break;
                     case "AROON":
                         string aroonInterval = "daily";
                         string aroonPeriod = "300";
                         response = await HttpClient
-                            .GetAsync(String.Format(AlphaVantageUri + "function={0}&symbol={1}&interval={2}&time_period={3}&apikey={4}",
+                            .GetAsync(String.Format(AVURI + "function={0}&symbol={1}&interval={2}&time_period={3}&apikey={4}",
                             function, symbol, aroonInterval, aroonPeriod, Program.Config.GetValue<string>("AlphaVantageApiKey")));
                         break;
                     case "BBANDS":
@@ -178,6 +179,150 @@ namespace Sociosearch.NET.Middleware
         }
     }
 
+    //API Documentation https://financialmodelingprep.com/developer/docs/
+    //No API key needed for this one?
+    public class FMP
+    {
+        private static readonly string FMPURI = @"https://financialmodelingprep.com/api/v3/";
+        private static readonly HttpClient HttpClient = new HttpClient();
+
+        public static async Task<string> CompleteFMPRequestAsync(string path, string function = null, string symbol = null)
+        {
+            try
+            {
+                HttpResponseMessage response = new HttpResponseMessage();
+                response = await HttpClient.GetAsync(FMPURI + path);
+                response.EnsureSuccessStatusCode();
+                string responseBody = await response.Content.ReadAsStringAsync();
+                return await Task.FromResult(responseBody);
+            }
+            catch (HttpRequestException e)
+            {
+                Debug.WriteLine("EXCEPTION Message: {0}, StackTrace: {1}", e.Message, e.StackTrace);
+                return string.Empty;
+            }
+        }
+
+
+        public static async Task<CompanyStatsFMP> GetCompanyStatsAsync(string symbol)
+        {
+            CompanyStatsFMP companyStat = new CompanyStatsFMP();
+            try
+            {
+                //FMP quote endpoint
+                string quoteResponse = CompleteFMPRequestAsync(String.Format("quote/{0}", symbol)).Result;
+                JArray quoteData = JArray.Parse(quoteResponse); //JArray since quote endpoint accepts multiple symbols
+                foreach (JObject quote in quoteData)
+                {
+                    companyStat.Symbol = symbol;
+                    companyStat.CompanyName = quote.GetValue("name").ToString();
+                    companyStat.MarketCap = decimal.Parse(quote.GetValue("marketCap").ToString());
+                    companyStat.SharesOutstanding = decimal.Parse(quote.GetValue("sharesOutstanding").ToString());
+                    companyStat.PeRatio = decimal.Parse(quote.GetValue("pe").ToString());
+                    companyStat.EarningsPerShare = decimal.Parse(quote.GetValue("eps").ToString());
+                    companyStat.EarningsReportDate = DateTime.Parse(quote.GetValue("earningsAnnouncement").ToString());
+
+                    companyStat.Price = decimal.Parse(quote.GetValue("price").ToString());
+                    companyStat.PriceOpenToday = decimal.Parse(quote.GetValue("open").ToString());
+                    companyStat.PricePreviousClose = decimal.Parse(quote.GetValue("previousClose").ToString());
+
+                    companyStat.PriceHighToday = decimal.Parse(quote.GetValue("dayHigh").ToString());
+                    companyStat.PriceLowToday = decimal.Parse(quote.GetValue("dayLow").ToString());
+                    companyStat.PriceAverageToday = (companyStat.PriceHighToday + companyStat.PriceLowToday) / 2;
+
+                    companyStat.PriceChangeTodayUSD = decimal.Parse(quote.GetValue("change").ToString());
+                    companyStat.PriceChangeTodayPercent = decimal.Parse(quote.GetValue("changesPercentage").ToString());
+                    companyStat.PriceAverage50Day = decimal.Parse(quote.GetValue("priceAvg50").ToString());
+
+                    companyStat.PriceHighYTD = decimal.Parse(quote.GetValue("yearHigh").ToString());
+                    companyStat.PriceLowYTD = decimal.Parse(quote.GetValue("yearLow").ToString());
+                    companyStat.PriceAverageEstimateYTD = (companyStat.PriceHighYTD + companyStat.PriceLowYTD) / 2;
+
+                    companyStat.VolumeToday = decimal.Parse(quote.GetValue("volume").ToString());
+                    companyStat.VolumeAverage = decimal.Parse(quote.GetValue("avgVolume").ToString());
+                    companyStat.VolumeAverageUSD = (companyStat.VolumeAverage * companyStat.PriceAverageToday);
+                }
+
+                //FMP company profile endpoint
+                string companyProfileResponse = CompleteFMPRequestAsync(String.Format("company/profile/{0}", symbol)).Result;
+                JObject profileData = JObject.Parse(companyProfileResponse);
+                if (profileData != null)
+                {
+                    JObject profile = (JObject) profileData.GetValue("profile");
+                    companyStat.Exchange = profile.GetValue("exchange").ToString();
+                    companyStat.CompanyDescription = profile.GetValue("description").ToString();
+                    companyStat.CompanyCEO = profile.GetValue("ceo").ToString();
+                    companyStat.CompanyIndustry = profile.GetValue("industry").ToString();
+                    companyStat.CompanySector = profile.GetValue("sector").ToString();
+                    companyStat.CompanyImageLink = profile.GetValue("image").ToString();
+
+                    companyStat.BetaValue = decimal.Parse(profile.GetValue("beta").ToString());
+                }
+
+                //FMP income statement endpoint
+                string financialsResponse = CompleteFMPRequestAsync(String.Format("financials/income-statement/{0}?period=quarter", symbol)).Result;
+                JObject financialsData = JObject.Parse(financialsResponse);
+                if (financialsData != null)
+                {
+                    JArray financials = (JArray)financialsData.GetValue("financials");
+                    foreach (JObject financial in financials)
+                    {
+                        FinancialsFMP fin = new FinancialsFMP
+                        {
+                            RevenueTotal = decimal.Parse(financial.GetValue("Revenue").ToString()),
+                            RevenueGrowth = decimal.Parse(financial.GetValue("Revenue Growth").ToString()),
+                            ExpensesRD = decimal.Parse(financial.GetValue("R&D Expenses").ToString()),
+                            ExpensesSGA = decimal.Parse(financial.GetValue("SG&A Expense").ToString()),
+                            ExpensesOperating = decimal.Parse(financial.GetValue("Operating Expenses").ToString()),
+                            IncomeOperating = decimal.Parse(financial.GetValue("Operating Income").ToString()),
+                            IncomeNet = decimal.Parse(financial.GetValue("Net Income").ToString()),
+                            IncomeConsolidated = decimal.Parse(financial.GetValue("Consolidated Income").ToString()),
+                            MarginGross = decimal.Parse(financial.GetValue("Gross Margin").ToString()),
+                            MarginEBITDA = decimal.Parse(financial.GetValue("EBITDA Margin").ToString()),
+                            MarginEBIT = decimal.Parse(financial.GetValue("EBIT Margin").ToString()),
+                            MarginCashFlow = decimal.Parse(financial.GetValue("Free Cash Flow margin").ToString()),
+                            MarginProfit = decimal.Parse(financial.GetValue("Profit Margin").ToString()),
+                            LastFinancialReportDate = DateTime.Parse(financial.GetValue("date").ToString())
+                        };
+                        companyStat.Financials = fin;
+                        break; //only get most recent quarterly sumbission or 10Q
+                    }
+                }
+
+                /*if (iexTrades != null) //data from intraday-prices
+                {
+                    TradeData td = new TradeData();
+                    foreach (var item in iexTrades)
+                    {
+                        td.RealVolume += item.volume;
+                        td.RealVolumeUSD += item.volume * item.average;
+                        td.TotalTrades += item.numberOfTrades;
+                        td.NotionalValueTotal += item.notional;
+                    }
+                    if (td.RealVolume > 0)
+                    {
+                        //https://www.investopedia.com/terms/n/notionalvalue.asp
+                        td.NotionalValuePerShare = td.NotionalValueTotal / td.RealVolume; //idk
+                        td.AvgTradeSize = td.RealVolume / td.TotalTrades;
+                        td.AvgTradeSizeUSD = td.RealVolumeUSD / td.TotalTrades;
+                    }
+                    td.Source = "IEX";
+                    companyStat.TradeData = td;
+                }*/
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("ERROR Utility.cs FMP.GetComanyStatsAsync: " + e.Message + ", StackTrace: " + e.StackTrace);
+            }
+            return await Task.FromResult(companyStat);
+        }
+
+        public static string GetQuote(string symbol)
+        {
+            return CompleteFMPRequestAsync(String.Format("quote/{0}", symbol)).Result;
+        }
+    }
+
     //API Key console https://iexcloud.io/console
     //API docs https://iexcloud.io/docs/api/#testing-sandbox
     //Client docs https://github.com/vslee/IEXSharp
@@ -206,101 +351,113 @@ namespace Sociosearch.NET.Middleware
             return await Task.FromResult(result);
         }
 
-        public static async Task<CompanyStats> GetCompanyStatsAsync(string symbol)
+        public static async Task<CompanyStatsIEX> GetCompanyStatsAsync(string symbol)
         {
-            var keyStatsResponse = await IEXClient.Stock.KeyStatsAsync(symbol);
-            var earningResponse = await IEXClient.Stock.EarningAsync(symbol);
-            var tradesResponse = await IEXClient.Stock.IntradayPriceAsync(symbol);
-            KeyStatsResponse iexStat = keyStatsResponse.Data;
-            EarningResponse iexFinancial = earningResponse.Data;
-            IEnumerable<IntradayPriceResponse> iexTrades = tradesResponse.Data;
-
-            CompanyStats companyStat = new CompanyStats();
-
-            if (iexStat != null)
+            CompanyStatsIEX companyStat = new CompanyStatsIEX();
+            try
             {
-                decimal high = iexStat.week52high;
-                decimal low = iexStat.week52low;
-                decimal medianPrice52w = (high + low) / 2;
-                companyStat.PriceHigh52w = high;
-                companyStat.PriceLow52w = low;
-                companyStat.PriceMedian52w = medianPrice52w;
+                var keyStatsResponse = await IEXClient.Stock.KeyStatsAsync(symbol);
+                //var earningResponse = await IEXClient.Stock.EarningAsync(symbol); earnings endpoint kills my limits
+                var tradesResponse = await IEXClient.Stock.IntradayPriceAsync(symbol);
+                KeyStatsResponse iexStat = keyStatsResponse.Data;
+                //EarningResponse iexFinancial = earningResponse.Data;
+                IEnumerable<IntradayPriceResponse> iexTrades = tradesResponse.Data;
 
-                decimal change1m = iexStat.month1ChangePercent;
-                decimal change3m = iexStat.month3ChangePercent;
-                decimal change6m = iexStat.month6ChangePercent;
-                companyStat.PercentChangeAvg = (change1m + change3m + change6m) / 3;
-                companyStat.PercentChange1m = change1m;
-
-                decimal volume10d = iexStat.avg10Volume;
-                decimal volume30d = iexStat.avg30Volume;
-                decimal avgVolume = (volume10d + volume30d) / 2;
-                companyStat.Volume10d = volume10d;
-
-                //VERY APPROXIMATE volume estimates for this symbol
-                companyStat.VolumeAvg = avgVolume;
-                companyStat.VolumeAvgUSD = avgVolume * companyStat.PriceMedian52w;
-
-                companyStat.CompanyName = iexStat.companyName;
-                companyStat.NumberOfEmployees = iexStat.employees;
-                companyStat.SharesOutstanding = iexStat.sharesOutstanding;
-                companyStat.MarketCap = iexStat.marketcap;
-                companyStat.MovingAvg50d = iexStat.day50MovingAvg;
-                companyStat.PeRatio = iexStat.peRatio;
-
-                //market capitalization per employee (capita)
-                companyStat.MarketCapPerCapita = companyStat.MarketCap / companyStat.NumberOfEmployees;
-
-                //dividends
-                Dividends dividends = new Dividends
+                if (iexStat != null)
                 {
-                    DividendRate = iexStat.ttmDividendRate,
-                    DividendYield = iexStat.dividendYield,
-                    LastDividendDate = iexStat.exDividendDate
-                };
-                companyStat.Dividends = dividends;
-            }
+                    decimal high = iexStat.week52high;
+                    decimal low = iexStat.week52low;
+                    decimal medianPrice52w = (high + low) / 2;
+                    companyStat.PriceHigh52w = high;
+                    companyStat.PriceLow52w = low;
+                    companyStat.PriceMedian52w = medianPrice52w;
 
-            if (iexFinancial != null)
-            {
-                List<VSLee.IEXSharp.Model.Shared.Response.Earning> fins = iexFinancial.earnings;
-                VSLee.IEXSharp.Model.Shared.Response.Earning fin = fins.FirstOrDefault();
-                if (fin != null)
-                {
-                    //re-enable if I can get financials from somewhere
-                    /*Financials financials = new Financials
+                    decimal change1m = iexStat.month1ChangePercent;
+                    decimal change3m = iexStat.month3ChangePercent;
+                    decimal change6m = iexStat.month6ChangePercent;
+                    companyStat.PercentChangeAvg = (change1m + change3m + change6m) / 3;
+                    companyStat.PercentChange1m = change1m;
+
+                    decimal volume10d = iexStat.avg10Volume;
+                    decimal volume30d = iexStat.avg30Volume;
+                    decimal avgVolume = (volume10d + volume30d) / 2;
+                    companyStat.Volume10d = volume10d;
+
+                    //VERY APPROXIMATE volume estimates for this symbol
+                    companyStat.VolumeAvg = avgVolume;
+                    companyStat.VolumeAvgUSD = avgVolume * companyStat.PriceMedian52w;
+
+                    companyStat.CompanyName = iexStat.companyName;
+                    companyStat.NumberOfEmployees = iexStat.employees;
+                    companyStat.SharesOutstanding = iexStat.sharesOutstanding;
+                    companyStat.MarketCap = iexStat.marketcap;
+                    companyStat.MovingAvg50d = iexStat.day50MovingAvg;
+                    companyStat.PeRatio = iexStat.peRatio;
+
+                    //market capitalization per employee (capita)
+                    if (companyStat.NumberOfEmployees > 0)
+                        companyStat.MarketCapPerCapita = companyStat.MarketCap / companyStat.NumberOfEmployees;
+
+
+                    //dividends
+                    Dividends dividends = new Dividends
                     {
-                        //Get TotalRevenue somewhere?
-                        RetainedEarnings = fin.,
-                        ShareHolderEquity = fin.shareholderEquity,
-                        ShortTermInvestments = fin.shortTermInvestments,
-                        CapitalSurplus = fin.capitalSurplus,
-                        TotalAssets = fin.totalAssets,
-                        TotalCash = fin.currentCash,
-                        TotalDebt = fin.longTermDebt,
-                        TotalLiabilities = fin.totalLiabilities,
-                        LastFinancialReportDate = fin.reportDate
-                    };*/
-                    companyStat.Earnings = fin;
+                        DividendRate = iexStat.ttmDividendRate,
+                        DividendYield = iexStat.dividendYield,
+                        LastDividendDate = iexStat.exDividendDate
+                    };
+                    companyStat.Dividends = dividends;
+                }
+
+                //if (iexFinancial != null)
+                //{
+                //List<VSLee.IEXSharp.Model.Shared.Response.Earning> fins = iexFinancial.earnings;
+                //if (fins != null)
+                //{
+                //VSLee.IEXSharp.Model.Shared.Response.Earning fin = fins.FirstOrDefault();
+
+                //re-enable if I can get financials from somewhere
+                /*Financials financials = new Financials
+                {
+                    //Get TotalRevenue somewhere?
+                    RetainedEarnings = fin.,
+                    ShareHolderEquity = fin.shareholderEquity,
+                    ShortTermInvestments = fin.shortTermInvestments,
+                    CapitalSurplus = fin.capitalSurplus,
+                    TotalAssets = fin.totalAssets,
+                    TotalCash = fin.currentCash,
+                    TotalDebt = fin.longTermDebt,
+                    TotalLiabilities = fin.totalLiabilities,
+                    LastFinancialReportDate = fin.reportDate
+                };*/
+                //companyStat.Earnings = fin;
+                //}
+                //}
+
+                if (iexTrades != null) //data from intraday-prices
+                {
+                    TradeData td = new TradeData();
+                    foreach (var item in iexTrades)
+                    {
+                        td.RealVolume += item.volume;
+                        td.RealVolumeUSD += item.volume * item.average;
+                        td.TotalTrades += item.numberOfTrades;
+                        td.NotionalValueTotal += item.notional;
+                    }
+                    if (td.RealVolume > 0)
+                    {
+                        //https://www.investopedia.com/terms/n/notionalvalue.asp
+                        td.NotionalValuePerShare = td.NotionalValueTotal / td.RealVolume; //idk
+                        td.AvgTradeSize = td.RealVolume / td.TotalTrades;
+                        td.AvgTradeSizeUSD = td.RealVolumeUSD / td.TotalTrades;
+                    }
+                    td.Source = "IEX";
+                    companyStat.TradeData = td;
                 }
             }
-
-            if (iexTrades != null) //data from intraday-prices
+            catch (Exception e)
             {
-                TradeData td = new TradeData();
-                foreach (var item in iexTrades)
-                {
-                    td.RealVolume += item.volume;
-                    td.RealVolumeUSD += item.volume * item.average;
-                    td.TotalTrades += item.numberOfTrades;
-                    td.NotionalValueTotal += item.notional;
-                }
-                //https://www.investopedia.com/terms/n/notionalvalue.asp
-                td.NotionalValuePerShare = td.NotionalValueTotal / td.RealVolume; //idk
-                td.AvgTradeSize = td.RealVolume / td.TotalTrades;
-                td.AvgTradeSizeUSD = td.RealVolumeUSD / td.TotalTrades;
-                td.Source = "IEX";
-                companyStat.TradeData = td;
+                Debug.WriteLine("ERROR Utility.cs IEX.GetComanyStatsAsync: " + e.Message + ", StackTrace: " + e.StackTrace);
             }
             return await Task.FromResult(companyStat);
         }
@@ -323,15 +480,37 @@ namespace Sociosearch.NET.Middleware
         private static readonly string otcSymbolsUri = @"ftp://ftp.nasdaqtrader.com/SymbolDirectory/otclist.txt";
         private static readonly string otcMarketsUri = @"https://www.otcmarkets.com/research/stock-screener/api/downloadCSV";
 
-        public static async Task<AllCompanies> GetAllCompaniesAsync()
+        public static CompaniesListIEX GetScreenedCompaniesIEX(CompaniesListIEX allCompanies, string screenId)
         {
-            AllCompanies companies = new AllCompanies()
+            CompaniesListIEX screened = new CompaniesListIEX
             {
-                SymbolsToCompanies = new Dictionary<string, Company>()
+                SymbolsToCompanies = new Dictionary<string, CompanyIEX>()
+            };
+
+            foreach (var company in allCompanies.SymbolsToCompanies)
+            {
+                string symbol = company.Key;
+                CompanyIEX companyObject = company.Value;
+                CompanyStatsIEX stats = companyObject.Stats;
+                if (stats.MovingAvg50d > 5 && stats.PeRatio > 1 && stats.PriceMedian52w < 20 && stats.PriceMedian52w > .01M
+                    && stats.PeRatio > 1 && stats.NumberOfEmployees > 10 && stats.VolumeAvgUSD > 500000
+                    /*&& !String.IsNullOrEmpty(stats.Earnings.EPSReportDate)*/)
+                {
+                    screened.SymbolsToCompanies.Add(symbol, companyObject);
+                }
+            }
+            return screened;
+        }
+
+        public static async Task<CompaniesListIEX> GetAllCompaniesIEXAsync()
+        {
+            CompaniesListIEX companies = new CompaniesListIEX()
+            {
+                SymbolsToCompanies = new Dictionary<string, CompanyIEX>()
             };
 
             string nasdaqData = GetFromFtpUri(nasdaqSymbolsUri);
-            string[] nasdaqDataLines = nasdaqData.Split( new[] { Environment.NewLine }, StringSplitOptions.None);
+            string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
             {
                 string line = nasdaqDataLines[i];
@@ -339,15 +518,17 @@ namespace Sociosearch.NET.Middleware
                 if (data.Count() > 3)
                 {
                     string symbol = data[1];
-                    if (!companies.SymbolsToCompanies.ContainsKey(symbol))
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
                     {
                         bool isNasdaq = data[0] == "Y";
                         if (isNasdaq)
                         {
-                            Company company = new Company
+                            CompanyStatsIEX stats = IEX.GetCompanyStatsAsync(symbol).Result;
+                            CompanyIEX company = new CompanyIEX
                             {
-                                Name = data[2],
-                                Exchange = "Nasdaq"
+                                Symbol = symbol,
+                                Exchange = "NASDAQ",
+                                Stats = stats
                             };
                             companies.SymbolsToCompanies.Add(symbol, company);
                         }
@@ -364,12 +545,14 @@ namespace Sociosearch.NET.Middleware
                 if (data.Count() > 3)
                 {
                     string symbol = data[0];
-                    if (!companies.SymbolsToCompanies.ContainsKey(symbol))
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
                     {
-                        Company company = new Company
+                        CompanyStatsIEX stats = IEX.GetCompanyStatsAsync(symbol).Result;
+                        CompanyIEX company = new CompanyIEX
                         {
-                            Name = data[1],
-                            Exchange = "OTC"
+                            Symbol = symbol,
+                            Exchange = "OTC",
+                            Stats = stats
                         };
                         companies.SymbolsToCompanies.Add(symbol, company);
                     }
@@ -385,12 +568,117 @@ namespace Sociosearch.NET.Middleware
                 if (data.Count() > 3)
                 {
                     string symbol = data[0];
-                    if (!companies.SymbolsToCompanies.ContainsKey(symbol))
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
                     {
-                        Company company = new Company
+                        CompanyStatsIEX stats = IEX.GetCompanyStatsAsync(symbol).Result;
+                        CompanyIEX company = new CompanyIEX
                         {
-                            Name = data[1],
-                            Exchange = data[2]
+                            Symbol = symbol,
+                            Exchange = data[2],
+                            Stats = stats
+                        };
+                        companies.SymbolsToCompanies.Add(symbol, company);
+                    }
+                }
+            }
+            return await Task.FromResult(companies);
+        }
+
+        public static CompaniesListFMP GetScreenedCompaniesFMP(CompaniesListFMP allCompanies, string screenId)
+        {
+            CompaniesListFMP screened = new CompaniesListFMP
+            {
+                SymbolsToCompanies = new Dictionary<string, CompanyFMP>()
+            };
+
+            foreach (var company in allCompanies.SymbolsToCompanies)
+            {
+                string symbol = company.Key;
+                CompanyFMP companyObject = company.Value;
+                CompanyStatsFMP stats = companyObject.Stats;
+                if (stats.PriceAverageToday < 20 && stats.PriceAverageToday > .01M && stats.VolumeAverageUSD > 1000000
+                    /*&& !String.IsNullOrEmpty(stats.Earnings.EPSReportDate)*/)
+                {
+                    screened.SymbolsToCompanies.Add(symbol, companyObject);
+                }
+            }
+            return screened;
+        }
+
+        public static async Task<CompaniesListFMP> GetAllCompaniesFMPAsync()
+        {
+            CompaniesListFMP companies = new CompaniesListFMP()
+            {
+                SymbolsToCompanies = new Dictionary<string, CompanyFMP>()
+            };
+
+            string nasdaqData = GetFromFtpUri(nasdaqSymbolsUri);
+            string[] nasdaqDataLines = nasdaqData.Split( new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
+            {
+                string line = nasdaqDataLines[i];
+                string[] data = line.Split('|');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[1];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
+                    {
+                        bool isNasdaq = data[0] == "Y";
+                        if (isNasdaq)
+                        {
+                            CompanyStatsFMP stats = FMP.GetCompanyStatsAsync(symbol).Result;
+                            CompanyFMP company = new CompanyFMP
+                            {
+                                Symbol = symbol,
+                                Exchange = "NASDAQ",
+                                Stats = stats
+                            };
+                            companies.SymbolsToCompanies.Add(symbol, company);
+                        }
+                    }
+                }
+            }
+
+            string otcData = GetFromFtpUri(otcSymbolsUri);
+            string[] otcDataLines = otcData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int j = 1; j < otcDataLines.Length - 1; j++) //trim first and last row
+            {
+                string line = otcDataLines[j];
+                string[] data = line.Split('|');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[0];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
+                    {
+                        CompanyStatsFMP stats = FMP.GetCompanyStatsAsync(symbol).Result;
+                        CompanyFMP company = new CompanyFMP
+                        {
+                            Symbol = symbol,
+                            Exchange = "OTC",
+                            Stats = stats
+                        };
+                        companies.SymbolsToCompanies.Add(symbol, company);
+                    }
+                }
+            }
+
+            string otcMarketsData = GetFromUri(otcMarketsUri);
+            string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int k = 1; k < otcMarketsDataLines.Length; k++) //trim first row
+            {
+                string line = otcMarketsDataLines[k];
+                string[] data = line.Split(',');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[0];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
+                    {
+                        CompanyStatsFMP stats = FMP.GetCompanyStatsAsync(symbol).Result;
+                        CompanyFMP company = new CompanyFMP
+                        {
+                            Symbol = symbol,
+                            Exchange = data[2],
+                            Stats = stats
                         };
                         companies.SymbolsToCompanies.Add(symbol, company);
                     }

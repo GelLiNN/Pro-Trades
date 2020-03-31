@@ -24,12 +24,16 @@ namespace Sociosearch.NET.Controllers
             return View("Search");
         }
 
+
+        /*
+         * Composite Score Endpoints
+         */
         [HttpGet("/GetIndicatorForSymbol/{function}/{symbol}/{days}")] //indicator == function
         public IActionResult GetIndicatorForSymbol(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
-            string avResponse = Utility.CompleteAlphaVantageRequest(function, symbol).Result;
-            decimal avCompositeScore = Utility.GetCompositeScore(avResponse, function, numOfDays);
+            string avResponse = AV.CompleteAlphaVantageRequest(function, symbol).Result;
+            decimal avCompositeScore = AV.GetCompositeScore(avResponse, function, numOfDays);
             return new ContentResult
             {
                 StatusCode = 200,
@@ -40,10 +44,10 @@ namespace Sociosearch.NET.Controllers
         [HttpGet("/GetCompositeScoreForSymbol/{symbol}")]
         public CompositeScoreResult GetCompositeScoreForSymbol(string symbol)
         {
-            string adxResponse = Utility.CompleteAlphaVantageRequest("ADX", symbol).Result;
-            decimal adxCompositeScore = Utility.GetCompositeScore("ADX", adxResponse, 5);
-            string aroonResponse = Utility.CompleteAlphaVantageRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = Utility.GetCompositeScore("AROON", aroonResponse, 20);
+            string adxResponse = AV.CompleteAlphaVantageRequest("ADX", symbol).Result;
+            decimal adxCompositeScore = AV.GetCompositeScore("ADX", adxResponse, 5);
+            string aroonResponse = AV.CompleteAlphaVantageRequest("AROON", symbol).Result;
+            decimal aroonCompositeScore = AV.GetCompositeScore("AROON", aroonResponse, 20);
 
             return new CompositeScoreResult
             {
@@ -53,22 +57,60 @@ namespace Sociosearch.NET.Controllers
             };
         }
 
-        [HttpGet("/GetCompanyStatsForSymbol/{symbol}")]
-        public CompanyStats GetCompanyStatsForSymbol(string symbol)
+        /*
+         * IEX dependent endpoints
+         */
+        [HttpGet("/GetCompanyStatsIEX/{symbol}")]
+        public CompanyStatsIEX GetCompanyStatsForSymbol(string symbol)
         {
             return IEX.GetCompanyStatsAsync(symbol).Result;
         }
 
-        [HttpGet("/GetQuoteForSymbol/{symbol}")]
+        [HttpGet("/GetQuoteIEX/{symbol}")]
         public VSLee.IEXSharp.Model.Shared.Response.Quote GetQuoteForSymbol(string symbol)
         {
             return IEX.GetQuoteAsync(symbol).Result;
         }
 
-        [HttpGet("/GetAllCompanies")]
-        public AllCompanies GetAllCompanies()
+        [HttpGet("/GetAllCompaniesIEX")]
+        public CompaniesListIEX GetAllCompaniesIEX()
         {
-            return Companies.GetAllCompaniesAsync().Result;
+            return Companies.GetAllCompaniesIEXAsync().Result;
+        }
+
+        [HttpGet("/GetScreenedCompaniesIEX/{screenId}")]
+        public CompaniesListIEX GetScreenedCompaniesIEX(string screenId)
+        {
+            CompaniesListIEX companies = Companies.GetAllCompaniesIEXAsync().Result;
+            return Companies.GetScreenedCompaniesIEX(companies, screenId);
+        }
+
+        /*
+         * FMP dependent endpoints
+         */
+        [HttpGet("/GetCompanyStatsFMP/{symbol}")]
+        public CompanyStatsFMP GetCompanyStatsFMP(string symbol)
+        {
+            return FMP.GetCompanyStatsAsync(symbol).Result;
+        }
+
+        [HttpGet("/GetQuoteFMP/{symbol}")]
+        public string GetQuoteFMP(string symbol)
+        {
+            return FMP.GetQuote(symbol);
+        }
+
+        [HttpGet("/GetAllCompaniesFMP")]
+        public CompaniesListFMP GetAllCompaniesFMP()
+        {
+            return Companies.GetAllCompaniesFMPAsync().Result;
+        }
+
+        [HttpGet("/GetScreenedCompaniesIEX/{screenId}")]
+        public CompaniesListFMP GetScreenedCompaniesFMP(string screenId)
+        {
+            CompaniesListFMP companies = Companies.GetAllCompaniesFMPAsync().Result;
+            return Companies.GetScreenedCompaniesFMP(companies, screenId);
         }
 
         [HttpGet("/Test")]

@@ -10,7 +10,10 @@ namespace Sociosearch.NET.Models
         public decimal CompositeScore { get; set; }
     }
 
-    public class CompanyStats
+    /*
+     * IEX Models
+     */
+    public class CompanyStatsIEX
     {
         public string CompanyName { get; set; }
         public long NumberOfEmployees { get; set; }
@@ -82,15 +85,104 @@ namespace Sociosearch.NET.Models
         public DateTime LastFinancialReportDate { get; set; }
     }
 
-    public class AllCompanies
+    public class CompaniesListIEX
     {
-        public Dictionary<string, Company> SymbolsToCompanies { get; set; }
+        public Dictionary<string, CompanyIEX> SymbolsToCompanies { get; set; }
     }
 
     //Can add more fields for searching, screening, sorting
-    public class Company
+    public class CompanyIEX
     {
-        public string Name { get; set; }
+        public string Symbol { get; set; }
         public string Exchange { get; set; }
+        public CompanyStatsIEX Stats { get; set; }
+    }
+
+    /*
+     * FMP Models
+     */
+    public class CompanyStatsFMP
+    {
+        public string Symbol{ get; set; }
+        public string Exchange { get; set; }
+
+        public string CompanyName { get; set; }
+        public string CompanyDescription { get; set; }
+        public string CompanyCEO { get; set; }
+        public string CompanyIndustry { get; set; }
+        public string CompanySector { get; set; }
+        public string CompanyImageLink { get; set; }
+
+        public decimal MarketCap { get; set; }
+        public decimal SharesOutstanding { get; set; }
+        public decimal PeRatio { get; set; }
+        public decimal BetaValue { get; set; }
+        public decimal EarningsPerShare { get; set; }
+        public DateTime EarningsReportDate { get; set; }
+
+        public decimal Price { get; set; }
+        public decimal PriceOpenToday { get; set; }
+        public decimal PricePreviousClose { get; set; }
+
+        public decimal PriceHighToday { get; set; }
+        public decimal PriceLowToday { get; set; }
+        public decimal PriceAverageToday { get; set; }
+
+        public decimal PriceChangeTodayUSD { get; set; }
+        public decimal PriceChangeTodayPercent { get; set; }
+        public decimal PriceAverage50Day { get; set; }
+
+        public decimal PriceHighYTD { get; set; }
+        public decimal PriceLowYTD { get; set; }
+        public decimal PriceAverageEstimateYTD { get; set; }
+
+        public decimal VolumeToday { get; set; }
+        public decimal VolumeAverage { get; set; }
+        public decimal VolumeAverageUSD { get; set; }
+
+        public TradeDataFMP TradeData { get; set; }
+        public FinancialsFMP Financials { get; set; }
+        public DividendsFMP Dividends { get; set; }
+    }
+
+    public class TradeDataFMP
+    {
+
+    }
+
+    public class FinancialsFMP
+    {
+        public decimal RevenueTotal { get; set; }
+        public decimal RevenueGrowth { get; set; }
+        public decimal ExpensesRD { get; set; }
+        public decimal ExpensesSGA { get; set; }
+        public decimal ExpensesOperating { get; set; }
+        public decimal IncomeOperating { get; set; }
+        public decimal IncomeNet { get; set; }
+        public decimal IncomeConsolidated { get; set; }
+        public decimal MarginGross { get; set; }
+        public decimal MarginEBITDA { get; set; }
+        public decimal MarginEBIT { get; set; }
+        public decimal MarginProfit { get; set; }
+        public decimal MarginCashFlow { get; set; }
+        public DateTime LastFinancialReportDate { get; set; }
+    }
+
+    public class DividendsFMP
+    {
+
+    }
+
+    public class CompaniesListFMP
+    {
+        public Dictionary<string, CompanyFMP> SymbolsToCompanies { get; set; }
+    }
+
+    //Can add more fields for searching, screening, sorting
+    public class CompanyFMP
+    {
+        public string Symbol { get; set; }
+        public string Exchange { get; set; }
+        public CompanyStatsFMP Stats { get; set; }
     }
 }
