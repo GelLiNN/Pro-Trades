@@ -25,7 +25,6 @@ namespace Sociosearch.NET.Controllers
             return View("Search");
         }
 
-
         /*
          * Composite Score Endpoints
          */
@@ -62,13 +61,13 @@ namespace Sociosearch.NET.Controllers
          * IEX dependent endpoints
          */
         [HttpGet("/GetCompanyStatsIEX/{symbol}")]
-        public CompanyStatsIEX GetCompanyStatsForSymbol(string symbol)
+        public CompanyStatsIEX GetCompanyStatsIEX(string symbol)
         {
             return IEX.GetCompanyStatsAsync(symbol).Result;
         }
 
         [HttpGet("/GetQuoteIEX/{symbol}")]
-        public VSLee.IEXSharp.Model.Shared.Response.Quote GetQuoteForSymbol(string symbol)
+        public VSLee.IEXSharp.Model.Shared.Response.Quote GetQuoteIEX(string symbol)
         {
             return IEX.GetQuoteAsync(symbol).Result;
         }
@@ -76,14 +75,14 @@ namespace Sociosearch.NET.Controllers
         [HttpGet("/GetAllCompaniesIEX")]
         public CompaniesListIEX GetAllCompaniesIEX()
         {
-            return Companies.GetAllCompaniesIEXAsync().Result;
+            return IEX.GetAllCompaniesAsync().Result;
         }
 
         [HttpGet("/GetScreenedCompaniesIEX/{screenId}")]
         public CompaniesListIEX GetScreenedCompaniesIEX(string screenId)
         {
-            CompaniesListIEX companies = Companies.GetAllCompaniesIEXAsync().Result;
-            return Companies.GetScreenedCompaniesIEX(companies, screenId);
+            CompaniesListIEX companies = IEX.GetAllCompaniesAsync().Result;
+            return IEX.GetScreenedCompaniesAsync(companies, screenId).Result;
         }
 
         /*
@@ -104,14 +103,14 @@ namespace Sociosearch.NET.Controllers
         [HttpGet("/GetAllCompaniesFMP")]
         public CompaniesListFMP GetAllCompaniesFMP()
         {
-            return Companies.GetAllCompaniesFMPAsync().Result;
+            return FMP.GetAllCompaniesAsync().Result;
         }
 
-        [HttpGet("/GetScreenedCompaniesIEX/{screenId}")]
+        [HttpGet("/GetScreenedCompaniesFMP/{screenId}")]
         public CompaniesListFMP GetScreenedCompaniesFMP(string screenId)
         {
-            CompaniesListFMP companies = Companies.GetAllCompaniesFMPAsync().Result;
-            return Companies.GetScreenedCompaniesFMP(companies, screenId);
+            CompaniesListFMP companies = FMP.GetAllCompaniesAsync().Result;
+            return FMP.GetScreenedCompaniesAsync(companies, screenId).Result;
         }
 
         /*
@@ -120,28 +119,31 @@ namespace Sociosearch.NET.Controllers
         [HttpGet("/GetCompanyStatsYahoo/{symbol}")]
         public CompanyStatsYahoo GetCompanyStatsYahoo(string symbol)
         {
-            return Y.GetCompanyStatsAsync(symbol).Result;
+            return YF.GetCompanyStatsAsync(symbol).Result;
         }
 
         [HttpGet("/GetQuoteYahoo/{symbol}")]
         public Security GetQuoteYahoo(string symbol)
         {
-            return Y.GetQuoteAsync(symbol).Result;
+            return YF.GetQuoteAsync(symbol).Result;
         }
 
         [HttpGet("/GetAllCompaniesYahoo")]
         public CompaniesListYahoo GetAllCompaniesYahoo()
         {
-            return Companies.GetAllCompaniesYahooAsync().Result;
+            return YF.GetAllCompaniesAsync().Result;
         }
 
         [HttpGet("/GetScreenedCompaniesYahoo/{screenId}")]
         public CompaniesListYahoo GetScreenedCompaniesYahoo(string screenId)
         {
-            CompaniesListYahoo companies = Companies.GetAllCompaniesYahooAsync().Result;
-            return Companies.GetScreenedCompaniesYahoo(companies, screenId);
+            CompaniesListYahoo companies = YF.GetAllCompaniesAsync().Result;
+            return YF.GetScreenedCompaniesAsync(companies, screenId).Result;
         }
 
+        /*
+         * Other endpoints
+         */
         [HttpGet("/Test")]
         public string Test()
         {

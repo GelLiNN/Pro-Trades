@@ -35,13 +35,13 @@ namespace Sociosearch.NET.Models
         public decimal VolumeAvgUSD { get; set; }
         public decimal MovingAvg50d { get; set; }
 
-        public TradeData TradeData { get; set; }
+        public TradeDataIEX TradeData { get; set; }
         //public Financials Financials { get; set; } re-enable if I can get from somewhere
         public VSLee.IEXSharp.Model.Shared.Response.Earning Earnings { get; set; }
-        public Dividends Dividends { get; set; }
+        public DividendsIEX Dividends { get; set; }
     }
 
-    public class TradeData
+    public class TradeDataIEX
     {
         public string Source { get; set; }
         public long RealVolume { get; set; }
@@ -52,7 +52,7 @@ namespace Sociosearch.NET.Models
         public decimal NotionalValueTotal { get; set; }
         public decimal NotionalValuePerShare { get; set; }
 
-        public TradeData()
+        public TradeDataIEX()
         {
             Source = string.Empty;
             RealVolume = 0;
@@ -65,14 +65,14 @@ namespace Sociosearch.NET.Models
         }
     }
 
-    public class Dividends
+    public class DividendsIEX
     {
         public string LastDividendDate { get; set; }
         public decimal DividendYield { get; set; }
         public decimal DividendRate { get; set; }
     }
 
-    public class Financials
+    public class FinancialsIEX
     {
         //Get TotalRevenue somewhere?
         public long RetainedEarnings { get; set; }

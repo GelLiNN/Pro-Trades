@@ -1,703 +1,239 @@
 ﻿using System;
-using VSLee.IEXSharp;
-using VSLee.IEXSharp.Model.Stock.Request;
-using NUnit.Framework;
-using VSLee.IEXSharp.Helper;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using IEXSharp.Helper;
 using Microsoft.Extensions.Configuration;
+using Sociosearch.NET.Models;
+using VSLee.IEXSharp;
+using VSLee.IEXSharp.Model.Stock.Request;
+using VSLee.IEXSharp.Model.Stock.Response;
 
 namespace Sociosearch.NET.Middleware
 {
-	public class StockTest
-	{
-		private IEXCloudClient sandBoxClient;
-
-		[SetUp]
-		public void Setup()
-		{
-			string pToken = Program.Config.GetValue<string>("iexPublishableToken");
-			string sToken = Program.Config.GetValue<string>("iexSecretToken");
-
-			sandBoxClient = new IEXCloudClient(publishableToken: pToken, secretToken: sToken, signRequest: false, useSandBox: true);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL", Period.Quarter, 1)]
-		[TestCase("FB", Period.Quarter, 2)]
-		public async Task BalanceSheetAsyncTest(string symbol, Period period = Period.Quarter,
-			int last = 1)
-		{
-			var response = await sandBoxClient.Stock.BalanceSheetAsync(symbol, period, last);
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.IsNotNull(response.Data.balancesheet);
-			Assert.GreaterOrEqual(response.Data.balancesheet.Count, 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL", "currentCash", Period.Quarter, 1)]
-		[TestCase("FB", "currentCash", Period.Quarter, 2)]
-		public async Task BalanceSheetFieldAsyncTest(string symbol, string field, Period period = Period.Quarter, int last = 1)
-		{
-			var response = await sandBoxClient.Stock.BalanceSheetFieldAsync(symbol, field, period, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		[TestCase("AAPL", new BatchType[] { BatchType.Chart, BatchType.News, BatchType.Quote })]
-		[TestCase("FB", new BatchType[] { BatchType.Chart, BatchType.News, BatchType.Quote }, "1m", 5)]
-		public async Task BatchBySymbolAsyncTest(string symbol, IEnumerable<BatchType> types, string range = "", int last = 1)
-		{
-			var response = await sandBoxClient.Stock.BatchBySymbolAsync(symbol, types, range, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		[TestCase(new string[] { "AAPL" }, new BatchType[] { BatchType.Chart, BatchType.News, BatchType.Quote })]
-		[TestCase(new string[] { "AAPL", "FB" }, new BatchType[] { BatchType.Chart, BatchType.News, BatchType.Quote }, "1m", 2)]
-		public async Task BatchByMarketAsyncTest(IEnumerable<string> symbols, IEnumerable<BatchType> types, string range = "", int last = 1)
-		{
-			var response = await sandBoxClient.Stock.BatchByMarketAsync(symbols, types, range, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count, 1);
-			Assert.IsNotNull(response);
-			Assert.IsNotNull(response.Data[symbols.ToList()[0]]);
-		}
-
-        //Flagged for bid and ask data
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task BookAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.BookAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.IsNotNull(response.Data.quote);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL", Period.Quarter, 1)]
-		[TestCase("AAPL", Period.Annual, 2)]
-		public async Task CashFlowAsyncTest(string symbol, Period period = Period.Quarter, int last = 1)
-		{
-			var response = await sandBoxClient.Stock.CashFlowAsync(symbol, period, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		[TestCase("AAPL", "reportDate", Period.Annual, 1)]
-		[TestCase("AAPL", "reportDate", Period.Quarter, 2)]
-		public async Task CashFlowFieldAsyncTest(string symbol, string field, Period period = Period.Quarter, int last = 1)
-		{
-			var response = await sandBoxClient.Stock.CashFlowFieldAsync(symbol, field, period, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-        //Flagged for screening
-		[Test]
-		[TestCase(CollectionType.List, "iexvolume")]
-		[TestCase(CollectionType.Sector, "Health Care")]
-		[TestCase(CollectionType.Tag, "Computer Hardware")]
-		public async Task CollectionAsyncTest(CollectionType collection, string collectionName)
-		{
-			var response = await sandBoxClient.Stock.CollectionsAsync(collection, collectionName);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-        //Flagged for company information
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task CompanyAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.CompanyAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task DelayedQuoteAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.DelayedQuoteAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		[TestCase("AAPL", DividendRange._1m)]
-		[TestCase("AAPL", DividendRange._1y)]
-		[TestCase("AAPL", DividendRange._2y)]
-		[TestCase("AAPL", DividendRange._3m)]
-		[TestCase("AAPL", DividendRange._5y)]
-		[TestCase("AAPL", DividendRange._6m)]
-		[TestCase("AAPL", DividendRange._next)]
-		[TestCase("AAPL", DividendRange._ytd)]
-		public async Task DividendAsyncTest(string symbol, DividendRange range)
-		{
-			var response = await sandBoxClient.Stock.DividendAsync(symbol, range);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-        //Flagged for potential link to financials data which is unavailable
-		[Test]
-		[TestCase("AAPL", 1)]
-		[TestCase("FB", 2)]
-		public async Task EarningAsyncTest(string symbol, int last)
-		{
-			var response = await sandBoxClient.Stock.EarningAsync(symbol, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		[TestCase("AAPL", "consensusEPS", 1)]
-		[TestCase("AAPL", "announceTime", 2)]
-		public async Task EarningFieldAsyncTest(string symbol, string field, int last)
-		{
-			var response = await sandBoxClient.Stock.EarningFieldAsync(symbol, field, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		public async Task EarningTodayAsyncTest()
-		{
-			var response = await sandBoxClient.Stock.EarningTodayAsync();
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task EffectiveSpreadAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.EffectiveSpreadAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL", 1)]
-		[TestCase("FB", 2)]
-		public async Task EstimateAsyncTest(string symbol, int last)
-		{
-			var response = await sandBoxClient.Stock.EstimateAsync(symbol, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.estimates.Count, 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL", "consensusEPS", 1)]
-		[TestCase("FB", "consensusEPS", 2)]
-		public async Task EstimateFieldAsyncTest(string symbol, string field, int last)
-		{
-			var response = await sandBoxClient.Stock.EstimateFieldAsync(symbol, field, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL", 1)]
-		[TestCase("FB", 2)]
-		public async Task FinancialAsyncTest(string symbol, int last)
-		{
-			var response = await sandBoxClient.Stock.FinancialAsync(symbol, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.financials.Count, 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL", "grossProfit", 1)]
-		[TestCase("FB", "grossProfit", 2)]
-		public async Task FinancialFieldAsyncTest(string symbol, string field, int last)
-		{
-			var response = await sandBoxClient.Stock.FinancialFieldAsync(symbol, field, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task FundOwnershipAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.FundOwnershipAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Flagged for running through a predictive model IA
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("AAPL", ChartRange._1y)]
-		[TestCase("AAPL", ChartRange._max)]
-		[TestCase("AAPL", ChartRange._ytd)]
-		[TestCase("AAPL", ChartRange._1m)]
-		public async Task HistoricalPriceAsync(string symbol,
-			ChartRange range = ChartRange._1m, QueryStringBuilder qsb = null)
-		{
-			var response = await sandBoxClient.Stock.HistoricalPriceAsync(symbol, range);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-			Assert.IsNotEmpty(response.Data.First().date);
-			Assert.Greater(response.Data.First().GetDateTimeInUTC(), DateTime.MinValue);
-		}
-
-		[Test]
-		[TestCase("ORCL", ChartRange._max)]
-		public async Task HistoricalPriceNonZeroAsync(string symbol,
-			ChartRange range = ChartRange._1m, DateTime? date = null, QueryStringBuilder qsb = null)
-		{
-			var response = await sandBoxClient.Stock.HistoricalPriceAsync(symbol, range);
-			foreach (var ohlc in response.Data)
-			{
-				Assert.NotZero(ohlc.open);
-				Assert.NotZero(ohlc.high);
-				Assert.NotZero(ohlc.low);
-				Assert.NotZero(ohlc.close);
-				Assert.NotZero(ohlc.volume);
-				Assert.NotZero(ohlc.uOpen);
-				Assert.NotZero(ohlc.uHigh);
-				Assert.NotZero(ohlc.uLow);
-				Assert.NotZero(ohlc.uClose);
-				Assert.NotZero(ohlc.uVolume);
-			}
-		}
-
-		[Test]
-		[TestCase("AAPL", true)]
-		[TestCase("AAPL", false)]
-		public async Task HistoricalPriceAsyncDateTest(string symbol, bool chartByDay)
-		{
-			var response = await sandBoxClient.Stock.HistoricalPriceByDateAsync(symbol, getLatestWeekday(), chartByDay);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-			Assert.IsNotEmpty(response.Data.First().minute);
-			Assert.Greater(response.Data.First().GetDateTimeInUTC(), DateTime.MinValue);
-		}
-
-		private static DateTime getLatestWeekday()
-		{
-			var latestWeekday = DateTime.Now.Subtract(TimeSpan.FromDays(1));
-			while (latestWeekday.DayOfWeek == DayOfWeek.Saturday || latestWeekday.DayOfWeek == DayOfWeek.Sunday)
-				latestWeekday -= TimeSpan.FromDays(1);
-			return latestWeekday;
-		}
-
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task HistoricalPriceDynamicAsync(string symbol, QueryStringBuilder qsb = null)
-		{
-			var response = await sandBoxClient.Stock.HistoricalPriceDynamicAsync(symbol, qsb);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.IsNotNull(response.Data.data);
-			Assert.GreaterOrEqual(response.Data.data.Count, 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL", Period.Annual, 1)]
-		[TestCase("FB", Period.Quarter, 2)]
-		public async Task IncomeStatementAsyncTest(string symbol, Period period, int last)
-		{
-			var response = await sandBoxClient.Stock.IncomeStatementAsync(symbol, period, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.IsNotNull(response.Data.income);
-			Assert.GreaterOrEqual(response.Data.income.Count, 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL", "costOfRevenue", Period.Quarter, 1)]
-		[TestCase("AAPL", "costOfRevenue", Period.Annual, 2)]
-		public async Task IncomeStatementFieldAsyncTest(string symbol, string field, Period period = Period.Quarter, int last = 1)
-		{
-			var response = await sandBoxClient.Stock.IncomeStatementFieldAsync(symbol, field, period, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task InsiderRosterAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.InsiderRosterAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task InsiderSummaryAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.InsiderSummaryAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task InsiderTransactionAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.InsiderTransactionAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task InstitutionalOwnerShipAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.InstitutionalOwnerShipAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-        //Flagged for more granular report of today's trades
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task IntradayPriceAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.IntradayPriceAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-		[Test]
-		[TestCase(IPOType.Today)]
-		[TestCase(IPOType.Upcoming)]
-		public async Task IPOCalendarAsyncTest(IPOType ipoType)
-		{
-			var response = await sandBoxClient.Stock.IPOCalendarAsync(ipoType);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-        //Flagged
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task KeyStatsAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.KeyStatsAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		[TestCase("AAPL", "nextDividendDate")]
-		[TestCase("FB", "nextDividendDate")]
-		public async Task KeyStatsStatAsyncTest(string symbol, string stat)
-		{
-			var response = await sandBoxClient.Stock.KeyStatsStatAsync(symbol, stat);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task LargestTradesAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.LargestTradesAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-        //Flagged for screening
-		[Test]
-		[TestCase("mostactive")]
-		[TestCase("gainers")]
-		[TestCase("losers")]
-		[TestCase("iexvolume")]
-		[TestCase("iexpercent")]
-		[TestCase("infocus")]
-		public async Task ListAsyncTest(string listType)
-		{
-			var response = await sandBoxClient.Stock.ListAsync(listType);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task LogoAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.LogoAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		public async Task MarketVolumeUSAsyncTest()
-		{
-			var response = await sandBoxClient.Stock.MarketVolumeUSAsync();
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-        //Flagged for sentiment analysis
-		[Test]
-		[TestCase("AAPL", 10)]
-		[TestCase("FB", 20)]
-		public async Task NewsAsyncTest(string symbol, int last)
-		{
-			var response = await sandBoxClient.Stock.NewsAsync(symbol, last);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task OHLCAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.OHLCAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task PeersAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.PeersAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task PreviousDayPriceAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.PreviousDayPriceAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task PriceAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.PriceAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task PriceTargetAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.PriceTargetAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-        //Flagged
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task QuoteAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.QuoteAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		[Test]
-		[TestCase("AAPL", "companyName")]
-		[TestCase("FB", "companyName")]
-		public async Task QuoteFieldAsyncTest(string symbol, string field)
-		{
-			var response = await sandBoxClient.Stock.QuoteFieldAsync(symbol, field);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task RecommandationTrendAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.RecommendationTrendAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		public async Task SectorPerformanceAsync()
-		{
-			var response = await sandBoxClient.Stock.SectorPerformanceAsync();
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-		[Test]
-		[TestCase("AAPL", SplitRange._1m)]
-		[TestCase("AAPL", SplitRange._1y)]
-		[TestCase("AAPL", SplitRange._2y)]
-		[TestCase("AAPL", SplitRange._3m)]
-		[TestCase("AAPL", SplitRange._5y)]
-		[TestCase("AAPL", SplitRange._6m)]
-		[TestCase("AAPL", SplitRange._next)]
-		[TestCase("AAPL", SplitRange._ytd)]
-		public async Task SplitAsyncTest(string symbol, SplitRange range)
-		{
-			var response = await sandBoxClient.Stock.SplitAsync(symbol, range);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-			Assert.GreaterOrEqual(response.Data.Count(), 1);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL", UpcomingEventType.Dividends)]
-		[TestCase("AAPL", UpcomingEventType.Earnings)]
-		[TestCase("AAPL", UpcomingEventType.Events)]
-		[TestCase("AAPL", UpcomingEventType.IPOs)]
-		[TestCase("AAPL", UpcomingEventType.Splits)]
-		public async Task UpcomingEventSymbolAsyncTest(string symbol, UpcomingEventType type)
-		{
-			var response = await sandBoxClient.Stock.UpcomingEventSymbolAsync(symbol, type);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase(UpcomingEventType.Dividends)]
-		[TestCase(UpcomingEventType.Earnings)]
-		[TestCase(UpcomingEventType.Events)]
-		[TestCase(UpcomingEventType.IPOs)]
-		[TestCase(UpcomingEventType.Splits)]
-		public async Task UpcomingEventMarketAsyncTest(UpcomingEventType type)
-		{
-			var response = await sandBoxClient.Stock.UpcomingEventMarketAsync(type);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-
-		//Not supported for free account
-		[Test]
-		[TestCase("AAPL")]
-		[TestCase("FB")]
-		public async Task VolumeByVenueAsyncTest(string symbol)
-		{
-			var response = await sandBoxClient.Stock.VolumeByVenueAsync(symbol);
-
-			Assert.IsNull(response.ErrorMessage);
-			Assert.IsNotNull(response.Data);
-		}
-	}
+    //API Key console https://iexcloud.io/console
+    //API docs https://iexcloud.io/docs/api/#testing-sandbox
+    //Client docs https://github.com/vslee/IEXSharp
+    public class IEX
+    {
+        private static readonly string PToken = Program.Config.GetValue<string>("IexPublishableToken");
+        private static readonly string SToken = Program.Config.GetValue<string>("IexSecretToken");
+        public static IEXCloudClient IEXClient = new IEXCloudClient(PToken, SToken, signRequest: false, useSandBox: false);
+
+        public static async Task<string> GetHistoricalPricesAsync(string symbol, ChartRange range)
+        {
+            var response = await IEXClient.Stock.HistoricalPriceAsync(symbol, range);
+            IEnumerable<HistoricalPriceResponse> prices = response.Data;
+            string result = "";
+            foreach (HistoricalPriceResponse price in prices)
+            {
+                decimal high = price.high;
+                decimal low = price.low;
+                long changePercent = price.changePercent;
+                long changeOverTime = price.changeOverTime;
+                decimal open = price.open;
+                decimal close = price.close;
+                long volume = price.volume;
+                result += "{date: " + price.date + ", price: " + close + "},";
+            }
+            return await Task.FromResult(result);
+        }
+
+        public static async Task<CompanyStatsIEX> GetCompanyStatsAsync(string symbol)
+        {
+            CompanyStatsIEX companyStat = new CompanyStatsIEX();
+            try
+            {
+                var keyStatsResponse = await IEXClient.Stock.KeyStatsAsync(symbol);
+                var tradesResponse = await IEXClient.Stock.IntradayPriceAsync(symbol);
+                KeyStatsResponse iexStat = keyStatsResponse.Data;
+                IEnumerable<IntradayPriceResponse> iexTrades = tradesResponse.Data;
+
+                //Key Stats
+                if (iexStat != null)
+                {
+                    decimal high = iexStat.week52high;
+                    decimal low = iexStat.week52low;
+                    decimal medianPrice52w = (high + low) / 2;
+                    companyStat.PriceHigh52w = high;
+                    companyStat.PriceLow52w = low;
+                    companyStat.PriceMedian52w = medianPrice52w;
+
+                    decimal change1m = iexStat.month1ChangePercent;
+                    decimal change3m = iexStat.month3ChangePercent;
+                    decimal change6m = iexStat.month6ChangePercent;
+                    companyStat.PercentChangeAvg = (change1m + change3m + change6m) / 3;
+                    companyStat.PercentChange1m = change1m;
+
+                    decimal volume10d = iexStat.avg10Volume;
+                    decimal volume30d = iexStat.avg30Volume;
+                    decimal avgVolume = (volume10d + volume30d) / 2;
+                    companyStat.Volume10d = volume10d;
+
+                    //VERY APPROXIMATE volume estimates for this symbol
+                    companyStat.VolumeAvg = avgVolume;
+                    companyStat.VolumeAvgUSD = avgVolume * companyStat.PriceMedian52w;
+
+                    companyStat.CompanyName = iexStat.companyName;
+                    companyStat.NumberOfEmployees = iexStat.employees;
+                    companyStat.SharesOutstanding = iexStat.sharesOutstanding;
+                    companyStat.MarketCap = iexStat.marketcap;
+                    companyStat.MovingAvg50d = iexStat.day50MovingAvg;
+                    companyStat.PeRatio = iexStat.peRatio;
+
+                    //market capitalization per employee (capita)
+                    if (companyStat.NumberOfEmployees > 0)
+                        companyStat.MarketCapPerCapita = companyStat.MarketCap / companyStat.NumberOfEmployees;
+
+
+                    //dividends
+                    DividendsIEX dividends = new DividendsIEX
+                    {
+                        DividendRate = iexStat.ttmDividendRate,
+                        DividendYield = iexStat.dividendYield,
+                        LastDividendDate = iexStat.exDividendDate
+                    };
+                    companyStat.Dividends = dividends;
+                }
+
+                //Trade Data from intraday-prices endpoint
+                if (iexTrades != null)
+                {
+                    TradeDataIEX td = new TradeDataIEX();
+                    foreach (var item in iexTrades)
+                    {
+                        td.RealVolume += item.volume;
+                        td.RealVolumeUSD += item.volume * item.average;
+                        td.TotalTrades += item.numberOfTrades;
+                        td.NotionalValueTotal += item.notional;
+                    }
+                    if (td.RealVolume > 0)
+                    {
+                        //https://www.investopedia.com/terms/n/notionalvalue.asp
+                        td.NotionalValuePerShare = td.NotionalValueTotal / td.RealVolume; //idk
+                        td.AvgTradeSize = td.RealVolume / td.TotalTrades;
+                        td.AvgTradeSizeUSD = td.RealVolumeUSD / td.TotalTrades;
+                    }
+                    td.Source = "IEX";
+                    companyStat.TradeData = td;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("ERROR Utility.cs IEX.GetComanyStatsAsync: " + e.Message + ", StackTrace: " + e.StackTrace);
+            }
+            return await Task.FromResult(companyStat);
+        }
+
+        public static async Task<VSLee.IEXSharp.Model.Shared.Response.Quote> GetQuoteAsync(string symbol)
+        {
+            var response = await IEXClient.Stock.QuoteAsync(symbol);
+            VSLee.IEXSharp.Model.Shared.Response.Quote quote = response.Data;
+            return quote;
+        }
+
+        public static async Task<CompaniesListIEX> GetScreenedCompaniesAsync(CompaniesListIEX allCompanies, string screenId)
+        {
+            CompaniesListIEX screened = new CompaniesListIEX
+            {
+                SymbolsToCompanies = new Dictionary<string, CompanyIEX>()
+            };
+
+            foreach (var company in allCompanies.SymbolsToCompanies)
+            {
+                string symbol = company.Key;
+                CompanyIEX companyObject = company.Value;
+                CompanyStatsIEX stats = companyObject.Stats;
+                if (stats.MovingAvg50d > 5 && stats.PeRatio > 1 && stats.PriceMedian52w < 20 && stats.PriceMedian52w > .01M
+                    && stats.PeRatio > 1 && stats.NumberOfEmployees > 10 && stats.VolumeAvgUSD > 1000000
+                    /*&& !String.IsNullOrEmpty(stats.Earnings.EPSReportDate)*/)
+                {
+                    screened.SymbolsToCompanies.Add(symbol, companyObject);
+                }
+            }
+            return await Task.FromResult(screened);
+        }
+
+        public static async Task<CompaniesListIEX> GetAllCompaniesAsync()
+        {
+            CompaniesListIEX companies = new CompaniesListIEX()
+            {
+                SymbolsToCompanies = new Dictionary<string, CompanyIEX>()
+            };
+
+            string nasdaqData = Companies.GetFromFtpUri(Companies.NasdaqSymbolsUri);
+            string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
+            {
+                string line = nasdaqDataLines[i];
+                string[] data = line.Split('|');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[1];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
+                    {
+                        bool isNasdaq = data[0] == "Y";
+                        if (isNasdaq)
+                        {
+                            CompanyStatsIEX stats = IEX.GetCompanyStatsAsync(symbol).Result;
+                            CompanyIEX company = new CompanyIEX
+                            {
+                                Symbol = symbol,
+                                Exchange = "NASDAQ",
+                                Stats = stats
+                            };
+                            companies.SymbolsToCompanies.Add(symbol, company);
+                        }
+                    }
+                }
+            }
+
+            string otcData = Companies.GetFromFtpUri(Companies.OtcSymbolsUri);
+            string[] otcDataLines = otcData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int j = 1; j < otcDataLines.Length - 1; j++) //trim first and last row
+            {
+                string line = otcDataLines[j];
+                string[] data = line.Split('|');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[0];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
+                    {
+                        CompanyStatsIEX stats = IEX.GetCompanyStatsAsync(symbol).Result;
+                        CompanyIEX company = new CompanyIEX
+                        {
+                            Symbol = symbol,
+                            Exchange = "OTC",
+                            Stats = stats
+                        };
+                        companies.SymbolsToCompanies.Add(symbol, company);
+                    }
+                }
+            }
+
+            string otcMarketsData = Companies.GetFromUri(Companies.OtcMarketsUri);
+            string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int k = 1; k < otcMarketsDataLines.Length; k++) //trim first row
+            {
+                string line = otcMarketsDataLines[k];
+                string[] data = line.Split(',');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[0];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
+                    {
+                        CompanyStatsIEX stats = IEX.GetCompanyStatsAsync(symbol).Result;
+                        CompanyIEX company = new CompanyIEX
+                        {
+                            Symbol = symbol,
+                            Exchange = data[2],
+                            Stats = stats
+                        };
+                        companies.SymbolsToCompanies.Add(symbol, company);
+                    }
+                }
+            }
+            return await Task.FromResult(companies);
+        }
+    }
 }
