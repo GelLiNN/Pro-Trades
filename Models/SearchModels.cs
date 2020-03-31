@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using YahooFinanceApi;
 
 namespace Sociosearch.NET.Models
 {
@@ -184,5 +185,93 @@ namespace Sociosearch.NET.Models
         public string Symbol { get; set; }
         public string Exchange { get; set; }
         public CompanyStatsFMP Stats { get; set; }
+    }
+
+    /*
+     * Yahoo Models
+     */
+    public class CompanyStatsYahoo
+    {
+        public string Symbol { get; set; }
+        public string Exchange { get; set; }
+
+        public string CompanyName { get; set; }
+        public bool CompanyTrading { get; set; }
+        public string CompanyQuoteType { get; set; }
+        public string CompanyMarket { get; set; }
+
+        public decimal MarketCap { get; set; }
+        public decimal SharesOutstanding { get; set; }
+        public decimal PeRatioForward { get; set; }
+        public decimal PeRatioTrailing { get; set; }
+        public decimal BookValue { get; set; }
+
+        public decimal Price { get; set; }
+        public decimal PriceOpenToday { get; set; }
+        public decimal PricePreviousClose { get; set; }
+
+        public decimal PriceHighToday { get; set; }
+        public decimal PriceLowToday { get; set; }
+        public decimal PriceAverageToday { get; set; }
+
+        public decimal PriceChangeTodayUSD { get; set; }
+        public decimal PriceChangeTodayPercent { get; set; }
+        public decimal PriceAverage50DayUSD { get; set; }
+        public decimal PriceAverage50DayPercent { get; set; }
+
+        public decimal PriceHigh52w { get; set; }
+        public decimal PriceLow52w { get; set; }
+        public decimal PriceAverageEstimate52w { get; set; }
+        public decimal PriceToBook { get; set; }
+
+        public decimal VolumeToday { get; set; }
+        public decimal VolumeTodayUSD { get; set; }
+        public decimal VolumeAverage10d { get; set; }
+        public decimal VolumeAverage10dUSD { get; set; }
+        public decimal VolumeAverage3m { get; set; }
+        public decimal VolumeAverage3mUSD { get; set; }
+
+        public TradeDataYahoo TradeData { get; set; }
+        public EarningsYahoo Earnings { get; set; }
+        public List<DividendTick> Dividends { get; set; }
+        public List<SplitTick> Splits { get; set; }
+
+        public CompanyStatsYahoo()
+        {
+            Dividends = new List<DividendTick>();
+            Splits = new List<SplitTick>();
+        }
+    }
+
+    public class TradeDataYahoo
+    {
+        public decimal BidPrice { get; set; }
+        public decimal BidSize { get; set; }
+        public decimal AskPrice { get; set; }
+        public decimal AskSize { get; set; }
+    }
+
+    public class EarningsYahoo
+    {
+        public decimal EpsForward { get; set; }
+        public decimal EpsTrailingYTD { get; set; }
+
+        //should use DateTime below instead
+        public String EarningsStartDate { get; set; }
+        public String EarningsEndDate { get; set; }
+        public String EarningsReportDate { get; set; }
+    }
+
+    public class CompaniesListYahoo
+    {
+        public Dictionary<string, CompanyYahoo> SymbolsToCompanies { get; set; }
+    }
+
+    //Can add more fields for searching, screening, sorting
+    public class CompanyYahoo
+    {
+        public string Symbol { get; set; }
+        public string Exchange { get; set; }
+        public CompanyStatsYahoo Stats { get; set; }
     }
 }

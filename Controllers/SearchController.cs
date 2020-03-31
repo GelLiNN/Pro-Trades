@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Sociosearch.NET.Middleware;
 using Sociosearch.NET.Models;
+using YahooFinanceApi;
 
 namespace Sociosearch.NET.Controllers
 {
@@ -111,6 +112,34 @@ namespace Sociosearch.NET.Controllers
         {
             CompaniesListFMP companies = Companies.GetAllCompaniesFMPAsync().Result;
             return Companies.GetScreenedCompaniesFMP(companies, screenId);
+        }
+
+        /*
+         * Yahoo dependent endpoints
+         */
+        [HttpGet("/GetCompanyStatsYahoo/{symbol}")]
+        public CompanyStatsYahoo GetCompanyStatsYahoo(string symbol)
+        {
+            return Y.GetCompanyStatsAsync(symbol).Result;
+        }
+
+        [HttpGet("/GetQuoteYahoo/{symbol}")]
+        public Security GetQuoteYahoo(string symbol)
+        {
+            return Y.GetQuoteAsync(symbol).Result;
+        }
+
+        [HttpGet("/GetAllCompaniesYahoo")]
+        public CompaniesListYahoo GetAllCompaniesYahoo()
+        {
+            return Companies.GetAllCompaniesYahooAsync().Result;
+        }
+
+        [HttpGet("/GetScreenedCompaniesYahoo/{screenId}")]
+        public CompaniesListYahoo GetScreenedCompaniesYahoo(string screenId)
+        {
+            CompaniesListYahoo companies = Companies.GetAllCompaniesYahooAsync().Result;
+            return Companies.GetScreenedCompaniesYahoo(companies, screenId);
         }
 
         [HttpGet("/Test")]
