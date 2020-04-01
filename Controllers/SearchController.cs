@@ -45,15 +45,18 @@ namespace Sociosearch.NET.Controllers
         public CompositeScoreResult GetCompositeScoreForSymbol(string symbol)
         {
             string adxResponse = AV.CompleteAlphaVantageRequest("ADX", symbol).Result;
-            decimal adxCompositeScore = AV.GetCompositeScore("ADX", adxResponse, 5);
+            decimal adxCompositeScore = AV.GetCompositeScore("ADX", adxResponse, 7);
             string aroonResponse = AV.CompleteAlphaVantageRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = AV.GetCompositeScore("AROON", aroonResponse, 20);
+            decimal aroonCompositeScore = AV.GetCompositeScore("AROON", aroonResponse, 21);
+            string macdResponse = AV.CompleteAlphaVantageRequest("MACD", symbol).Result;
+            decimal macdCompositeScore = AV.GetCompositeScore("MACD", macdResponse, 7);
 
             return new CompositeScoreResult
             {
                 ADXComposite = adxCompositeScore,
                 AROONComposite = aroonCompositeScore,
-                CompositeScore = (adxCompositeScore + aroonCompositeScore) / 2
+                MACDComposite = macdCompositeScore,
+                CompositeScore = (adxCompositeScore + aroonCompositeScore + macdCompositeScore) / 3
             };
         }
 

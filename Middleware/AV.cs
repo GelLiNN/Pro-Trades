@@ -122,14 +122,6 @@ namespace Sociosearch.NET.Middleware
                     decimal aroonDownTotal = 0;
                     foreach (var result in resultSet)
                     {
-                        string adxKey = result.Key;
-                        string adxDate = DateTime.Parse(adxKey).ToString("yyyy-MM-dd");
-                        if (!dates.Contains(adxDate))
-                        {
-                            dates.Add(adxDate);
-                            daysCalulated++;
-                        }
-
                         if (daysCalulated < daysToCalculate)
                         {
                             string aroonUpVal = result.Value.Value<string>("Aroon Up");
@@ -137,6 +129,14 @@ namespace Sociosearch.NET.Middleware
                             aroonUpTotal += decimal.Parse(aroonUpVal);
                             aroonDownTotal += decimal.Parse(aroonDownVal);
                             numberOfResults++;
+
+                            string aroonKey = result.Key;
+                            string aroonDate = DateTime.Parse(aroonKey).ToString("yyyy-MM-dd");
+                            if (!dates.Contains(aroonDate))
+                            {
+                                dates.Add(aroonDate);
+                                daysCalulated++;
+                            }
                         }
                         else
                             break;
@@ -144,11 +144,16 @@ namespace Sociosearch.NET.Middleware
                     decimal aroonAvgUp = aroonUpTotal / numberOfResults;
                     decimal aroonAvgDown = aroonDownTotal / numberOfResults;
                     decimal percentDiffDown = (aroonAvgDown / aroonAvgUp) * 100;
-                    decimal diff = 100 - percentDiffDown;
-                    if (diff < 0)
-                        compositeScore = 0;
-                    else //score as a percentage of 50 means if avgDown is half of avgUp you will get 100 (perfect)
-                        compositeScore = (diff / 50) * 100;
+                    decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
+                    decimal diffDown = 100 - percentDiffDown;
+                    decimal diffUp = 0 + percentDiffUp;
+
+                    //Look for the crossing point indicators like MACD?
+
+                    if (diffDown < 0) //if AROON average down > AROON average up, score with 0 + (up as % of down)
+                        compositeScore = diffUp;
+                    else //if AROON avg down < AROON avg up, score with 100 - (down as % of up) + 10
+                        compositeScore = diffDown + 10;
                     break;
                 case "MACD":
                     //Positive rate-of-change for the MACD Histogram values indicate bullish movement
@@ -162,6 +167,7 @@ namespace Sociosearch.NET.Middleware
                     Stack<decimal> macdHistYList = new Stack<decimal>();
                     Stack<decimal> macdBaseYList = new Stack<decimal>();
                     Stack<decimal> macdSignalYList = new Stack<decimal>();
+                    decimal macdTotalHist = 0;
 
                     foreach (var result in resultSet)
                     {
@@ -170,9 +176,11 @@ namespace Sociosearch.NET.Middleware
                             decimal macdBaseValue = decimal.Parse(result.Value.Value<string>("MACD"));
                             decimal macdSignalValue = decimal.Parse(result.Value.Value<string>("MACD_Signal"));
                             decimal macdHistogramValue = decimal.Parse(result.Value.Value<string>("MACD_Hist"));
+
                             macdHistYList.Push(macdHistogramValue);
                             macdBaseYList.Push(macdBaseValue);
                             macdSignalYList.Push(macdSignalValue);
+                            macdTotalHist += macdHistogramValue;
                             numberOfResults++;
 
                             string macdKey = result.Key;
@@ -215,10 +223,14 @@ namespace Sociosearch.NET.Middleware
                         previous = current;
                         previousIsNegative = currentIsNegative;
                     }
-                    if (histSlope > 0)
-                    {
-                        compositeScore = 0;// (histSlope / maxHistSlope);
-                    }
+                    //calculate composite score based on the following values and weighted multipliers
+                    compositeScore = 0;
+                    compositeScore += (macdTotalHist > 0) ? (macdTotalHist * 5) + 10 : -10;
+                    compositeScore += (histSlope > 0) ? (histSlope * 5) + 20 : -10;
+                    compositeScore += (baseSlope > 0) ? (baseSlope * 3) + 10 : -10;
+                    compositeScore += (signalSlope > 0) ? (signalSlope * 3) + 10 : -10;
+                    compositeScore += (hasBuySignal) ? 30 : -10;
+                    compositeScore += (hasSellSignal) ? -40 : 10;
                     break;
                 case "BBANDS":
                     break;

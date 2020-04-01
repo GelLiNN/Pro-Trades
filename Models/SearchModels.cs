@@ -8,6 +8,7 @@ namespace Sociosearch.NET.Models
     {
         public decimal ADXComposite { get; set; }
         public decimal AROONComposite { get; set; }
+        public decimal MACDComposite { get; set; }
         public decimal CompositeScore { get; set; }
     }
 
