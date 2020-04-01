@@ -33,11 +33,11 @@ namespace Sociosearch.NET.Controllers
         {
             int numOfDays = Int32.Parse(days);
             string avResponse = AV.CompleteAlphaVantageRequest(function, symbol).Result;
-            decimal avCompositeScore = AV.GetCompositeScore(avResponse, function, numOfDays);
+            decimal avCompositeScore = AV.GetCompositeScore(function, avResponse, numOfDays);
             return new ContentResult
             {
                 StatusCode = 200,
-                Content = "Success! Composite Score " + avCompositeScore
+                Content = "Success! Composite Score for function " + function + ": " + avCompositeScore
             };
         }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -37,15 +38,20 @@ namespace Sociosearch.NET.Middleware
                             .GetAsync(String.Format(AVURI + "function={0}&symbol={1}&interval={2}&time_period={3}&apikey={4}",
                             function, symbol, aroonInterval, aroonPeriod, Program.Config.GetValue<string>("AlphaVantageApiKey")));
                         break;
+                    case "MACD":
+                        string macdInterval = "daily";
+                        string macdSeriesType = "open";
+                        response = await HttpClient
+                            .GetAsync(String.Format(AVURI + "function={0}&symbol={1}&interval={2}&series_type={3}&apikey={4}",
+                            function, symbol, macdInterval, macdSeriesType, Program.Config.GetValue<string>("AlphaVantageApiKey")));
+                        break;
                     case "BBANDS":
+                        break;
+                    case "STOCH":
                         break;
                     case "RSI":
                         break;
-                    case "MACD":
-                        break;
                     case "CCI":
-                        break;
-                    case "STOCH":
                         break;
 
                 }
@@ -144,13 +150,81 @@ namespace Sociosearch.NET.Middleware
                     else //score as a percentage of 50 means if avgDown is half of avgUp you will get 100 (perfect)
                         compositeScore = (diff / 50) * 100;
                     break;
+                case "MACD":
+                    //Positive rate-of-change for the MACD Histogram values indicate bullish movement
+                    //Recent Buy signal measured by MACD base value crossing (becoming greater than) the MACD signal value
+                    //Recent Sell signal measured by MACD signal value crossing (becoming greater than) the MACD base value
+                    resultSet = (JObject)data.GetValue("Technical Analysis: MACD");
+                    List<decimal> xList = new List<decimal>();
+                    for (int i = 1; i <= daysToCalculate; i++)
+                        xList.Add(i);
+
+                    Stack<decimal> macdHistYList = new Stack<decimal>();
+                    Stack<decimal> macdBaseYList = new Stack<decimal>();
+                    Stack<decimal> macdSignalYList = new Stack<decimal>();
+
+                    foreach (var result in resultSet)
+                    {
+                        if (daysCalulated < daysToCalculate)
+                        {
+                            decimal macdBaseValue = decimal.Parse(result.Value.Value<string>("MACD"));
+                            decimal macdSignalValue = decimal.Parse(result.Value.Value<string>("MACD_Signal"));
+                            decimal macdHistogramValue = decimal.Parse(result.Value.Value<string>("MACD_Hist"));
+                            macdHistYList.Push(macdHistogramValue);
+                            macdBaseYList.Push(macdBaseValue);
+                            macdSignalYList.Push(macdSignalValue);
+                            numberOfResults++;
+
+                            string macdKey = result.Key;
+                            string macdDate = DateTime.Parse(macdKey).ToString("yyyy-MM-dd");
+                            if (!dates.Contains(macdDate))
+                            {
+                                dates.Add(macdDate);
+                                daysCalulated++;
+                            }
+                        }
+                        else
+                            break;
+                    }
+                    List<decimal> baseYList = macdBaseYList.ToList();
+                    decimal baseSlope = GetSlope(xList, baseYList);
+                    List<decimal> signalYList = macdSignalYList.ToList();
+                    decimal signalSlope = GetSlope(xList, signalYList);
+                    List<decimal> histYList = macdHistYList.ToList();
+                    decimal histSlope = GetSlope(xList, histYList);
+                    //decimal multiplier = GetScoreMultiplier(histXList, histYList);
+
+                    //look for buy and sell signals
+                    bool hasBuySignal = false;
+                    bool hasSellSignal = false;
+
+                    decimal previous = histYList[0];
+                    bool previousIsNegative = previous < 0;
+                    for (int i = 1; i < histYList.Count(); i++)
+                    {
+                        decimal current = histYList[i];
+                        bool currentIsNegative = current < 0;
+                        if (!currentIsNegative && previousIsNegative)
+                        {
+                            hasBuySignal = true;
+                        }
+                        else if (currentIsNegative && !previousIsNegative)
+                        {
+                            hasSellSignal = true;
+                        }
+                        previous = current;
+                        previousIsNegative = currentIsNegative;
+                    }
+                    if (histSlope > 0)
+                    {
+                        compositeScore = 0;// (histSlope / maxHistSlope);
+                    }
+                    break;
                 case "BBANDS":
                     break;
                 case "RSI":
                     break;
                 case "OBV":
-                    break;
-                case "MACD":
                     break;
                 case "CCI":
                     //Possible sell signals:
@@ -167,6 +241,23 @@ namespace Sociosearch.NET.Middleware
 
             }
             return compositeScore;
+        }
+
+        public static decimal GetSlope(List<decimal> xList, List<decimal> yList)
+        {
+            //get list of x's and y's with potential skipping
+            //var xs = xList.Skip(skip).Take(months);
+            //var ys = yList.Skip(skip).Take(months);
+
+            //"zip" xs and ys to make the sum of products easier
+            var xys = Enumerable.Zip(xList, yList, (x, y) => new { x = x, y = y });
+
+            decimal xbar = xList.Average();
+            decimal ybar = yList.Average();
+
+            decimal slope = xys.Sum(xy => (xy.x - xbar) * (xy.y - ybar)) / xList.Sum(x => (x - xbar) * (x - xbar));
+
+            return slope;
         }
     }
 }
