@@ -47,7 +47,7 @@ namespace Sociosearch.NET.Controllers
             string adxResponse = AV.CompleteAlphaVantageRequest("ADX", symbol).Result;
             decimal adxCompositeScore = AV.GetCompositeScore("ADX", adxResponse, 7);
             string aroonResponse = AV.CompleteAlphaVantageRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = AV.GetCompositeScore("AROON", aroonResponse, 21);
+            decimal aroonCompositeScore = AV.GetCompositeScore("AROON", aroonResponse, 14);
             string macdResponse = AV.CompleteAlphaVantageRequest("MACD", symbol).Result;
             decimal macdCompositeScore = AV.GetCompositeScore("MACD", macdResponse, 7);
 
