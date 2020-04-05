@@ -51,6 +51,8 @@ namespace Sociosearch.NET.Middleware
                         break;
                     case "RSI":
                         break;
+                    case "OBV":
+                        break;
                     case "CCI":
                         break;
 
@@ -305,11 +307,49 @@ namespace Sociosearch.NET.Middleware
                     break;
 
                 case "BBANDS":
+                    //Bollinger Bands consist of three lines. The middle band is a simple moving average (generally 20 periods)
+                    //of the typical price (TP). The upper and lower bands are F standard deviations (generally 2) above and below the middle band.
+                    //The bands widen and narrow when the volatility of the price is higher or lower, respectively.
+                    //Bollinger Bands do not, in themselves, generate buy or sell signals; they are an indicator of overbought or oversold conditions.
+                    //When the price is near the upper or lower band it indicates that a reversal may be imminent.
+                    //The middle band becomes a support or resistance level.The upper and lower bands can also be interpreted as price targets.
+                    //When the price bounces off of the lower band and crosses the middle band, then the upper band becomes the price target.
+                    //See also Bollinger Width, Envelope, Price Channels and Projection Bands.
+                    //https://www.investopedia.com/articles/technical/04/030304.asp
+                    //https://www.fmlabs.com/reference/default.htm?url=Bollinger.htm
+                    //https://www.alphavantage.co/query?function=BBANDS&symbol=MSFT&interval=weekly&time_period=5&series_type=close&nbdevup=3&nbdevdn=3&apikey=demo
                     break;
+
+
+                case "STOCH":
+                    //The Stochastic Oscillator measures where the close is in relation to the recent trading range.
+                    //The values range from zero to 100. D values over 75 indicate an overbought condition; values under 25 indicate an oversold condition.
+                    //When the Fast D crosses above the Slow D, it is a buy signal; when it crosses below, it is a sell signal.
+                    //The Raw K is generally considered too erratic to use for crossover signals.
+                    //https://www.fmlabs.com/reference/default.htm?url=StochasticOscillator.htm
+                    //https://www.investopedia.com/articles/technical/073001.asp
+                    //https://www.alphavantage.co/query?function=STOCH&symbol=MSFT&interval=daily&apikey=
+                        break;
+
                 case "RSI":
+                    //The Relative Strength Index (RSI) calculates a ratio of the recent upward price movements to the absolute price movement.
+                    //The RSI ranges from 0 to 100. The RSI is interpreted as an overbought/oversold indicator when the value is over 70/below 30.
+                    //You can also look for divergence with price. If the price is making new highs/lows, and the RSI is not, it indicates a reversal.
+                    //https://www.investopedia.com/articles/active-trading/042114/overbought-or-oversold-use-relative-strength-index-find-out.asp
+                    //https://www.alphavantage.co/query?function=RSI&symbol=MSFT&interval=weekly&time_period=10&series_type=open&apikey=demo
                     break;
+
                 case "OBV":
+                    //The On Balance Volume (OBV) is a cumulative total of the up and down volume.
+                    //When the close is higher than the previous close, the volume is added to the running total,
+                    //and when the close is lower than the previous close, the volume is subtracted from the running total.
+                    //To interpret the OBV, look for the OBV to move with the price or precede price moves.
+                    //If the price moves before the OBV, then it is a non - confirmed move. A series of rising peaks, or falling troughs
+                    //in the OBV indicates a strong trend. If the OBV is flat, then the market is not trending.
+                    //https://www.investopedia.com/articles/technical/100801.asp
+                    //https://www.alphavantage.co/query?function=OBV&symbol=MSFT&interval=daily&apikey=
                     break;
+
                 case "CCI":
                     //Possible sell signals:
                     //The CCI crosses above 100 and has started to curve downward.
@@ -319,8 +359,8 @@ namespace Sociosearch.NET.Middleware
                     //The CCI crosses below -100 and has started to curve upward.
                     //There is a bullish divergence between the CCI and the actual price movement, characterized by upward movement
                     //in the CCI while the price of the asset continues to move downward or sideways.
-                    break;
-                case "STOCH":
+                    //https://www.investopedia.com/investing/timing-trades-with-commodity-channel-index/
+                    //https://www.alphavantage.co/query?function=CCI&symbol=MSFT&interval=daily&time_period=10&apikey=
                     break;
 
             }
