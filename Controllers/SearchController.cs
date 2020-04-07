@@ -51,12 +51,23 @@ namespace Sociosearch.NET.Controllers
             string macdResponse = AV.CompleteAlphaVantageRequest("MACD", symbol).Result;
             decimal macdCompositeScore = AV.GetCompositeScore("MACD", macdResponse, 7);
 
+            //QUANDL calls slightly different due to QUANDL Codes
+            string shortResponse = string.Empty;
+            foreach (string code in Q.QCFINRA)
+            {
+                shortResponse = Q.CompleteQuandlRequest("SHORT", "FINRA/" + code + "_TSLA").Result;
+                if (!String.IsNullOrEmpty(shortResponse))
+                    break;
+            }
+            ShortInterestResult shortResult = Q.GetShortInterest(shortResponse, 7);
+
             return new CompositeScoreResult
             {
                 ADXComposite = adxCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
-                CompositeScore = (adxCompositeScore + aroonCompositeScore + macdCompositeScore) / 3
+                CompositeScore = (adxCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 4,
+                ShortInterest = shortResult
             };
         }
 

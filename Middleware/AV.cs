@@ -210,7 +210,7 @@ namespace Sociosearch.NET.Middleware
                     decimal bearResult = 100 - percentDiffUp;
 
                     //Add bull bonus if AROON avg up >= 70 per investopedia recommendation
-                    decimal bullBonus = (aroonAvgUp > aroonAvgDown && aroonAvgUp >= 70) ? (aroonAvgUp / 2) : 0;
+                    decimal bullBonus = (aroonAvgUp > aroonAvgDown && aroonAvgUp >= 70) ? (aroonAvgUp / 10) + 10 : 0;
 
                     compositeScore = 0;
                     //calculate composite score based on the following values and weighted multipliers
@@ -296,12 +296,14 @@ namespace Sociosearch.NET.Middleware
                     decimal histSlopeMultiplier = GetSlopeMultiplier(histSlope);
                     decimal baseSlopeMultiplier = GetSlopeMultiplier(baseSlope);
                     decimal signalSlopeMultiplier = GetSlopeMultiplier(signalSlope);
+                    decimal histBonus = (macdTotalHist > 15) ? 15 : macdTotalHist;
+
                     //calculate composite score based on the following values and weighted multipliers
                     compositeScore = 0;
                     compositeScore += (histSlope > -.1M) ? (histSlope * histSlopeMultiplier) + 30 : 0;
                     compositeScore += (baseSlope > -.1M) ? (baseSlope * baseSlopeMultiplier) + 10 : 0;
                     compositeScore += (signalSlope > -.1M) ? (signalSlope * signalSlopeMultiplier) + 10 : 0;
-                    compositeScore += (macdTotalHist > 0) ? (macdTotalHist * 5) + 10 : 0;
+                    compositeScore += (histBonus > 0) ? histBonus : 0;
                     compositeScore += (macdHasBuySignal) ? 30 : 0;
                     compositeScore += (macdHasSellSignal) ? -40 : 0;
                     break;

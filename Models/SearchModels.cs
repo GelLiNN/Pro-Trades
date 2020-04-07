@@ -10,6 +10,17 @@ namespace Sociosearch.NET.Models
         public decimal AROONComposite { get; set; }
         public decimal MACDComposite { get; set; }
         public decimal CompositeScore { get; set; }
+        public ShortInterestResult ShortInterest { get; set; }
+    }
+
+    public class ShortInterestResult
+    {
+        public decimal TotalVolume { get; set; }
+        public decimal TotalVolumeShort { get; set; }
+        public decimal ShortInterestPercentToday { get; set; }
+        public decimal ShortInterestPercentAverage { get; set; }
+        public decimal ShortInterestSlope { get; set; }
+        public decimal ShortInterestCompositeScore { get; set; }
     }
 
     /*
