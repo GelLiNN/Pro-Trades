@@ -1,0 +1,306 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
+using Sociosearch.NET.Models;
+
+namespace Sociosearch.NET.Middleware
+{
+    //MemoryCache wrapper for storing cache keys and otherwise assisting with cache functionality
+    public class DataCache
+    {
+
+        public enum Channels
+        {
+            [Description("iex")] IEX,
+            [Description("yf")] YF
+        }
+
+        public enum CacheTypes
+        {
+            [Description("companies")] Companies
+        }
+
+        //Settings
+        private static readonly int MaxCacheUpdateAge = 720; //Minutes
+        private static readonly int MinCacheUpdateAge = 60; //Minutes
+        private static readonly bool AutoUpdateDisabled = true;
+
+        //Globals
+        public HashSet<string> CachedSymbols;
+        public Dictionary<string, string> ExceptionReport;
+        public List<string> CacheIds = new List<string> { "iex-companies", "yf-companies" };
+        private IMemoryCache _iexCompaniesCache;
+        private IMemoryCache _yfCompaniesCache;
+        private RequestManager _requestManager;
+
+        public DataCache(RequestManager manager)
+        {
+            _iexCompaniesCache = new MemoryCache(new MemoryCacheOptions());
+            _yfCompaniesCache = new MemoryCache(new MemoryCacheOptions());
+            _requestManager = manager;
+
+            CachedSymbols = new HashSet<string>();
+            ExceptionReport = new Dictionary<string, string>();
+        }
+
+        //Get object by cacheKey <channel>-<cacheType>-<symbol>
+        public object Get(string cacheKey)
+        {
+            string[] tokens = cacheKey.Split('-');
+            string cacheId = tokens[0] + "-" + tokens[1];
+            switch (cacheId)
+            {
+                case "iex-companies":
+                    CompanyIEX iexCompanyEntry;
+                    if (!_iexCompaniesCache.TryGetValue(cacheKey, out iexCompanyEntry))
+                    {
+                        //Not in cache, so we can update the cache with private helper
+                        UpdateIEXCompanyCacheEntry(cacheKey, null, EvictionReason.None, this);
+                        _iexCompaniesCache.TryGetValue(cacheKey, out iexCompanyEntry);
+                    }
+                    return iexCompanyEntry;
+                case "yf-companies":
+                    CompanyYF yfCompanyEntry;
+                    if (!_yfCompaniesCache.TryGetValue(cacheKey, out yfCompanyEntry))
+                    {
+                        //Not in cache, so we can update the cache with private helper
+                        UpdateYFCompanyCacheEntry(cacheKey, null, EvictionReason.None, this);
+                        _yfCompaniesCache.TryGetValue(cacheKey, out yfCompanyEntry);
+                    }
+                    return yfCompanyEntry;
+                default:
+                    throw new Exception("Cache ID " + cacheId + " is not supported by PimService Cache.");
+            }
+        }
+
+        //Add passed object to correct cache based on cacheKey <channel>-<cacheType>-<symbol>
+        public void Add(object product, string cacheKey)
+        {
+            string[] tokens = cacheKey.Split('-');
+            string cacheId = tokens[0] + "-" + tokens[1];
+            int expirationMinutes = new Random().Next(MinCacheUpdateAge, MaxCacheUpdateAge);
+            var expirationTime = DateTime.Now.Add(new TimeSpan(0, expirationMinutes, 0));
+            //var expirationToken = new CancellationChangeToken(
+            //new CancellationTokenSource(TimeSpan.FromMinutes(expirationMinutes + .01)).Token);
+
+            MemoryCacheEntryOptions options;
+            if (AutoUpdateDisabled)
+            {
+                options = new MemoryCacheEntryOptions()
+                    .SetPriority(CacheItemPriority.NeverRemove);
+            }
+            else
+            {
+                options = new MemoryCacheEntryOptions()
+                    .SetPriority(CacheItemPriority.NeverRemove)
+                    .SetAbsoluteExpiration(expirationTime);
+                //.AddExpirationToken(expirationToken);
+            }
+            switch (cacheId)
+            {
+                case "iex-companies":
+                    options.RegisterPostEvictionCallback(callback: UpdateIEXCompanyCacheEntry, state: this);
+                    _iexCompaniesCache.Set(cacheKey, product, options);
+                    break;
+                case "yf-companies":
+                    options.RegisterPostEvictionCallback(callback: UpdateYFCompanyCacheEntry, state: this);
+                    _yfCompaniesCache.Set(cacheKey, product, options);
+                    break;
+                default:
+                    throw new Exception("Cache ID " + cacheId + " is not supported by PimService Cache.");
+            }
+            string curSymbol = cacheKey.Split('-')[2];
+            lock (CachedSymbols)
+            {
+                if (!this.CachedSymbols.Contains(cacheKey))
+                    this.CachedSymbols.Add(cacheKey);
+            }
+        }
+
+        //Investors Exchange Company Cache Entry Update Routine
+        public void UpdateIEXCompanyCacheEntry(object key, object value, EvictionReason reason, object state = null)
+        {
+            try
+            {
+                Stopwatch sw = new Stopwatch(); sw.Start();
+                string cacheKey = (string)key;
+                string channel = cacheKey.Split('-')[0];
+                string symbol = cacheKey.Split('-')[2];
+
+                //Remove before updating and re-adding
+                RemoveCachedSymbol(cacheKey);
+
+                //implementation
+
+                //Save IEX Company to cache
+                //this.Add(company, cacheKey;
+                string perf = sw.ElapsedMilliseconds.ToString();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("ERROR UpdateIEXCompanyCacheEntry: " + e.Message);
+            }
+        }
+
+        //Yahoo Finance Company Cache Entry Update Routine
+        public void UpdateYFCompanyCacheEntry(object key, object value, EvictionReason reason, object state = null)
+        {
+            try
+            {
+                Stopwatch sw = new Stopwatch(); sw.Start();
+                string cacheKey = (string)key;
+                string channel = cacheKey.Split('-')[0];
+                string symbol = cacheKey.Split('-')[2];
+
+                //Remove before updating and re-adding
+                RemoveCachedSymbol(cacheKey);
+
+                //implementation
+
+                //Save YF Company to cache
+                //this.Add(company, cacheKey);
+                string perf = sw.ElapsedMilliseconds.ToString();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("ERROR UpdateYFCompanyCacheEntry: " + e.Message);
+            }
+        }
+
+        public void AddCachedSymbol(string cacheKey)
+        {
+            lock (CachedSymbols)
+            {
+                if (!CachedSymbols.Contains(cacheKey))
+                    CachedSymbols.Add(cacheKey);
+            }
+        }
+
+        public void RemoveCachedSymbol(string cacheKey)
+        {
+            lock (CachedSymbols)
+            {
+                if (CachedSymbols.Contains(cacheKey))
+                    CachedSymbols.Remove(cacheKey);
+            }
+        }
+
+        public HashSet<string> GetCachedSymbols(string cacheId)
+        {
+            lock (CachedSymbols)
+            {
+                HashSet<string> items = CachedSymbols
+                    .Where(x => x.ToString().StartsWith(cacheId)).ToHashSet();
+                return new HashSet<string>(items);
+            }
+        }
+
+        public string GetCacheId(string channel, string type)
+        {
+            string id = channel.ToLower() + "-" + type.ToLower();
+            foreach (string cacheId in CacheIds)
+                if (id == cacheId)
+                    return cacheId;
+            return null;
+        }
+
+        /*public void ClearAll()
+        {
+            this.CachedUpcs = new CustomDictionary<string, HashSet<string>>();
+            this.CachedStyles = new CustomDictionary<string, string>();
+
+            _cbcorporateProductsCache = new MemoryCache(new MemoryCacheOptions());
+            _psProductsCache = new MemoryCache(new MemoryCacheOptions());
+            _psPricesCache = new MemoryCache(new MemoryCacheOptions());
+        }
+
+        public void ClearCache(string cacheId)
+        {
+            cacheId = cacheId.ToLower();
+            switch (cacheId)
+            {
+                case "cbcorporate-products":
+                    _cbcorporateProductsCache = new MemoryCache(new MemoryCacheOptions());
+                    break;
+                case "promostandards-products":
+                    _psProductsCache = new MemoryCache(new MemoryCacheOptions());
+                    break;
+                case "promostandards-prices":
+                    _psPricesCache = new MemoryCache(new MemoryCacheOptions());
+                    break;
+                default:
+                    throw new Exception("Cache ID " + cacheId + " is not supported by PimService Cache.");
+            }
+            foreach (string cacheKey in CachedStyles.Keys)
+            {
+                if (cacheKey.StartsWith(cacheId))
+                    lock (CachedStyles) { CachedStyles.Remove(cacheKey); }
+            }
+            foreach (string cacheKey in CachedUpcs.Keys)
+            {
+                if (cacheKey.StartsWith(cacheId))
+                    lock (CachedUpcs) { CachedUpcs.Remove(cacheKey); }
+            }
+        }*/
+
+        public async Task LoadCacheAsync(string cacheId)
+        {
+            int count = 0;
+            await Task.Run(() =>
+            {
+                /*Get all entity IDs from pim instead of starting with a LIS query
+                string entityIdResponse = string.Empty;
+                if (cacheId.StartsWith("iex"))
+                    entityIdResponse = _requestManager.CompleteIEXRequest("query", "POST", new PSAllProductsQuery());
+                else
+                    entityIdResponse = _requestManager.CompletePimRequest("query", "POST", new AllProductsQuery());*/
+
+                /*Parallel Edition
+                Parallel.ForEach(ids, Common.ParallelOptions, (entityId) =>
+                {
+                    string cacheKey = string.Format("{0}-{1}", cacheId, entityId);
+                    try
+                    {
+                        if (!this.CachedStyles.ContainsKey(cacheKey))
+                        {
+                            this.Get(cacheKey);
+                            Interlocked.Increment(ref count);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        lock (ExceptionReport) { ExceptionReport.Add(cacheKey, "Error: " + e.Message + ", StackTrace: " + e.StackTrace); }
+                        return;
+                    }
+                });*/
+
+                /*Single-Thread edition
+                for (int i = 0; i < ids.Count(); i++)
+                {
+                    string entityId = ids[i].ToString();
+                    string cacheKey = string.Format("{0}-{1}", cacheId, entityId);
+                    try
+                    {
+                        if (!this.CachedStyles.ContainsKey(cacheKey))
+                        {
+                            this.Get(cacheKey);
+                            count++;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        lock (ExceptionReport)
+                        {
+                            ExceptionReport.Add(cacheKey, "Error: " + e.Message + ", StackTrace: " + e.StackTrace);
+                        }
+                        continue;
+                    }
+                }*/
+            });
+        }
+    }
+}

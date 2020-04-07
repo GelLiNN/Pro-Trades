@@ -38,7 +38,7 @@ namespace Sociosearch.NET.Models
 
         public TradeDataIEX TradeData { get; set; }
         //public Financials Financials { get; set; } re-enable if I can get from somewhere
-        public VSLee.IEXSharp.Model.Shared.Response.Earning Earnings { get; set; }
+        //public VSLee.IEXSharp.Model.Shared.Response.Earning Earnings { get; set; }
         public DividendsIEX Dividends { get; set; }
     }
 
@@ -191,7 +191,7 @@ namespace Sociosearch.NET.Models
     /*
      * Yahoo Models
      */
-    public class CompanyStatsYahoo
+    public class CompanyStatsYF
     {
         public string Symbol { get; set; }
         public string Exchange { get; set; }
@@ -232,19 +232,19 @@ namespace Sociosearch.NET.Models
         public decimal VolumeAverage3m { get; set; }
         public decimal VolumeAverage3mUSD { get; set; }
 
-        public TradeDataYahoo TradeData { get; set; }
-        public EarningsYahoo Earnings { get; set; }
+        public TradeDataYF TradeData { get; set; }
+        public EarningsYF Earnings { get; set; }
         public List<DividendTick> Dividends { get; set; }
         public List<SplitTick> Splits { get; set; }
 
-        public CompanyStatsYahoo()
+        public CompanyStatsYF()
         {
             Dividends = new List<DividendTick>();
             Splits = new List<SplitTick>();
         }
     }
 
-    public class TradeDataYahoo
+    public class TradeDataYF
     {
         public decimal BidPrice { get; set; }
         public decimal BidSize { get; set; }
@@ -252,7 +252,7 @@ namespace Sociosearch.NET.Models
         public decimal AskSize { get; set; }
     }
 
-    public class EarningsYahoo
+    public class EarningsYF
     {
         public decimal EpsForward { get; set; }
         public decimal EpsTrailingYTD { get; set; }
@@ -263,16 +263,16 @@ namespace Sociosearch.NET.Models
         public String EarningsReportDate { get; set; }
     }
 
-    public class CompaniesListYahoo
+    public class CompaniesListYF
     {
-        public Dictionary<string, CompanyYahoo> SymbolsToCompanies { get; set; }
+        public Dictionary<string, CompanyYF> SymbolsToCompanies { get; set; }
     }
 
     //Can add more fields for searching, screening, sorting
-    public class CompanyYahoo
+    public class CompanyYF
     {
         public string Symbol { get; set; }
         public string Exchange { get; set; }
-        public CompanyStatsYahoo Stats { get; set; }
+        public CompanyStatsYF Stats { get; set; }
     }
 }

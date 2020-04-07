@@ -61,7 +61,7 @@ namespace Sociosearch.NET.Controllers
         }
 
         /*
-         * IEX dependent endpoints
+         * Investors Exchange dependent endpoints
          */
         [HttpGet("/GetCompanyStatsIEX/{symbol}")]
         public CompanyStatsIEX GetCompanyStatsIEX(string symbol)
@@ -89,7 +89,7 @@ namespace Sociosearch.NET.Controllers
         }
 
         /*
-         * FMP dependent endpoints
+         * Financial Modeling Prep dependent endpoints
          */
         [HttpGet("/GetCompanyStatsFMP/{symbol}")]
         public CompanyStatsFMP GetCompanyStatsFMP(string symbol)
@@ -117,30 +117,30 @@ namespace Sociosearch.NET.Controllers
         }
 
         /*
-         * Yahoo dependent endpoints
+         * Yahoo Finance dependent endpoints
          */
-        [HttpGet("/GetCompanyStatsYahoo/{symbol}")]
-        public CompanyStatsYahoo GetCompanyStatsYahoo(string symbol)
+        [HttpGet("/GetCompanyStatsYF/{symbol}")]
+        public CompanyStatsYF GetCompanyStatsYF(string symbol)
         {
             return YF.GetCompanyStatsAsync(symbol).Result;
         }
 
-        [HttpGet("/GetQuoteYahoo/{symbol}")]
+        [HttpGet("/GetQuoteYF/{symbol}")]
         public Security GetQuoteYahoo(string symbol)
         {
             return YF.GetQuoteAsync(symbol).Result;
         }
 
-        [HttpGet("/GetAllCompaniesYahoo")]
-        public CompaniesListYahoo GetAllCompaniesYahoo()
+        [HttpGet("/GetAllCompaniesYF")]
+        public CompaniesListYF GetAllCompaniesYF()
         {
             return YF.GetAllCompaniesAsync().Result;
         }
 
-        [HttpGet("/GetScreenedCompaniesYahoo/{screenId}")]
-        public CompaniesListYahoo GetScreenedCompaniesYahoo(string screenId)
+        [HttpGet("/GetScreenedCompaniesYF/{screenId}")]
+        public CompaniesListYF GetScreenedCompaniesYahoo(string screenId)
         {
-            CompaniesListYahoo companies = YF.GetAllCompaniesAsync().Result;
+            CompaniesListYF companies = YF.GetAllCompaniesAsync().Result;
             return YF.GetScreenedCompaniesAsync(companies, screenId).Result;
         }
 

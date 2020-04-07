@@ -12,9 +12,9 @@ namespace Sociosearch.NET.Middleware
     //No API key needed for this one?
     public class YF
     {
-        public static async Task<CompanyStatsYahoo> GetCompanyStatsAsync(string symbol)
+        public static async Task<CompanyStatsYF> GetCompanyStatsAsync(string symbol)
         {
-            CompanyStatsYahoo companyStat = new CompanyStatsYahoo();
+            CompanyStatsYF companyStat = new CompanyStatsYF();
             try
             {
                 //Yahoo Quote
@@ -60,7 +60,7 @@ namespace Sociosearch.NET.Middleware
                     companyStat.VolumeAverage3m = decimal.Parse(quote.AverageDailyVolume3Month.ToString());
                     companyStat.VolumeAverage3mUSD = (companyStat.VolumeAverage3m * companyStat.PriceAverageToday);
 
-                    companyStat.Earnings = new EarningsYahoo
+                    companyStat.Earnings = new EarningsYF
                     {
                         EpsForward = decimal.Parse(quote.EpsForward.ToString()),
                         EpsTrailingYTD = decimal.Parse(quote.EpsTrailingTwelveMonths.ToString()),
@@ -70,7 +70,7 @@ namespace Sociosearch.NET.Middleware
                     };
 
                     //Could get more trade data from IEX possibly
-                    companyStat.TradeData = new TradeDataYahoo
+                    companyStat.TradeData = new TradeDataYF
                     {
                         BidPrice = decimal.Parse(quote.Bid.ToString()),
                         BidSize = decimal.Parse(quote.BidSize.ToString()),
@@ -92,7 +92,7 @@ namespace Sociosearch.NET.Middleware
             }
             catch (Exception e)
             {
-                Debug.WriteLine("ERROR Utility.cs FMP.GetComanyStatsAsync: " + e.Message + ", StackTrace: " + e.StackTrace);
+                Debug.WriteLine("ERROR YF.cs YF.GetComanyStatsAsync: " + e.Message + ", StackTrace: " + e.StackTrace);
             }
             return await Task.FromResult(companyStat);
         }
@@ -105,18 +105,18 @@ namespace Sociosearch.NET.Middleware
             return quote;
         }
 
-        public static async Task<CompaniesListYahoo> GetScreenedCompaniesAsync(CompaniesListYahoo allCompanies, string screenId)
+        public static async Task<CompaniesListYF> GetScreenedCompaniesAsync(CompaniesListYF allCompanies, string screenId)
         {
-            CompaniesListYahoo screened = new CompaniesListYahoo
+            CompaniesListYF screened = new CompaniesListYF
             {
-                SymbolsToCompanies = new Dictionary<string, CompanyYahoo>()
+                SymbolsToCompanies = new Dictionary<string, CompanyYF>()
             };
 
             foreach (var company in allCompanies.SymbolsToCompanies)
             {
                 string symbol = company.Key;
-                CompanyYahoo companyObject = company.Value;
-                CompanyStatsYahoo stats = companyObject.Stats;
+                CompanyYF companyObject = company.Value;
+                CompanyStatsYF stats = companyObject.Stats;
                 if (stats.PriceAverageToday < 20 && stats.PriceAverageToday > .01M && stats.VolumeAverage10dUSD > 1000000
                     /*&& !String.IsNullOrEmpty(stats.Earnings.EPSReportDate)*/)
                 {
@@ -126,11 +126,11 @@ namespace Sociosearch.NET.Middleware
             return await Task.FromResult(screened);
         }
 
-        public static async Task<CompaniesListYahoo> GetAllCompaniesAsync()
+        public static async Task<CompaniesListYF> GetAllCompaniesAsync()
         {
-            CompaniesListYahoo companies = new CompaniesListYahoo()
+            CompaniesListYF companies = new CompaniesListYF()
             {
-                SymbolsToCompanies = new Dictionary<string, CompanyYahoo>()
+                SymbolsToCompanies = new Dictionary<string, CompanyYF>()
             };
 
             string nasdaqData = Companies.GetFromFtpUri(Companies.NasdaqSymbolsUri);
@@ -147,8 +147,8 @@ namespace Sociosearch.NET.Middleware
                         bool isNasdaq = data[0] == "Y";
                         if (isNasdaq)
                         {
-                            CompanyStatsYahoo stats = YF.GetCompanyStatsAsync(symbol).Result;
-                            CompanyYahoo company = new CompanyYahoo
+                            CompanyStatsYF stats = YF.GetCompanyStatsAsync(symbol).Result;
+                            CompanyYF company = new CompanyYF
                             {
                                 Symbol = symbol,
                                 Exchange = "NASDAQ",
@@ -171,8 +171,8 @@ namespace Sociosearch.NET.Middleware
                     string symbol = data[0];
                     if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
                     {
-                        CompanyStatsYahoo stats = YF.GetCompanyStatsAsync(symbol).Result;
-                        CompanyYahoo company = new CompanyYahoo
+                        CompanyStatsYF stats = YF.GetCompanyStatsAsync(symbol).Result;
+                        CompanyYF company = new CompanyYF
                         {
                             Symbol = symbol,
                             Exchange = "OTC",
@@ -194,8 +194,8 @@ namespace Sociosearch.NET.Middleware
                     string symbol = data[0];
                     if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
                     {
-                        CompanyStatsYahoo stats = YF.GetCompanyStatsAsync(symbol).Result;
-                        CompanyYahoo company = new CompanyYahoo
+                        CompanyStatsYF stats = YF.GetCompanyStatsAsync(symbol).Result;
+                        CompanyYF company = new CompanyYF
                         {
                             Symbol = symbol,
                             Exchange = data[2],
