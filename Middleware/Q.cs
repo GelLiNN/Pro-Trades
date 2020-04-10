@@ -29,7 +29,7 @@ namespace Sociosearch.NET.Middleware
         //FNSQ - Nasdaq
         //FORF - Other?
         //FNYX - NYSE
-        public static readonly List<string> QCFINRA = new List<string> { "FNSQ", "FNYX", "FORF" };
+        public static readonly List<string> FinraCodes = new List<string> { "FNSQ", "FNYX", "FORF" };
 
         public static async Task<string> CompleteQuandlRequest(string function, string path)
         {
@@ -71,7 +71,7 @@ namespace Sociosearch.NET.Middleware
                 string responseBody = await response.Content.ReadAsStringAsync();
                 return await Task.FromResult(responseBody);*/
             }
-            catch (HttpRequestException e)
+            catch (Exception e)
             {
                 Debug.WriteLine("EXCEPTION Message: {0}, StackTrace: {1}", e.Message, e.StackTrace);
                 return string.Empty;
@@ -133,7 +133,7 @@ namespace Sociosearch.NET.Middleware
 
             //calculate composite score based on the following values and weighted multipliers
             compositeScore += 100 - shortInterestAverage; //get score as 100 - short interest
-            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 20 : -5;
+            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 10 : -5;
 
             //Return ShortInterestResult
             return new ShortInterestResult

@@ -70,12 +70,9 @@ namespace Sociosearch.NET.Middleware
 
         public static decimal GetCompositeScore(string function, string alphaVantageResponse, int daysToCalculate)
         {
-            decimal compositeScore = -1;
+            decimal compositeScore = 0;
             JObject data = JObject.Parse(alphaVantageResponse);
             JObject resultSet;
-            int daysCalulated = 0;
-            int numberOfResults = 0;
-            HashSet<string> dates = new HashSet<string>();
 
             //different processing for each indicator
             switch (function.ToUpper())
@@ -86,42 +83,7 @@ namespace Sociosearch.NET.Middleware
                     //Many traders will use ADX readings above 25 to suggest that the trend is strong enough for trend-trading strategies.
                     //Conversely, when ADX is below 25, many will avoid trend-trading strategies.
                     resultSet = (JObject)data.GetValue("Technical Analysis: ADX");
-
-                    Stack<decimal> adxValueYList = new Stack<decimal>();
-                    decimal adxTotal = 0;
-                    foreach (var result in resultSet)
-                    {
-                        if (daysCalulated < daysToCalculate)
-                        {
-                            decimal adxVal = decimal.Parse(result.Value.Value<string>("ADX"));
-                            adxValueYList.Push(adxVal);
-                            adxTotal += adxVal;
-                            numberOfResults++;
-
-                            string adxKey = result.Key;
-                            string adxDate = DateTime.Parse(adxKey).ToString("yyyy-MM-dd");
-                            if (!dates.Contains(adxDate))
-                            {
-                                dates.Add(adxDate);
-                                daysCalulated++;
-                            }
-                        }
-                        else
-                            break;
-                    }
-
-                    List<decimal> adxXList = new List<decimal>();
-                    for (int i = 1; i <= numberOfResults; i++)
-                        adxXList.Add(i);
-
-                    List<decimal> adxYList = adxValueYList.ToList();
-                    decimal adxSlope = GetSlope(adxXList, adxYList);
-                    decimal adxSlopeMultiplier = GetSlopeMultiplier(adxSlope);
-                    decimal adxAvg = adxTotal / numberOfResults;
-
-                    //calculate composite score based on the following values and weighted multipliers
-                    compositeScore += ((adxAvg) / 25) * 100; //get average trend strength as a percentage of 25
-                    compositeScore += (adxSlope > 0) ? (adxSlope * adxSlopeMultiplier) + 10 : 0;
+                    compositeScore = GetADXComposite(resultSet, daysToCalculate);
                     break;
 
                 case "AROON":
@@ -135,94 +97,7 @@ namespace Sociosearch.NET.Middleware
                     //making the bullish indicator 100 to 0 and the bearish indicator 0 to - 100 and finding the
                     //difference between the two values. This oscillator then varies between 100 and - 100, with 0 indicating no trend.
                     resultSet = (JObject)data.GetValue("Technical Analysis: AROON");
-
-                    List<decimal> aroonXList = new List<decimal>();
-                    for (int i = 1; i <= daysToCalculate; i++)
-                        aroonXList.Add(i);
-
-                    Stack<decimal> aroonUpYList = new Stack<decimal>();
-                    Stack<decimal> aroonDownYList = new Stack<decimal>();
-                    Stack<decimal> aroonOscillatorYList = new Stack<decimal>();
-                    decimal aroonUpTotal = 0;
-                    decimal aroonDownTotal = 0;
-
-                    foreach (var result in resultSet)
-                    {
-                        if (daysCalulated < daysToCalculate)
-                        {
-                            decimal aroonUpVal = decimal.Parse(result.Value.Value<string>("Aroon Up"));
-                            decimal aroonDownVal = decimal.Parse(result.Value.Value<string>("Aroon Down"));
-                            aroonUpYList.Push(aroonUpVal);
-                            aroonDownYList.Push(aroonDownVal);
-                            aroonOscillatorYList.Push(aroonUpVal - aroonDownVal);
-                            aroonUpTotal += aroonUpVal;
-                            aroonDownTotal += aroonDownVal;
-                            numberOfResults++;
-
-                            string aroonKey = result.Key;
-                            string aroonDate = DateTime.Parse(aroonKey).ToString("yyyy-MM-dd");
-                            if (!dates.Contains(aroonDate))
-                            {
-                                dates.Add(aroonDate);
-                                daysCalulated++;
-                            }
-                        }
-                        else
-                            break;
-                    }
-                    List<decimal> upYList = aroonUpYList.ToList();
-                    decimal upSlope = GetSlope(aroonXList, upYList);
-                    List<decimal> downYList = aroonDownYList.ToList();
-                    decimal downSlope = GetSlope(aroonXList, downYList);
-                    List<decimal> oscillatorYList = aroonOscillatorYList.ToList();
-                    decimal oscillatorSlope = GetSlope(aroonXList, oscillatorYList);
-
-                    decimal upSlopeMultiplier = GetSlopeMultiplier(upSlope);
-                    decimal downSlopeMultiplier = GetSlopeMultiplier(downSlope);
-                    decimal oscillatorSlopeMultiplier = GetSlopeMultiplier(oscillatorSlope);
-
-                    //look for buy and sell signals
-                    bool aroonHasBuySignal = false;
-                    bool aroonHasSellSignal = false;
-                    decimal previousOscillatorValue = oscillatorYList[0];
-                    bool previousIsNegative = previousOscillatorValue <= 0;
-                    for (int i = 1; i < oscillatorYList.Count(); i++) 
-                    {
-                        decimal currentOscillatorValue = oscillatorYList[i];
-                        bool currentIsNegative = currentOscillatorValue <= 0;
-                        if (!currentIsNegative && previousIsNegative && (upYList[i] >= 20 && downYList[i] <= 80))
-                        {
-                            aroonHasBuySignal = true;
-                        }
-                        else if (currentIsNegative && !previousIsNegative && (upYList[i] <= 30 && downYList[i] >= 70))
-                        {
-                            aroonHasSellSignal = true;
-                        }
-                        previousOscillatorValue = currentOscillatorValue;
-                        previousIsNegative = previousOscillatorValue <= 0;
-                    }
-
-                    decimal aroonAvgUp = aroonUpTotal / numberOfResults;
-                    decimal aroonAvgDown = aroonDownTotal / numberOfResults;
-                    decimal percentDiffDown = (aroonAvgDown / aroonAvgUp) * 100;
-                    decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
-                    decimal bullResult = 100 - percentDiffDown;
-                    decimal bearResult = 100 - percentDiffUp;
-
-                    //Add bull bonus if AROON avg up >= 70 per investopedia recommendation
-                    decimal bullBonus = (aroonAvgUp > aroonAvgDown && aroonAvgUp >= 70) ? (aroonAvgUp / 10) + 10 : 0;
-
-                    compositeScore = 0;
-                    //calculate composite score based on the following values and weighted multipliers
-                    //if AROON avg up > AROON avg down, start score with 100 - (down as % of up) +10
-                    //if AROON avg up < AROON avg down, start score with 100 - (up as % of down)
-                    compositeScore += (aroonAvgUp > aroonAvgDown) ? bullResult : bearResult;
-                    compositeScore += bullBonus;
-                    compositeScore += (upSlope > 0) ? (upSlope * upSlopeMultiplier) + 10 : 0;
-                    compositeScore += (downSlope < 0) ? (downSlope * downSlopeMultiplier) + 10 : 0;
-                    compositeScore += (oscillatorSlope > 0) ? (oscillatorSlope * oscillatorSlopeMultiplier) + 10 : 0;
-                    compositeScore += (aroonHasBuySignal) ? 30 : 0;
-                    compositeScore += (aroonHasSellSignal) ? -40 : 0;
+                    compositeScore = GetAROONComposite(resultSet, daysToCalculate);
                     break;
 
                 case "MACD":
@@ -230,82 +105,7 @@ namespace Sociosearch.NET.Middleware
                     //Recent Buy signal measured by MACD base value crossing (becoming greater than) the MACD signal value
                     //Recent Sell signal measured by MACD signal value crossing (becoming greater than) the MACD base value
                     resultSet = (JObject)data.GetValue("Technical Analysis: MACD");
-                    List<decimal> macdXList = new List<decimal>();
-                    for (int i = 1; i <= daysToCalculate; i++)
-                        macdXList.Add(i);
-
-                    Stack<decimal> macdHistYList = new Stack<decimal>();
-                    Stack<decimal> macdBaseYList = new Stack<decimal>();
-                    Stack<decimal> macdSignalYList = new Stack<decimal>();
-                    decimal macdTotalHist = 0;
-
-                    foreach (var result in resultSet)
-                    {
-                        if (daysCalulated < daysToCalculate)
-                        {
-                            decimal macdBaseValue = decimal.Parse(result.Value.Value<string>("MACD"));
-                            decimal macdSignalValue = decimal.Parse(result.Value.Value<string>("MACD_Signal"));
-                            decimal macdHistogramValue = decimal.Parse(result.Value.Value<string>("MACD_Hist"));
-
-                            macdHistYList.Push(macdHistogramValue);
-                            macdBaseYList.Push(macdBaseValue);
-                            macdSignalYList.Push(macdSignalValue);
-                            macdTotalHist += macdHistogramValue;
-                            numberOfResults++;
-
-                            string macdKey = result.Key;
-                            string macdDate = DateTime.Parse(macdKey).ToString("yyyy-MM-dd");
-                            if (!dates.Contains(macdDate))
-                            {
-                                dates.Add(macdDate);
-                                daysCalulated++;
-                            }
-                        }
-                        else
-                            break;
-                    }
-                    List<decimal> baseYList = macdBaseYList.ToList();
-                    decimal baseSlope = GetSlope(macdXList, baseYList);
-                    List<decimal> signalYList = macdSignalYList.ToList();
-                    decimal signalSlope = GetSlope(macdXList, signalYList);
-                    List<decimal> histYList = macdHistYList.ToList();
-                    decimal histSlope = GetSlope(macdXList, histYList);
-                    //decimal multiplier = GetScoreMultiplier(histXList, histYList);
-
-                    //look for buy and sell signals
-                    bool macdHasBuySignal = false;
-                    bool macdHasSellSignal = false;
-
-                    decimal macdPrev = histYList[0];
-                    bool macdPrevIsNegative = macdPrev < 0;
-                    for (int i = 1; i < histYList.Count(); i++)
-                    {
-                        decimal current = histYList[i];
-                        bool currentIsNegative = current < 0;
-                        if (!currentIsNegative && macdPrevIsNegative)
-                        {
-                            macdHasBuySignal = true;
-                        }
-                        else if (currentIsNegative && !macdPrevIsNegative)
-                        {
-                            macdHasSellSignal = true;
-                        }
-                        macdPrev = current;
-                        macdPrevIsNegative = macdPrev < 0;
-                    }
-                    decimal histSlopeMultiplier = GetSlopeMultiplier(histSlope);
-                    decimal baseSlopeMultiplier = GetSlopeMultiplier(baseSlope);
-                    decimal signalSlopeMultiplier = GetSlopeMultiplier(signalSlope);
-                    decimal histBonus = (macdTotalHist > 15) ? 15 : macdTotalHist;
-
-                    //calculate composite score based on the following values and weighted multipliers
-                    compositeScore = 0;
-                    compositeScore += (histSlope > -.1M) ? (histSlope * histSlopeMultiplier) + 30 : 0;
-                    compositeScore += (baseSlope > -.1M) ? (baseSlope * baseSlopeMultiplier) + 10 : 0;
-                    compositeScore += (signalSlope > -.1M) ? (signalSlope * signalSlopeMultiplier) + 10 : 0;
-                    compositeScore += (histBonus > 0) ? histBonus : 0;
-                    compositeScore += (macdHasBuySignal) ? 30 : 0;
-                    compositeScore += (macdHasSellSignal) ? -40 : 0;
+                    compositeScore = GetMACDComposite(resultSet, daysToCalculate);
                     break;
 
                 case "BBANDS":
@@ -367,6 +167,238 @@ namespace Sociosearch.NET.Middleware
 
             }
             return compositeScore;
+        }
+
+        public static decimal GetADXComposite(JObject resultSet, int daysToCalculate)
+        {
+            int daysCalulated = 0;
+            int numberOfResults = 0;
+            HashSet<string> dates = new HashSet<string>();
+
+            Stack<decimal> adxValueYList = new Stack<decimal>();
+            decimal adxTotal = 0;
+            foreach (var result in resultSet)
+            {
+                if (daysCalulated < daysToCalculate)
+                {
+                    decimal adxVal = decimal.Parse(result.Value.Value<string>("ADX"));
+                    adxValueYList.Push(adxVal);
+                    adxTotal += adxVal;
+                    numberOfResults++;
+
+                    string adxKey = result.Key;
+                    string adxDate = DateTime.Parse(adxKey).ToString("yyyy-MM-dd");
+                    if (!dates.Contains(adxDate))
+                    {
+                        dates.Add(adxDate);
+                        daysCalulated++;
+                    }
+                }
+                else
+                    break;
+            }
+
+            List<decimal> adxXList = new List<decimal>();
+            for (int i = 1; i <= numberOfResults; i++)
+                adxXList.Add(i);
+
+            List<decimal> adxYList = adxValueYList.ToList();
+            decimal adxSlope = GetSlope(adxXList, adxYList);
+            decimal adxSlopeMultiplier = GetSlopeMultiplier(adxSlope);
+            decimal adxAvg = adxTotal / numberOfResults;
+
+            //calculate composite score based on the following values and weighted multipliers
+            decimal composite = 0;
+            composite += ((adxAvg) / 25) * 100; //get average trend strength as a percentage of 25
+            composite += (adxSlope > -0.1M) ? (adxSlope * adxSlopeMultiplier) + 10 : 0;
+
+            return composite;
+        }
+
+        public static decimal GetAROONComposite(JObject resultSet, int daysToCalculate)
+        {
+            int daysCalulated = 0;
+            int numberOfResults = 0;
+            HashSet<string> dates = new HashSet<string>();
+
+            Stack<decimal> aroonUpYList = new Stack<decimal>();
+            Stack<decimal> aroonDownYList = new Stack<decimal>();
+            Stack<decimal> aroonOscillatorYList = new Stack<decimal>();
+            decimal aroonUpTotal = 0;
+            decimal aroonDownTotal = 0;
+
+            foreach (var result in resultSet)
+            {
+                if (daysCalulated < daysToCalculate)
+                {
+                    decimal aroonUpVal = decimal.Parse(result.Value.Value<string>("Aroon Up"));
+                    decimal aroonDownVal = decimal.Parse(result.Value.Value<string>("Aroon Down"));
+                    aroonUpYList.Push(aroonUpVal);
+                    aroonDownYList.Push(aroonDownVal);
+                    aroonOscillatorYList.Push(aroonUpVal - aroonDownVal);
+                    aroonUpTotal += aroonUpVal;
+                    aroonDownTotal += aroonDownVal;
+                    numberOfResults++;
+
+                    string aroonKey = result.Key;
+                    string aroonDate = DateTime.Parse(aroonKey).ToString("yyyy-MM-dd");
+                    if (!dates.Contains(aroonDate))
+                    {
+                        dates.Add(aroonDate);
+                        daysCalulated++;
+                    }
+                }
+                else
+                    break;
+            }
+
+            List<decimal> aroonXList = new List<decimal>();
+            for (int i = 1; i <= numberOfResults; i++)
+                aroonXList.Add(i);
+
+            List<decimal> upYList = aroonUpYList.ToList();
+            decimal upSlope = GetSlope(aroonXList, upYList);
+            List<decimal> downYList = aroonDownYList.ToList();
+            decimal downSlope = GetSlope(aroonXList, downYList);
+            List<decimal> oscillatorYList = aroonOscillatorYList.ToList();
+            decimal oscillatorSlope = GetSlope(aroonXList, oscillatorYList);
+
+            decimal upSlopeMultiplier = GetSlopeMultiplier(upSlope);
+            decimal downSlopeMultiplier = GetSlopeMultiplier(downSlope);
+            decimal oscillatorSlopeMultiplier = GetSlopeMultiplier(oscillatorSlope);
+
+            //look for buy and sell signals
+            bool aroonHasBuySignal = false;
+            bool aroonHasSellSignal = false;
+            decimal previousOscillatorValue = oscillatorYList[0];
+            bool previousIsNegative = previousOscillatorValue <= 0;
+            for (int i = 1; i < oscillatorYList.Count(); i++)
+            {
+                decimal currentOscillatorValue = oscillatorYList[i];
+                bool currentIsNegative = currentOscillatorValue <= 0;
+                if (!currentIsNegative && previousIsNegative && (upYList[i] >= 20 && downYList[i] <= 80))
+                {
+                    aroonHasBuySignal = true;
+                }
+                else if (currentIsNegative && !previousIsNegative && (upYList[i] <= 30 && downYList[i] >= 70))
+                {
+                    aroonHasSellSignal = true;
+                }
+                previousOscillatorValue = currentOscillatorValue;
+                previousIsNegative = previousOscillatorValue <= 0;
+            }
+
+            decimal aroonAvgUp = aroonUpTotal / numberOfResults;
+            decimal aroonAvgDown = aroonDownTotal / numberOfResults;
+            decimal percentDiffDown = (aroonAvgDown / aroonAvgUp) * 100;
+            decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
+            decimal bullResult = 100 - percentDiffDown;
+            decimal bearResult = 100 - percentDiffUp;
+
+            //Add bull bonus if AROON avg up >= 70 per investopedia recommendation
+            //Cap bullBonus at 20
+            decimal bullBonus = (aroonAvgUp > aroonAvgDown && aroonAvgUp >= 70) ? Math.Min((aroonAvgUp / 2) + 10, 20) : 0;
+
+            //calculate composite score based on the following values and weighted multipliers
+            //if AROON avg up > AROON avg down, start score with 100 - (down as % of up) +10
+            //if AROON avg up < AROON avg down, start score with 100 - (up as % of down)
+            decimal composite = 0;
+            composite += (aroonAvgUp > aroonAvgDown) ? bullResult : bearResult;
+            composite += bullBonus;
+            composite += (upSlope > -0.1M) ? (upSlope * upSlopeMultiplier) + 10 : 0;
+            composite += (downSlope < 0.1M) ? (downSlope * downSlopeMultiplier) : -(downSlope * downSlopeMultiplier);
+            composite += (oscillatorSlope > -0.1M) ? (oscillatorSlope * oscillatorSlopeMultiplier) + 10 : -10;
+            composite += (aroonHasBuySignal) ? 40 : 0;
+            composite += (aroonHasSellSignal) ? -40 : 0;
+
+            return composite;
+        }
+
+        public static decimal GetMACDComposite(JObject resultSet, int daysToCalculate)
+        {
+            int daysCalulated = 0;
+            int numberOfResults = 0;
+            HashSet<string> dates = new HashSet<string>();
+
+            Stack<decimal> macdHistYList = new Stack<decimal>();
+            Stack<decimal> macdBaseYList = new Stack<decimal>();
+            Stack<decimal> macdSignalYList = new Stack<decimal>();
+            decimal macdTotalHist = 0;
+
+            foreach (var result in resultSet)
+            {
+                if (daysCalulated < daysToCalculate)
+                {
+                    decimal macdBaseValue = decimal.Parse(result.Value.Value<string>("MACD"));
+                    decimal macdSignalValue = decimal.Parse(result.Value.Value<string>("MACD_Signal"));
+                    decimal macdHistogramValue = decimal.Parse(result.Value.Value<string>("MACD_Hist"));
+
+                    macdHistYList.Push(macdHistogramValue);
+                    macdBaseYList.Push(macdBaseValue);
+                    macdSignalYList.Push(macdSignalValue);
+                    macdTotalHist += macdHistogramValue;
+                    numberOfResults++;
+
+                    string macdKey = result.Key;
+                    string macdDate = DateTime.Parse(macdKey).ToString("yyyy-MM-dd");
+                    if (!dates.Contains(macdDate))
+                    {
+                        dates.Add(macdDate);
+                        daysCalulated++;
+                    }
+                }
+                else
+                    break;
+            }
+
+            List<decimal> macdXList = new List<decimal>();
+            for (int i = 1; i <= numberOfResults; i++)
+                macdXList.Add(i);
+
+            List<decimal> baseYList = macdBaseYList.ToList();
+            decimal baseSlope = GetSlope(macdXList, baseYList);
+            List<decimal> signalYList = macdSignalYList.ToList();
+            decimal signalSlope = GetSlope(macdXList, signalYList);
+            List<decimal> histYList = macdHistYList.ToList();
+            decimal histSlope = GetSlope(macdXList, histYList);
+
+            //look for buy and sell signals
+            bool macdHasBuySignal = false;
+            bool macdHasSellSignal = false;
+
+            decimal macdPrev = histYList[0];
+            bool macdPrevIsNegative = macdPrev < 0;
+            for (int i = 1; i < histYList.Count(); i++)
+            {
+                decimal current = histYList[i];
+                bool currentIsNegative = current < 0;
+                if (!currentIsNegative && macdPrevIsNegative)
+                {
+                    macdHasBuySignal = true;
+                }
+                else if (currentIsNegative && !macdPrevIsNegative)
+                {
+                    macdHasSellSignal = true;
+                }
+                macdPrev = current;
+                macdPrevIsNegative = macdPrev < 0;
+            }
+            decimal histSlopeMultiplier = GetSlopeMultiplier(histSlope);
+            decimal baseSlopeMultiplier = GetSlopeMultiplier(baseSlope);
+            decimal signalSlopeMultiplier = GetSlopeMultiplier(signalSlope);
+
+            decimal histBonus = Math.Min(macdTotalHist * 4, 20); //cap histBonus at 20
+
+            //calculate composite score based on the following values and weighted multipliers
+            decimal composite = 0;
+            composite += (histSlope > -0.1M) ? (histSlope * histSlopeMultiplier) + 30 : 0;
+            composite += (baseSlope > -0.1M) ? (baseSlope * baseSlopeMultiplier) + 10 : 0;
+            composite += (signalSlope > -0.1M) ? (signalSlope * signalSlopeMultiplier) + 10 : 0;
+            composite += (histBonus > 0) ? histBonus : 0;
+            composite += (macdHasBuySignal) ? 40 : 0;
+            composite += (macdHasSellSignal) ? -40 : 0;
+
+            return composite;
         }
 
         public static decimal GetSlope(List<decimal> xList, List<decimal> yList)

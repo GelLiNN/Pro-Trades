@@ -39,11 +39,11 @@ namespace Sociosearch.NET
             services.AddTransient<IEmailSender, EmailSender>();
 
             //Use RequestManager
-            services.AddSingleton<RequestManager>();
+            //services.AddSingleton<RequestManager>();
 
             //Use DataCache
-            services.AddSingleton<DataCache>();
-            services.AddSingleton<IHostedService, DataCacheLoader>(); //Load caches in background thread on startup
+            //services.AddSingleton<DataCache>();
+            //services.AddSingleton<IHostedService, DataCacheLoader>(); //Load caches in background thread on startup
 
             //Use other .NET MVC modules
             services.AddControllersWithViews();

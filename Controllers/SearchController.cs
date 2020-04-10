@@ -53,9 +53,9 @@ namespace Sociosearch.NET.Controllers
 
             //QUANDL calls slightly different due to QUANDL Codes
             string shortResponse = string.Empty;
-            foreach (string code in Q.QCFINRA)
+            foreach (string code in Q.FinraCodes)
             {
-                shortResponse = Q.CompleteQuandlRequest("SHORT", "FINRA/" + code + "_TSLA").Result;
+                shortResponse = Q.CompleteQuandlRequest("SHORT", String.Format("FINRA/{0}_{1}", code, symbol)).Result;
                 if (!String.IsNullOrEmpty(shortResponse))
                     break;
             }
