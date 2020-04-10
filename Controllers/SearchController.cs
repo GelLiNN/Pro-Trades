@@ -161,6 +161,14 @@ namespace Sociosearch.NET.Controllers
         [HttpGet("/Test")]
         public string Test()
         {
+            //Stuff from my codillity assessment for Sameksha
+            //Job links
+
+
+            //Stuff from 2-4 Interview for Jasleen / Collabera
+            //Interviewees Veronica and Brad
+
+
             return string.Empty;
         }
     }
