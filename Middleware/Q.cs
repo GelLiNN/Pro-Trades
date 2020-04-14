@@ -27,8 +27,8 @@ namespace Sociosearch.NET.Middleware
 
         //quandl codes for FINRA
         //FNSQ - Nasdaq
-        //FORF - Other?
         //FNYX - NYSE
+        //FORF - Other?
         public static readonly List<string> FinraCodes = new List<string> { "FNSQ", "FNYX", "FORF" };
 
         public static async Task<string> CompleteQuandlRequest(string function, string path)
