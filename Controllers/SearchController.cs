@@ -14,9 +14,12 @@ namespace Sociosearch.NET.Controllers
     {
         private readonly ILogger<SearchController> _logger;
 
-        public SearchController(ILogger<SearchController> logger)
+        private static DataCache _cache;
+
+        public SearchController(ILogger<SearchController> logger, DataCache cache)
         {
             _logger = logger;
+            _cache = cache;
         }
 
         [HttpGet("/Search")]
@@ -138,7 +141,7 @@ namespace Sociosearch.NET.Controllers
         }
 
         [HttpGet("/GetQuoteYF/{symbol}")]
-        public Security GetQuoteYahoo(string symbol)
+        public Security GetQuoteYF(string symbol)
         {
             return YF.GetQuoteAsync(symbol).Result;
         }
@@ -150,10 +153,27 @@ namespace Sociosearch.NET.Controllers
         }
 
         [HttpGet("/GetScreenedCompaniesYF/{screenId}")]
-        public CompaniesListYF GetScreenedCompaniesYahoo(string screenId)
+        public CompaniesListYF GetScreenedCompaniesYF(string screenId)
         {
             CompaniesListYF companies = YF.GetAllCompaniesAsync().Result;
             return YF.GetScreenedCompaniesAsync(companies, screenId).Result;
+        }
+
+        /*
+         * Cache related endpoints
+         */
+        [HttpGet("/GetCachedCompaniesYF")]
+        public HashSet<string> GetCachedCompaniesYF()
+        {
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            return cachedSymbols;
+        }
+
+        [HttpGet("/GetCachedCompaniesIEX")]
+        public HashSet<string> GetCachedCompaniesIEX()
+        {
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("iex-companies");
+            return cachedSymbols;
         }
 
         /*

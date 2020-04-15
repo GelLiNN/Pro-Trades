@@ -30,7 +30,7 @@ namespace Sociosearch.NET.Middleware
         private static readonly bool AutoUpdateDisabled = true;
 
         //Globals
-        public HashSet<string> CachedSymbols;
+        public Dictionary<string, HashSet<string>> CachedSymbols; //CacheId => Cached Symbols
         public Dictionary<string, string> ExceptionReport;
         public List<string> CacheIds = new List<string> { "iex-companies", "yf-companies" };
         private IMemoryCache _iexCompaniesCache;
@@ -43,7 +43,7 @@ namespace Sociosearch.NET.Middleware
             _yfCompaniesCache = new MemoryCache(new MemoryCacheOptions());
             _requestManager = manager;
 
-            CachedSymbols = new HashSet<string>();
+            CachedSymbols = new Dictionary<string, HashSet<string>>();
             ExceptionReport = new Dictionary<string, string>();
         }
 
@@ -116,8 +116,8 @@ namespace Sociosearch.NET.Middleware
             string curSymbol = cacheKey.Split('-')[2];
             lock (CachedSymbols)
             {
-                if (!this.CachedSymbols.Contains(cacheKey))
-                    this.CachedSymbols.Add(cacheKey);
+                if (!this.CachedSymbols[cacheId].Contains(cacheKey))
+                    this.CachedSymbols[cacheId].Add(cacheKey);
             }
         }
 
@@ -134,10 +134,10 @@ namespace Sociosearch.NET.Middleware
                 //Remove before updating and re-adding
                 RemoveCachedSymbol(cacheKey);
 
-                //implementation
+                CompanyStatsIEX companyStats = IEX.GetCompanyStatsAsync(symbol).Result;
 
                 //Save IEX Company to cache
-                //this.Add(company, cacheKey;
+                this.Add(companyStats, cacheKey);
                 string perf = sw.ElapsedMilliseconds.ToString();
             }
             catch (Exception e)
@@ -159,10 +159,10 @@ namespace Sociosearch.NET.Middleware
                 //Remove before updating and re-adding
                 RemoveCachedSymbol(cacheKey);
 
-                //implementation
+                CompanyStatsYF companyStats = YF.GetCompanyStatsAsync(symbol).Result;
 
                 //Save YF Company to cache
-                //this.Add(company, cacheKey);
+                this.Add(companyStats, cacheKey);
                 string perf = sw.ElapsedMilliseconds.ToString();
             }
             catch (Exception e)
@@ -173,19 +173,23 @@ namespace Sociosearch.NET.Middleware
 
         public void AddCachedSymbol(string cacheKey)
         {
+            string[] tokens = cacheKey.Split('-');
+            string cacheId = tokens[0] + "-" + tokens[1];
             lock (CachedSymbols)
             {
-                if (!CachedSymbols.Contains(cacheKey))
-                    CachedSymbols.Add(cacheKey);
+                if (!CachedSymbols[cacheId].Contains(cacheKey))
+                    CachedSymbols[cacheId].Add(cacheKey);
             }
         }
 
         public void RemoveCachedSymbol(string cacheKey)
         {
+            string[] tokens = cacheKey.Split('-');
+            string cacheId = tokens[0] + "-" + tokens[1];
             lock (CachedSymbols)
             {
-                if (CachedSymbols.Contains(cacheKey))
-                    CachedSymbols.Remove(cacheKey);
+                if (CachedSymbols[cacheId].Contains(cacheKey))
+                    CachedSymbols[cacheId].Remove(cacheKey);
             }
         }
 
@@ -193,7 +197,7 @@ namespace Sociosearch.NET.Middleware
         {
             lock (CachedSymbols)
             {
-                HashSet<string> items = CachedSymbols
+                HashSet<string> items = CachedSymbols[cacheId]
                     .Where(x => x.ToString().StartsWith(cacheId)).ToHashSet();
                 return new HashSet<string>(items);
             }
@@ -252,12 +256,66 @@ namespace Sociosearch.NET.Middleware
             int count = 0;
             await Task.Run(() =>
             {
-                /*Get all entity IDs from pim instead of starting with a LIS query
-                string entityIdResponse = string.Empty;
-                if (cacheId.StartsWith("iex"))
-                    entityIdResponse = _requestManager.CompleteIEXRequest("query", "POST", new PSAllProductsQuery());
-                else
-                    entityIdResponse = _requestManager.CompletePimRequest("query", "POST", new AllProductsQuery());*/
+                //initialize the corresponding set of cached symbols for this cacheId
+                this.CachedSymbols.Add(cacheId, new HashSet<string>());
+
+                string nasdaqData = Companies.GetFromFtpUri(Companies.NasdaqSymbolsUri);
+                string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+                for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
+                {
+                    string line = nasdaqDataLines[i];
+                    string[] data = line.Split('|');
+                    if (data.Count() > 3)
+                    {
+                        string symbol = data[1];
+                        if (!String.IsNullOrEmpty(symbol) && !this.CachedSymbols[cacheId].Contains(symbol))
+                        {
+                            bool isNasdaq = data[0] == "Y";
+                            if (isNasdaq)
+                            {
+                                string cacheKey = String.Format("{0}-{1}", cacheId, symbol);
+                                this.Get(cacheKey);
+                                count++;
+                            }
+                        }
+                    }
+                }
+
+                string otcData = Companies.GetFromFtpUri(Companies.OtcSymbolsUri);
+                string[] otcDataLines = otcData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+                for (int j = 1; j < otcDataLines.Length - 1; j++) //trim first and last row
+                {
+                    string line = otcDataLines[j];
+                    string[] data = line.Split('|');
+                    if (data.Count() > 3)
+                    {
+                        string symbol = data[0];
+                        if (!String.IsNullOrEmpty(symbol) && !this.CachedSymbols[cacheId].Contains(symbol))
+                        {
+                            string cacheKey = String.Format("{0}-{1}", cacheId, symbol);
+                            this.Get(cacheKey);
+                            count++;
+                        }
+                    }
+                }
+
+                string otcMarketsData = Companies.GetFromUri(Companies.OtcMarketsUri);
+                string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+                for (int k = 1; k < otcMarketsDataLines.Length; k++) //trim first row
+                {
+                    string line = otcMarketsDataLines[k];
+                    string[] data = line.Split(',');
+                    if (data.Count() > 3)
+                    {
+                        string symbol = data[0];
+                        if (!String.IsNullOrEmpty(symbol) && !this.CachedSymbols[cacheId].Contains(symbol))
+                        {
+                            string cacheKey = String.Format("{0}-{1}", cacheId, symbol);
+                            this.Get(cacheKey);
+                            count++;
+                        }
+                    }
+                }
 
                 /*Parallel Edition
                 Parallel.ForEach(ids, Common.ParallelOptions, (entityId) =>
