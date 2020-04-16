@@ -9,42 +9,50 @@ using Newtonsoft.Json.Linq;
 
 namespace Sociosearch.NET.Middleware
 {
-    //API Documentation https://www.alphavantage.co/documentation/
-    public static class AV
+    //Twelve Data https://twelvedata.com/docs#getting-started
+    //API docs https://twelvedata.com/docs#technical-indicators
+    public class TD
     {
-        private static readonly string AVURI = "https://www.alphavantage.co/query?";
-        private static readonly HttpClient HttpClient = new HttpClient();
+        private static readonly string APIKey = Program.Config.GetValue<string>("TwelveDataApiKey");
+        private static readonly string TDURI = @"https://api.twelvedata.com/";
+        private static readonly HttpClient Client = new HttpClient();
 
-        public static async Task<string> CompleteAlphaVantageRequest(string function, string symbol)
+        public static async Task<string> CompleteTwelveDataRequest(string function, string symbol)
         {
             try
             {
+                function = function.ToLower();
                 HttpResponseMessage response = new HttpResponseMessage();
 
                 //different GET params for each indicator
-                switch (function.ToUpper())
+                switch (function)
                 {
-                    case "ADX":
+                    case "adx":
                         string adxInterval = "30min";
                         string adxPeriod = "100";
-                        response = await HttpClient
-                            .GetAsync(String.Format(AVURI + "function={0}&symbol={1}&interval={2}&time_period={3}&apikey={4}",
-                            function, symbol, adxInterval, adxPeriod, Program.Config.GetValue<string>("AlphaVantageApiKey")));
+                        string adxOutputSize = "100";
+                        string adxRequest = String.Format(TDURI + "{0}?symbol={1}&interval={2}&time_period={3}&outputsize={4}&apikey={5}",
+                            function, symbol, adxInterval, adxPeriod, adxOutputSize, APIKey);
+                        response = await Client.GetAsync(adxRequest);
                         break;
-                    case "AROON":
-                        string aroonInterval = "daily";
+
+                    case "aroon":
+                        string aroonInterval = "1day";
                         string aroonPeriod = "100";
-                        response = await HttpClient
-                            .GetAsync(String.Format(AVURI + "function={0}&symbol={1}&interval={2}&time_period={3}&apikey={4}",
-                            function, symbol, aroonInterval, aroonPeriod, Program.Config.GetValue<string>("AlphaVantageApiKey")));
+                        string aroonRequest = String.Format(TDURI + "{0}?symbol={1}&interval={2}&time_period={3}&apikey={4}",
+                            function, symbol, aroonInterval, aroonPeriod, APIKey);
+                        response = await Client.GetAsync(aroonRequest);
                         break;
-                    case "MACD":
-                        string macdInterval = "daily";
-                        string macdSeriesType = "open";
-                        response = await HttpClient
-                            .GetAsync(String.Format(AVURI + "function={0}&symbol={1}&interval={2}&series_type={3}&apikey={4}",
-                            function, symbol, macdInterval, macdSeriesType, Program.Config.GetValue<string>("AlphaVantageApiKey")));
+
+                    case "macd":
+                        string macdInterval = "1day";
+                        string macdSeriesType = "1"; //0 => close, 1 => open, 2 => high, 3 => low, 4 => volume
+                        string macdRequest = String.Format(TDURI + "{0}?symbol={1}&interval={2}&series_type={3}&apikey={4}",
+                            function, symbol, macdInterval, macdSeriesType, APIKey);
+                        response = await Client.GetAsync(macdRequest);
                         break;
+
+                    //Below cases need to be migrated to use TD's conventions
                     case "BBANDS":
                         break;
                     case "STOCH":
@@ -63,7 +71,7 @@ namespace Sociosearch.NET.Middleware
             }
             catch (HttpRequestException e)
             {
-                Debug.WriteLine("AV EXCEPTION Message: {0}, StackTrace: {1}", e.Message, e.StackTrace);
+                Debug.WriteLine("TD EXCEPTION Message: {0}, StackTrace: {1}", e.Message, e.StackTrace);
                 return string.Empty;
             }
         }
@@ -72,21 +80,22 @@ namespace Sociosearch.NET.Middleware
         {
             decimal compositeScore = 0;
             JObject data = JObject.Parse(alphaVantageResponse);
-            JObject resultSet;
+            JArray resultSet;
+            function = function.ToLower();
 
             //different processing for each indicator
-            switch (function.ToUpper())
+            switch (function)
             {
-                case "ADX":
+                case "adx":
                     //When the +DMI is above the -DMI, prices are moving up, and ADX measures the strength of the uptrend.
                     //When the -DMI is above the +DMI, prices are moving down, and ADX measures the strength of the downtrend.
                     //Many traders will use ADX readings above 25 to suggest that the trend is strong enough for trend-trading strategies.
                     //Conversely, when ADX is below 25, many will avoid trend-trading strategies.
-                    resultSet = (JObject)data.GetValue("Technical Analysis: ADX");
+                    resultSet = (JArray)data.GetValue("values");
                     compositeScore = GetADXComposite(resultSet, daysToCalculate);
                     break;
 
-                case "AROON":
+                case "aroon":
                     //Indicator Movements Around the Key Levels, 30 and 70 - Movements above 70 indicate a strong trend,
                     //while movements below 30 indicate low trend strength. Movements between 30 and 70 indicate indecision.
                     //For example, if the bullish indicator remains above 70 while the bearish indicator remains below 30,
@@ -96,18 +105,19 @@ namespace Sociosearch.NET.Middleware
                     //The two Aroon indicators(bullish and bearish) can also be made into a single oscillator by
                     //making the bullish indicator 100 to 0 and the bearish indicator 0 to - 100 and finding the
                     //difference between the two values. This oscillator then varies between 100 and - 100, with 0 indicating no trend.
-                    resultSet = (JObject)data.GetValue("Technical Analysis: AROON");
+                    resultSet = (JArray)data.GetValue("values");
                     compositeScore = GetAROONComposite(resultSet, daysToCalculate);
                     break;
 
-                case "MACD":
+                case "macd":
                     //Positive rate-of-change for the MACD Histogram values indicate bullish movement
                     //Recent Buy signal measured by MACD base value crossing (becoming greater than) the MACD signal value
                     //Recent Sell signal measured by MACD signal value crossing (becoming greater than) the MACD base value
-                    resultSet = (JObject)data.GetValue("Technical Analysis: MACD");
+                    resultSet = (JArray)data.GetValue("values");
                     compositeScore = GetMACDComposite(resultSet, daysToCalculate);
                     break;
 
+                //Below cases need to be migrated to use TD's conventions
                 case "BBANDS":
                     //Bollinger Bands consist of three lines. The middle band is a simple moving average (generally 20 periods)
                     //of the typical price (TP). The upper and lower bands are F standard deviations (generally 2) above and below the middle band.
@@ -131,7 +141,7 @@ namespace Sociosearch.NET.Middleware
                     //https://www.fmlabs.com/reference/default.htm?url=StochasticOscillator.htm
                     //https://www.investopedia.com/articles/technical/073001.asp
                     //https://www.alphavantage.co/query?function=STOCH&symbol=MSFT&interval=daily&apikey=
-                        break;
+                    break;
 
                 case "RSI":
                     //The Relative Strength Index (RSI) calculates a ratio of the recent upward price movements to the absolute price movement.
@@ -169,7 +179,8 @@ namespace Sociosearch.NET.Middleware
             return compositeScore;
         }
 
-        public static decimal GetADXComposite(JObject resultSet, int daysToCalculate)
+
+        public static decimal GetADXComposite(JArray resultSet, int daysToCalculate)
         {
             int daysCalulated = 0;
             int numberOfResults = 0;
@@ -181,13 +192,13 @@ namespace Sociosearch.NET.Middleware
             {
                 if (daysCalulated < daysToCalculate)
                 {
-                    decimal adxVal = decimal.Parse(result.Value.Value<string>("ADX"));
+                    decimal adxVal = decimal.Parse(result.Value<string>("adx"));
                     adxValueYList.Push(adxVal);
                     adxTotal += adxVal;
                     numberOfResults++;
 
-                    string adxKey = result.Key;
-                    string adxDate = DateTime.Parse(adxKey).ToString("yyyy-MM-dd");
+                    string resultDate = result.Value<string>("datetime");
+                    string adxDate = DateTime.Parse(resultDate).ToString("yyyy-MM-dd");
                     if (!dates.Contains(adxDate))
                     {
                         dates.Add(adxDate);
@@ -215,7 +226,7 @@ namespace Sociosearch.NET.Middleware
             return composite;
         }
 
-        public static decimal GetAROONComposite(JObject resultSet, int daysToCalculate)
+        public static decimal GetAROONComposite(JArray resultSet, int daysToCalculate)
         {
             int daysCalulated = 0;
             int numberOfResults = 0;
@@ -231,8 +242,8 @@ namespace Sociosearch.NET.Middleware
             {
                 if (daysCalulated < daysToCalculate)
                 {
-                    decimal aroonUpVal = decimal.Parse(result.Value.Value<string>("Aroon Up"));
-                    decimal aroonDownVal = decimal.Parse(result.Value.Value<string>("Aroon Down"));
+                    decimal aroonUpVal = decimal.Parse(result.Value<string>("aroon_up"));
+                    decimal aroonDownVal = decimal.Parse(result.Value<string>("aroon_down"));
                     aroonUpYList.Push(aroonUpVal);
                     aroonDownYList.Push(aroonDownVal);
                     aroonOscillatorYList.Push(aroonUpVal - aroonDownVal);
@@ -240,8 +251,8 @@ namespace Sociosearch.NET.Middleware
                     aroonDownTotal += aroonDownVal;
                     numberOfResults++;
 
-                    string aroonKey = result.Key;
-                    string aroonDate = DateTime.Parse(aroonKey).ToString("yyyy-MM-dd");
+                    string resultDate = result.Value<string>("datetime");
+                    string aroonDate = DateTime.Parse(resultDate).ToString("yyyy-MM-dd");
                     if (!dates.Contains(aroonDate))
                     {
                         dates.Add(aroonDate);
@@ -314,7 +325,7 @@ namespace Sociosearch.NET.Middleware
             return composite;
         }
 
-        public static decimal GetMACDComposite(JObject resultSet, int daysToCalculate)
+        public static decimal GetMACDComposite(JArray resultSet, int daysToCalculate)
         {
             int daysCalulated = 0;
             int numberOfResults = 0;
@@ -329,9 +340,9 @@ namespace Sociosearch.NET.Middleware
             {
                 if (daysCalulated < daysToCalculate)
                 {
-                    decimal macdBaseValue = decimal.Parse(result.Value.Value<string>("MACD"));
-                    decimal macdSignalValue = decimal.Parse(result.Value.Value<string>("MACD_Signal"));
-                    decimal macdHistogramValue = decimal.Parse(result.Value.Value<string>("MACD_Hist"));
+                    decimal macdBaseValue = decimal.Parse(result.Value<string>("macd"));
+                    decimal macdSignalValue = decimal.Parse(result.Value<string>("macd_signal"));
+                    decimal macdHistogramValue = decimal.Parse(result.Value<string>("macd_hist"));
 
                     macdHistYList.Push(macdHistogramValue);
                     macdBaseYList.Push(macdBaseValue);
@@ -339,8 +350,8 @@ namespace Sociosearch.NET.Middleware
                     macdTotalHist += macdHistogramValue;
                     numberOfResults++;
 
-                    string macdKey = result.Key;
-                    string macdDate = DateTime.Parse(macdKey).ToString("yyyy-MM-dd");
+                    string resultDate = result.Value<string>("datetime");
+                    string macdDate = DateTime.Parse(resultDate).ToString("yyyy-MM-dd");
                     if (!dates.Contains(macdDate))
                     {
                         dates.Add(macdDate);

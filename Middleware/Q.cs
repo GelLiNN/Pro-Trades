@@ -23,7 +23,7 @@ namespace Sociosearch.NET.Middleware
     {
         private static readonly string APIKey = Program.Config.GetValue<string>("QuandlApiKey");
         private static readonly string QURI = "https://www.quandl.com/api/v3/datasets/";
-        private static readonly HttpClient Client = new HttpClient();
+        //private static readonly HttpClient Client = new HttpClient();
 
         //quandl codes for FINRA
         //FNSQ - Nasdaq
@@ -59,7 +59,7 @@ namespace Sociosearch.NET.Middleware
                 }
                 return await Task.FromResult(responseStr);
 
-                //HttpClient Implementation
+                //HttpClient Implementation, could not use because of headers...
                 /*HttpResponseMessage response = new HttpResponseMessage();
                 switch (function.ToUpper())
                 {
@@ -133,7 +133,7 @@ namespace Sociosearch.NET.Middleware
 
             //calculate composite score based on the following values and weighted multipliers
             compositeScore += 100 - shortInterestAverage; //get score as 100 - short interest
-            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 10 : -5;
+            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 15 : -5;
 
             //Return ShortInterestResult
             return new ShortInterestResult

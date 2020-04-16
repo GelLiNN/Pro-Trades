@@ -31,8 +31,8 @@ namespace Sociosearch.NET.Controllers
         /*
          * Composite Score Endpoints
          */
-        [HttpGet("/GetIndicatorForSymbol/{function}/{symbol}/{days}")] //indicator == function
-        public IActionResult GetIndicatorForSymbol(string function, string symbol, string days)
+        [HttpGet("/GetIndicatorAV/{function}/{symbol}/{days}")] //indicator == function
+        public IActionResult GetIndicatorAV(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
             string avResponse = AV.CompleteAlphaVantageRequest(function, symbol).Result;
@@ -44,8 +44,8 @@ namespace Sociosearch.NET.Controllers
             };
         }
 
-        [HttpGet("/GetCompositeScoreForSymbol/{symbol}")]
-        public CompositeScoreResult GetCompositeScoreForSymbol(string symbol)
+        [HttpGet("/GetCompositeScoreAV/{symbol}")]
+        public CompositeScoreResult GetCompositeScoreAV(string symbol)
         {
             string adxResponse = AV.CompleteAlphaVantageRequest("ADX", symbol).Result;
             decimal adxCompositeScore = AV.GetCompositeScore("ADX", adxResponse, 7);
@@ -67,6 +67,52 @@ namespace Sociosearch.NET.Controllers
             return new CompositeScoreResult
             {
                 Symbol = symbol,
+                DataProvider = "AlphaVantage",
+                ADXComposite = adxCompositeScore,
+                AROONComposite = aroonCompositeScore,
+                MACDComposite = macdCompositeScore,
+                CompositeScore = (adxCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 4,
+                ShortInterest = shortResult
+            };
+        }
+
+        [HttpGet("/GetIndicatorTD/{function}/{symbol}/{days}")] //indicator == function
+        public IActionResult GetIndicatorForSymbol(string function, string symbol, string days)
+        {
+            int numOfDays = Int32.Parse(days);
+            string tdResponse = TD.CompleteTwelveDataRequest(function, symbol).Result;
+            decimal tdCompositeScore = TD.GetCompositeScore(function, tdResponse, numOfDays);
+            return new ContentResult
+            {
+                StatusCode = 200,
+                Content = "Success! Composite Score for function " + function + ": " + tdCompositeScore
+            };
+        }
+
+        [HttpGet("/GetCompositeScoreTD/{symbol}")]
+        public CompositeScoreResult GetCompositeScoreForSymbol(string symbol)
+        {
+            string adxResponse = TD.CompleteTwelveDataRequest("ADX", symbol).Result;
+            decimal adxCompositeScore = TD.GetCompositeScore("ADX", adxResponse, 7);
+            string aroonResponse = TD.CompleteTwelveDataRequest("AROON", symbol).Result;
+            decimal aroonCompositeScore = TD.GetCompositeScore("AROON", aroonResponse, 14);
+            string macdResponse = TD.CompleteTwelveDataRequest("MACD", symbol).Result;
+            decimal macdCompositeScore = TD.GetCompositeScore("MACD", macdResponse, 7);
+
+            //QUANDL calls slightly different due to QUANDL Codes
+            string shortResponse = string.Empty;
+            foreach (string code in Q.FinraCodes)
+            {
+                shortResponse = Q.CompleteQuandlRequest("SHORT", String.Format("FINRA/{0}_{1}", code, symbol)).Result;
+                if (!String.IsNullOrEmpty(shortResponse))
+                    break;
+            }
+            ShortInterestResult shortResult = Q.GetShortInterest(shortResponse, 7);
+
+            return new CompositeScoreResult
+            {
+                Symbol = symbol,
+                DataProvider = "TwelveData",
                 ADXComposite = adxCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
