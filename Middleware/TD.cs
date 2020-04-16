@@ -38,7 +38,7 @@ namespace Sociosearch.NET.Middleware
 
                     case "aroon":
                         string aroonInterval = "1day";
-                        string aroonPeriod = "100";
+                        string aroonPeriod = "300"; //Switch to 28 if request fails
                         string aroonRequest = String.Format(TDURI + "{0}?symbol={1}&interval={2}&time_period={3}&apikey={4}",
                             function, symbol, aroonInterval, aroonPeriod, APIKey);
                         response = await Client.GetAsync(aroonRequest);
@@ -223,7 +223,7 @@ namespace Sociosearch.NET.Middleware
             composite += ((adxAvg) / 25) * 100; //get average trend strength as a percentage of 25
             composite += (adxSlope > 0.0M) ? (adxSlope * adxSlopeMultiplier) + 15 : 0;
 
-            return composite;
+            return Math.Min(composite, 100); //cap ADX composite at 100, no extra weight
         }
 
         public static decimal GetAROONComposite(JArray resultSet, int daysToCalculate)
@@ -272,11 +272,11 @@ namespace Sociosearch.NET.Middleware
             List<decimal> downYList = aroonDownYList.ToList();
             decimal downSlope = GetSlope(aroonXList, downYList);
             List<decimal> oscillatorYList = aroonOscillatorYList.ToList();
-            decimal oscillatorSlope = GetSlope(aroonXList, oscillatorYList);
+            //decimal oscillatorSlope = GetSlope(aroonXList, oscillatorYList);
 
             decimal upSlopeMultiplier = GetSlopeMultiplier(upSlope);
             decimal downSlopeMultiplier = GetSlopeMultiplier(downSlope);
-            decimal oscillatorSlopeMultiplier = GetSlopeMultiplier(oscillatorSlope);
+            //decimal oscillatorSlopeMultiplier = GetSlopeMultiplier(oscillatorSlope);
 
             //look for buy and sell signals
             bool aroonHasBuySignal = false;
@@ -303,22 +303,27 @@ namespace Sociosearch.NET.Middleware
             decimal aroonAvgDown = aroonDownTotal / numberOfResults;
             decimal percentDiffDown = (aroonAvgDown / aroonAvgUp) * 100;
             decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
-            decimal bullResult = 100 - percentDiffDown;
-            decimal bearResult = percentDiffUp + 10;
+
+            decimal bullResult = Math.Min(100 - percentDiffDown, 60); //bull result caps at 60
+            decimal bearResult = Math.Min(percentDiffUp + 15, 30); //bear result caps at 30
 
             //Add bull bonus if AROON avg up >= 70 per investopedia recommendation
-            //Cap bullBonus at 20
-            decimal bullBonus = (aroonAvgUp > aroonAvgDown && aroonAvgUp >= 70) ? Math.Min((aroonAvgUp / 2) + 10, 20) : 0;
+            //Cap bullBonus at 25
+            decimal bullBonus = (aroonAvgUp > aroonAvgDown && aroonAvgUp >= 70) ? Math.Min((aroonAvgUp / 9) + 10, 25) : 0;
+
+            //Add bear bonus if AROON avg down <= 70 per investopedia recommendation
+            decimal bearBonus = (aroonAvgDown > aroonAvgUp && aroonAvgDown <= 70) ? Math.Min((aroonAvgUp / 8) + 5, 20) : 0;
 
             //calculate composite score based on the following values and weighted multipliers
-            //if AROON avg up > AROON avg down, start score with 100 - (down as % of up) +10
+            //if AROON avg up > AROON avg down, start score with 100 - (down as % of up)
             //if AROON avg up < AROON avg down, start score with 100 - (up as % of down)
             decimal composite = 0;
             composite += (aroonAvgUp > aroonAvgDown) ? bullResult : bearResult;
-            composite += bullBonus;
+            composite += (bullBonus > bearBonus) ? bullBonus : bearBonus;
             composite += (upSlope > -0.05M) ? (upSlope * upSlopeMultiplier) + 10 : 0;
-            composite += (downSlope < 0.05M) ? (downSlope * downSlopeMultiplier) : -(downSlope * downSlopeMultiplier);
-            composite += (oscillatorSlope > 0.0M) ? (oscillatorSlope * oscillatorSlopeMultiplier) + 10 : -10;
+            composite += (downSlope < 0.05M) ? (downSlope * downSlopeMultiplier) + 10 : -(downSlope * downSlopeMultiplier);
+            //composite += (oscillatorSlope > -0.05M) ? (oscillatorSlope * oscillatorSlopeMultiplier) + 10 : 0;
+                //-(oscillatorSlope * oscillatorSlopeMultiplier) - 10;
             composite += (aroonHasBuySignal) ? 40 : 0;
             composite += (aroonHasSellSignal) ? -40 : 0;
 
@@ -398,14 +403,14 @@ namespace Sociosearch.NET.Middleware
             decimal baseSlopeMultiplier = GetSlopeMultiplier(baseSlope);
             decimal signalSlopeMultiplier = GetSlopeMultiplier(signalSlope);
 
-            decimal histBonus = Math.Min(macdTotalHist * 4, 20); //cap histBonus at 20
+            decimal histBonus = Math.Min((macdTotalHist * 5) + 5, 20); //cap histBonus at 20
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
-            composite += (histSlope > 0.0M) ? (histSlope * histSlopeMultiplier) + 25 : 0;
+            composite += (histSlope > -0.05M) ? (histSlope * histSlopeMultiplier) + 25 : 0;
             composite += (baseSlope > -0.05M) ? (baseSlope * baseSlopeMultiplier) + 10 : 0;
             composite += (signalSlope > -0.05M) ? (signalSlope * signalSlopeMultiplier) + 10 : 0;
-            composite += (histBonus > 0) ? histBonus : 0;
+            composite += (histBonus > 0) ? histBonus : 0; //Add histBonus if macdTotalHist is not negative
             composite += (macdHasBuySignal) ? 40 : 0;
             composite += (macdHasSellSignal) ? -40 : 0;
 
@@ -425,31 +430,35 @@ namespace Sociosearch.NET.Middleware
         public static decimal GetSlopeMultiplier(decimal slope)
         {
             //Positive cases
-            if (slope > 0 && slope < 0.5M)
+            if (slope > 0 && slope < 0.25M)
                 return 50.0M;
-            else if (slope > 0.5M && slope < 1)
+            else if (slope >= 0.25M && slope < 0.5M)
+                return 35.0M;
+            else if (slope >= 0.5M && slope < 1)
                 return 25.0M;
-            else if (slope > 1 && slope < 5)
-                return 5.0M;
-            else if (slope > 5 && slope < 10)
-                return 2.5M;
-            else if (slope > 10 && slope < 20)
+            else if (slope >= 1 && slope < 5)
+                return 2.0M;
+            else if (slope >= 5 && slope < 10)
                 return 1.5M;
-            else if (slope > 20)
+            else if (slope >= 10 && slope < 20)
+                return 1.0M;
+            else if (slope >= 20)
                 return 1.0M;
 
             //Negative cases
-            else if (slope < 0 && slope > -0.5M)
+            else if (slope < 0 && slope > -0.25M)
                 return -50.0M;
-            else if (slope < -0.5M && slope > -1)
+            else if (slope <= -0.25M && slope > -0.5M)
+                return -35.0M;
+            else if (slope <= -0.5M && slope > -1)
                 return -25.0M;
-            else if (slope < -1 && slope > -5)
-                return -5.0M;
-            else if (slope < -5 && slope > -10)
-                return -2.5M;
-            else if (slope < -10 && slope > -20)
+            else if (slope <= -1 && slope > -5)
+                return -2.0M;
+            else if (slope <= -5 && slope > -10)
                 return -1.5M;
-            else if (slope < -20)
+            else if (slope <= -10 && slope > -20)
+                return -1.0M;
+            else if (slope <= -20)
                 return -1.0M;
             else
                 return 0;

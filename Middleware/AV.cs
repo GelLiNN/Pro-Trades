@@ -293,7 +293,7 @@ namespace Sociosearch.NET.Middleware
             decimal percentDiffDown = (aroonAvgDown / aroonAvgUp) * 100;
             decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
             decimal bullResult = 100 - percentDiffDown;
-            decimal bearResult = percentDiffUp + 10;
+            decimal bearResult = percentDiffUp + 15;
 
             //Add bull bonus if AROON avg up >= 70 per investopedia recommendation
             //Cap bullBonus at 20

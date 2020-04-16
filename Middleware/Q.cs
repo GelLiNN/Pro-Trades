@@ -127,13 +127,19 @@ namespace Sociosearch.NET.Middleware
                 shortXList.Add(i);
 
             List<decimal> shortYList = shortInterestYList.ToList();
-            decimal shortSlope = AV.GetSlope(shortXList, shortYList);
-            decimal shortSlopeMultiplier = AV.GetSlopeMultiplier(shortSlope);
+            decimal shortSlope = TD.GetSlope(shortXList, shortYList);
+            decimal shortSlopeMultiplier = TD.GetSlopeMultiplier(shortSlope);
             decimal shortInterestAverage = (totalVolumeShort / totalVolume) * 100;
+
+            //Add these bonuses to account for normal short interest fluctuations
+            bool slightlyBearish = (0.0M <= shortSlope && shortSlope <= 0.5M);
+            bool moderatelyBearish = (0.5M <= shortSlope && shortSlope <= 1.0M);
 
             //calculate composite score based on the following values and weighted multipliers
             compositeScore += 100 - shortInterestAverage; //get score as 100 - short interest
-            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 15 : -5;
+            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 20 : -5;
+            compositeScore += (shortSlope > 0 && slightlyBearish) ? 15 : 0;
+            compositeScore += (shortSlope > 0 && moderatelyBearish) ? 10 : 0;
 
             //Return ShortInterestResult
             return new ShortInterestResult
