@@ -54,7 +54,7 @@ namespace Sociosearch.NET.Middleware
 
                     case "obv":
                         string obvInterval = "1day";
-                        string obvSeriesType = "0"; //0 => close, 1 => open, 2 => high, 3 => low, 4 => volume
+                        string obvSeriesType = "2"; //0 => close, 1 => open, 2 => high, 3 => low, 4 => volume
                         string obvOutputSize = "100";
                         string obvRequest = String.Format(TDURI + "{0}?symbol={1}&interval={2}&series_type={3}&outputsize={4}&apikey={5}",
                             function, symbol, obvInterval, obvSeriesType, obvOutputSize, APIKey);
@@ -497,14 +497,18 @@ namespace Sociosearch.NET.Middleware
             }
 
             decimal trendingBonus = 0; //Math.Min((macdTotalHist * 5) + 5, 20); //cap trendingBonus at 20
+            decimal avgBonus = (obvAverage > 0) ? 25 : 10;
 
             //Start with the average of the 2 most recent OBV Z Scores
             decimal baseValue = ((zScores[zScores.Count - 1] + zScores[zScores.Count - 2]) / 2) * 100;
+            if (baseValue < 0)
+                baseValue = 15; //pity points
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
             composite += baseValue;
-            composite += (zScoreSlope > 0) ? (zScoreSlope * zScoreSlopeMultiplier) : -(zScoreSlope * zScoreSlopeMultiplier);
+            composite += avgBonus;
+            composite += (zScoreSlope > 0) ? (zScoreSlope * zScoreSlopeMultiplier) + 10 : 0;
             composite += (obvIsTrending) ? trendingBonus : 0; //Add trendingBonus if data shows that OBV is trending
             composite += (obvHasBuySignal) ? 15 : 0;
             composite += (obvHasSellSignal) ? -15 : 0;
@@ -561,27 +565,65 @@ namespace Sociosearch.NET.Middleware
 
         public static List<decimal> GetZScores(List<decimal> input)
         {
+            // Find standard deviation and compute Z Scores
+            decimal mean = input.Sum() / input.Count;
+
+            decimal stdDev = GetStandardDeviation(input, true);
+
+            decimal estMin = mean - (stdDev);
+            decimal estMax = mean + (stdDev);
+
+            decimal setMax = input.Max();
+            decimal setMin = input.Min();
+            decimal range = setMax - setMin;
+            decimal zScoreScalar = GetStdDevScalar(range, stdDev);
+
+            List<decimal> zScores = new List<decimal>();
+
+            // Normally z-score tells you how many stdDev away from the mean this value is
+            // In this case, we're finding how many (stdDev * zScoreScalar) away from the mean this value is
+            for (int i = 0; i < input.Count; i++)
+            {
+                //OR compare the range to the stdDev to decide on our Z Score multiplier
+                decimal curZ = (input[i] - mean) / (stdDev * zScoreScalar);
+                zScores.Add(curZ);
+            }
+
+            return zScores;
+        }
+
+        public static decimal GetStdDevScalar(decimal range, decimal stdDev)
+        {
+            //how many stdDevs do you need to cover the entire range?
+            return range / stdDev;
+        }
+
+        // Transform input data into normalized scores
+        public static List<decimal> GetNormalizedData(List<decimal> input)
+        {
             // Estimate min and max from the input values using standard deviation
             decimal mean = input.Sum() / input.Count;
 
             decimal stdDev = GetStandardDeviation(input, true);
 
-            decimal estMin = mean - (stdDev * 2.0M);
-            decimal estMax = mean + (stdDev * 2.0M);
+            decimal setMax = input.Max();
+            decimal setMin = input.Min();
+            decimal range = setMax - setMin;
+            decimal stdDevScalar = GetStdDevScalar(range, stdDev);
 
-            // Earlier implementation
-            //decimal setMax = input.Max();
-            //decimal setMin = input.Min();
-            //decimal estMax = GetEstimatedBound(input, setMin, setMax, true);
-            //decimal estMin = GetEstimatedBound(input, setMin, setMax, false);
+            decimal estMax = mean + (stdDev * stdDevScalar);
+            decimal estMin = mean - (stdDev * stdDevScalar);
 
-            List<decimal> zScores = new List<decimal>();
+            List<decimal> normalized = new List<decimal>();
+
+            //below is using a difference quotient to get results for normalization
             for (int i = 0; i < input.Count; i++)
             {
-                decimal curZ = (input[i] - estMin) / (estMax - estMin);
-                zScores.Add(curZ);
+                decimal curScore = (input[i] - estMin) / (estMax - estMin);
+                normalized.Add(curScore);
             }
-            return zScores;
+
+            return normalized;
         }
 
         // May not be needed anymore now that I can use Standard Deviation
