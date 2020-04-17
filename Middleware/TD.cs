@@ -52,14 +52,21 @@ namespace Sociosearch.NET.Middleware
                         response = await Client.GetAsync(macdRequest);
                         break;
 
+                    case "obv":
+                        string obvInterval = "1day";
+                        string obvSeriesType = "0"; //0 => close, 1 => open, 2 => high, 3 => low, 4 => volume
+                        string obvOutputSize = "100";
+                        string obvRequest = String.Format(TDURI + "{0}?symbol={1}&interval={2}&series_type={3}&outputsize={4}&apikey={5}",
+                            function, symbol, obvInterval, obvSeriesType, obvOutputSize, APIKey);
+                        response = await Client.GetAsync(obvRequest);
+                        break;
+
                     //Below cases need to be migrated to use TD's conventions
                     case "BBANDS":
                         break;
                     case "STOCH":
                         break;
                     case "RSI":
-                        break;
-                    case "OBV":
                         break;
                     case "CCI":
                         break;
@@ -117,6 +124,18 @@ namespace Sociosearch.NET.Middleware
                     compositeScore = GetMACDComposite(resultSet, daysToCalculate);
                     break;
 
+                case "obv":
+                    //The On Balance Volume (OBV) is a cumulative total of the up and down volume.
+                    //When the close is higher than the previous close, the volume is added to the running total,
+                    //and when the close is lower than the previous close, the volume is subtracted from the running total.
+                    //To interpret the OBV, look for the OBV to move with the price or precede price moves.
+                    //If the price moves before the OBV, then it is a non-confirmed move. A series of rising peaks, or falling troughs
+                    //in the OBV indicates a strong trend. If the OBV is flat, then the market is not trending.
+                    //https://www.investopedia.com/articles/technical/100801.asp
+                    resultSet = (JArray)data.GetValue("values");
+                    compositeScore = GetOBVComposite(resultSet, daysToCalculate);
+                    break;
+
                 //Below cases need to be migrated to use TD's conventions
                 case "BBANDS":
                     //Bollinger Bands consist of three lines. The middle band is a simple moving average (generally 20 periods)
@@ -131,7 +150,6 @@ namespace Sociosearch.NET.Middleware
                     //https://www.fmlabs.com/reference/default.htm?url=Bollinger.htm
                     //https://www.alphavantage.co/query?function=BBANDS&symbol=MSFT&interval=weekly&time_period=5&series_type=close&nbdevup=3&nbdevdn=3&apikey=demo
                     break;
-
 
                 case "STOCH":
                     //The Stochastic Oscillator measures where the close is in relation to the recent trading range.
@@ -149,17 +167,6 @@ namespace Sociosearch.NET.Middleware
                     //You can also look for divergence with price. If the price is making new highs/lows, and the RSI is not, it indicates a reversal.
                     //https://www.investopedia.com/articles/active-trading/042114/overbought-or-oversold-use-relative-strength-index-find-out.asp
                     //https://www.alphavantage.co/query?function=RSI&symbol=MSFT&interval=weekly&time_period=10&series_type=open&apikey=demo
-                    break;
-
-                case "OBV":
-                    //The On Balance Volume (OBV) is a cumulative total of the up and down volume.
-                    //When the close is higher than the previous close, the volume is added to the running total,
-                    //and when the close is lower than the previous close, the volume is subtracted from the running total.
-                    //To interpret the OBV, look for the OBV to move with the price or precede price moves.
-                    //If the price moves before the OBV, then it is a non - confirmed move. A series of rising peaks, or falling troughs
-                    //in the OBV indicates a strong trend. If the OBV is flat, then the market is not trending.
-                    //https://www.investopedia.com/articles/technical/100801.asp
-                    //https://www.alphavantage.co/query?function=OBV&symbol=MSFT&interval=daily&apikey=
                     break;
 
                 case "CCI":
@@ -417,6 +424,94 @@ namespace Sociosearch.NET.Middleware
             return composite;
         }
 
+        public static decimal GetOBVComposite(JArray resultSet, int daysToCalculate)
+        {
+            int daysCalulated = 0;
+            int numberOfResults = 0;
+            HashSet<string> dates = new HashSet<string>();
+
+            Stack<decimal> obvValueYList = new Stack<decimal>();
+            decimal obvSum = 0;
+
+            foreach (var result in resultSet)
+            {
+                if (daysCalulated < daysToCalculate)
+                {
+                    decimal obvValue = decimal.Parse(result.Value<string>("obv"));
+
+                    obvValueYList.Push(obvValue);
+                    obvSum += obvValue;
+                    numberOfResults++;
+
+                    string resultDate = result.Value<string>("datetime");
+                    string obvDate = DateTime.Parse(resultDate).ToString("yyyy-MM-dd");
+                    if (!dates.Contains(obvDate))
+                    {
+                        dates.Add(obvDate);
+                        daysCalulated++;
+                    }
+                }
+                else
+                    break;
+            }
+
+            List<decimal> obvXList = new List<decimal>();
+            for (int i = 1; i <= numberOfResults; i++)
+                obvXList.Add(i);
+
+            List<decimal> obvYList = obvValueYList.ToList();
+            decimal obvSlope = GetSlope(obvXList, obvYList);
+            decimal obvSlopeMultiplier = GetSlopeMultiplier(obvSlope);
+
+            List<decimal> zScores = GetZScores(obvYList);
+            decimal zScoreSlope = GetSlope(zScores, obvXList);
+            decimal zScoreSlopeMultiplier = GetSlopeMultiplier(zScoreSlope);
+
+            decimal obvAverage = obvSum / numberOfResults;
+
+            //look for buy and sell signals
+            bool obvHasBuySignal = false;
+            bool obvHasSellSignal = false;
+            bool obvIsTrending = false; //can do this if I have historical OCHL data provided
+
+            decimal obvPrev = obvYList[0];
+            bool obvPrevIsNegative = obvPrev < 0;
+            for (int i = 1; i < obvYList.Count(); i++)
+            {
+                decimal current = obvYList[i];
+                bool currentIsNegative = current < 0;
+                if (!currentIsNegative && obvPrevIsNegative)
+                {
+                    obvHasBuySignal = true;
+                    if (obvHasSellSignal)
+                        obvHasSellSignal = false; //cancel the previous sell signal if buy signal is most recent
+                }
+                else if (currentIsNegative && !obvPrevIsNegative)
+                {
+                    obvHasSellSignal = true;
+                    if (obvHasBuySignal)
+                        obvHasBuySignal = false; //cancel the previous buy signal if sell signal is most recent
+                }
+                obvPrev = current;
+                obvPrevIsNegative = obvPrev < 0;
+            }
+
+            decimal trendingBonus = 0; //Math.Min((macdTotalHist * 5) + 5, 20); //cap trendingBonus at 20
+
+            //Start with the average of the 2 most recent OBV Z Scores
+            decimal baseValue = ((zScores[zScores.Count - 1] + zScores[zScores.Count - 2]) / 2) * 100;
+
+            //calculate composite score based on the following values and weighted multipliers
+            decimal composite = 0;
+            composite += baseValue;
+            composite += (zScoreSlope > 0) ? (zScoreSlope * zScoreSlopeMultiplier) : -(zScoreSlope * zScoreSlopeMultiplier);
+            composite += (obvIsTrending) ? trendingBonus : 0; //Add trendingBonus if data shows that OBV is trending
+            composite += (obvHasBuySignal) ? 15 : 0;
+            composite += (obvHasSellSignal) ? -15 : 0;
+
+            return composite;
+        }
+
         public static decimal GetSlope(List<decimal> xList, List<decimal> yList)
         {
             //"zip" xs and ys to make the sum of products easier
@@ -462,6 +557,89 @@ namespace Sociosearch.NET.Middleware
                 return -1.0M;
             else
                 return 0;
+        }
+
+        public static List<decimal> GetZScores(List<decimal> input)
+        {
+            // Estimate min and max from the input values using standard deviation
+            decimal mean = input.Sum() / input.Count;
+
+            decimal stdDev = GetStandardDeviation(input, true);
+
+            decimal estMin = mean - (stdDev * 2.0M);
+            decimal estMax = mean + (stdDev * 2.0M);
+
+            // Earlier implementation
+            //decimal setMax = input.Max();
+            //decimal setMin = input.Min();
+            //decimal estMax = GetEstimatedBound(input, setMin, setMax, true);
+            //decimal estMin = GetEstimatedBound(input, setMin, setMax, false);
+
+            List<decimal> zScores = new List<decimal>();
+            for (int i = 0; i < input.Count; i++)
+            {
+                decimal curZ = (input[i] - estMin) / (estMax - estMin);
+                zScores.Add(curZ);
+            }
+            return zScores;
+        }
+
+        // May not be needed anymore now that I can use Standard Deviation
+        public static decimal GetEstimatedBound(List<decimal> set, decimal setMin, decimal setMax, bool isMax)
+        {
+            decimal sum = 0;
+            for (int i = 0; i < set.Count; i++)
+                sum += set[i];
+
+            decimal mean = sum / set.Count;
+
+            decimal stdDev = GetStandardDeviation(set, true);
+
+            //decimal range = setMax - setMin;
+            //decimal expandedRange = range * 1.5M; //like an estimated std deviation
+            //decimal expander = expandedRange / 2.0M;
+            return (isMax) ? mean + stdDev : mean - stdDev;
+        }
+
+        // Return the standard deviation of an array of decimals
+        // If the second argument is True, evaluate as a sample
+        // If the second argument is False, evaluate as a population
+        public static decimal GetStandardDeviation(List<decimal> values, bool isSample)
+        {
+            // Get the mean
+            decimal sum = 0;
+            for (int i = 0; i < values.Count; i++)
+                sum += values[i];
+            decimal mean = sum / values.Count;
+
+            // Get the sum of the squares of the differences between each value and the mean
+            decimal sumOfSquares = 0;
+            for (int i = 0; i < values.Count; i++)
+                sumOfSquares += (values[i] - mean) * (values[i] - mean);
+
+            if (isSample)
+                return DecimalSqrt(sumOfSquares / (values.Count() - 1));
+            else
+                return DecimalSqrt(sumOfSquares / values.Count());
+        }
+
+        // https://stackoverflow.com/questions/4124189/performing-math-operations-on-decimal-datatype-in-c
+        // x - a number, from which we need to calculate the square root
+        // epsilon - an accuracy of calculation of the root from our number.
+        // The result of the calculations will differ from an actual value
+        // of the root on less than epslion.
+        public static decimal DecimalSqrt(decimal x, decimal epsilon = 0.0M)
+        {
+            if (x < 0) throw new Exception("EXCEPTION: Cannot calculate square root from a negative number");
+            decimal current = (decimal)Math.Sqrt((double)x), previous;
+            do
+            {
+                previous = current;
+                if (previous == 0.0M) return 0;
+                current = (previous + x / previous) / 2;
+            }
+            while (Math.Abs(previous - current) > epsilon);
+            return current;
         }
     }
 }

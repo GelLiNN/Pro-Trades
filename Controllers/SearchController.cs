@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Sociosearch.NET.Middleware;
@@ -77,7 +79,7 @@ namespace Sociosearch.NET.Controllers
         }
 
         [HttpGet("/GetIndicatorTD/{function}/{symbol}/{days}")] //indicator == function
-        public IActionResult GetIndicatorForSymbol(string function, string symbol, string days)
+        public IActionResult GetIndicatorTD(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
             string tdResponse = TD.CompleteTwelveDataRequest(function, symbol).Result;
@@ -90,7 +92,7 @@ namespace Sociosearch.NET.Controllers
         }
 
         [HttpGet("/GetCompositeScoreTD/{symbol}")]
-        public CompositeScoreResult GetCompositeScoreForSymbol(string symbol)
+        public CompositeScoreResult GetCompositeScoreTD(string symbol)
         {
             string adxResponse = TD.CompleteTwelveDataRequest("ADX", symbol).Result;
             decimal adxCompositeScore = TD.GetCompositeScore("ADX", adxResponse, 7);
