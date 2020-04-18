@@ -9,6 +9,7 @@ namespace Sociosearch.NET.Models
         public string Symbol { get; set; }
         public string DataProvider { get; set; }
         public decimal ADXComposite { get; set; }
+        public decimal OBVComposite { get; set; }
         public decimal AROONComposite { get; set; }
         public decimal MACDComposite { get; set; }
         public decimal CompositeScore { get; set; }

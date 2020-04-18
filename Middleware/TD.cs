@@ -27,6 +27,15 @@ namespace Sociosearch.NET.Middleware
                 //different GET params for each indicator
                 switch (function)
                 {
+                    case "time_series":
+                        //Gets OCHL data going back 14 trading days for a symbol
+                        string tsInterval = "1day";
+                        string tsOutputSize = "14";
+                        string tsRequest = String.Format(TDURI + "{0}?symbol={1}&interval={2}&outputsize={3}&apikey={4}",
+                            function, symbol, tsInterval, tsOutputSize, APIKey);
+                        response = await Client.GetAsync(tsRequest);
+                        break;
+
                     case "adx":
                         string adxInterval = "30min";
                         string adxPeriod = "100";
@@ -83,10 +92,10 @@ namespace Sociosearch.NET.Middleware
             }
         }
 
-        public static decimal GetCompositeScore(string function, string alphaVantageResponse, int daysToCalculate)
+        public static decimal GetCompositeScore(string function, string twelveDataResponse, int daysToCalculate)
         {
             decimal compositeScore = 0;
-            JObject data = JObject.Parse(alphaVantageResponse);
+            JObject data = JObject.Parse(twelveDataResponse);
             JArray resultSet;
             function = function.ToLower();
 
