@@ -99,7 +99,7 @@ namespace Sociosearch.NET.Controllers
             string obvResponse = TD.CompleteTwelveDataRequest("OBV", symbol).Result;
             decimal obvCompositeScore = TD.GetCompositeScore("OBV", obvResponse, 7);
             string aroonResponse = TD.CompleteTwelveDataRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = TD.GetCompositeScore("AROON", aroonResponse, 14);
+            decimal aroonCompositeScore = TD.GetCompositeScore("AROON", aroonResponse, 7);
             string macdResponse = TD.CompleteTwelveDataRequest("MACD", symbol).Result;
             decimal macdCompositeScore = TD.GetCompositeScore("MACD", macdResponse, 7);
 

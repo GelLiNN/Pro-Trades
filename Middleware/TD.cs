@@ -37,8 +37,8 @@ namespace Sociosearch.NET.Middleware
                         break;
 
                     case "adx":
-                        string adxInterval = "30min";
-                        string adxPeriod = "100";
+                        string adxInterval = "1day";
+                        string adxPeriod = "28";
                         string adxOutputSize = "100";
                         string adxRequest = String.Format(TDURI + "{0}?symbol={1}&interval={2}&time_period={3}&outputsize={4}&apikey={5}",
                             function, symbol, adxInterval, adxPeriod, adxOutputSize, APIKey);
@@ -47,7 +47,7 @@ namespace Sociosearch.NET.Middleware
 
                     case "aroon":
                         string aroonInterval = "1day";
-                        string aroonPeriod = "300"; //Switch to 28 if request fails
+                        string aroonPeriod = "14"; //14 is used by default on Yahoo Finance, Investopedia calls for 25
                         string aroonRequest = String.Format(TDURI + "{0}?symbol={1}&interval={2}&time_period={3}&apikey={4}",
                             function, symbol, aroonInterval, aroonPeriod, APIKey);
                         response = await Client.GetAsync(aroonRequest);
@@ -63,7 +63,7 @@ namespace Sociosearch.NET.Middleware
 
                     case "obv":
                         string obvInterval = "1day";
-                        string obvSeriesType = "2"; //0 => close, 1 => open, 2 => high, 3 => low, 4 => volume
+                        string obvSeriesType = "0"; //0 => close, 1 => open, 2 => high, 3 => low, 4 => volume
                         string obvOutputSize = "100";
                         string obvRequest = String.Format(TDURI + "{0}?symbol={1}&interval={2}&series_type={3}&outputsize={4}&apikey={5}",
                             function, symbol, obvInterval, obvSeriesType, obvOutputSize, APIKey);
@@ -234,10 +234,29 @@ namespace Sociosearch.NET.Middleware
             decimal adxSlopeMultiplier = GetSlopeMultiplier(adxSlope);
             decimal adxAvg = adxTotal / numberOfResults;
 
+            List<decimal> adxZScores = GetZScores(adxYList);
+            decimal zScoreSlope = GetSlope(adxXList, adxZScores);
+            decimal zScoreSlopeMultiplier = GetSlopeMultiplier(zScoreSlope);
+
+            //Start with the average of the 2 most recent ADX values
+            decimal baseValue = (adxYList[adxYList.Count - 1] + adxYList[adxYList.Count - 2]) / 2;
+
+            //Add based on the most recent Z Score * 100 if it is positive
+            decimal recentZScore = adxZScores[adxZScores.Count - 1];
+            if (recentZScore > 0)
+                baseValue += (recentZScore * 100) / 2; //to even it out
+            else
+                baseValue += 10; //pity points
+
+            //Add bonus for ADX average above 25 per investopedia recommendation
+            decimal averageBonus = adxAvg > 25 ? 25 : 0;
+
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
-            composite += ((adxAvg) / 25) * 100; //get average trend strength as a percentage of 25
-            composite += (adxSlope > 0.0M) ? (adxSlope * adxSlopeMultiplier) + 15 : 0;
+            composite += baseValue;
+            composite += averageBonus;
+            composite += (adxSlope > 0.1M) ? (adxSlope * adxSlopeMultiplier) + 10 : -10; //penalty
+            composite += (zScoreSlope > 0.1M) ? (zScoreSlope * zScoreSlopeMultiplier) + 10 : 0;
 
             return Math.Min(composite, 100); //cap ADX composite at 100, no extra weight
         }
@@ -320,15 +339,18 @@ namespace Sociosearch.NET.Middleware
             decimal percentDiffDown = (aroonAvgDown / aroonAvgUp) * 100;
             decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
 
-            decimal bullResult = Math.Min(100 - percentDiffDown, 60); //bull result caps at 60
-            decimal bearResult = Math.Min(percentDiffUp + 15, 30); //bear result caps at 30
+            decimal bullResult = Math.Min(100 - percentDiffDown, 50); //bull result caps at 50
+            decimal bearResult = Math.Min(percentDiffUp + 15, 20); //bear result caps at 20
 
-            //Add bull bonus if AROON avg up >= 70 per investopedia recommendation
-            //Cap bullBonus at 25
-            decimal bullBonus = (aroonAvgUp > aroonAvgDown && aroonAvgUp >= 70) ? Math.Min((aroonAvgUp / 9) + 10, 25) : 0;
+            //Add bull bonus if last AROON UP >= 70 per investopedia recommendation
+            //This is the same as when last AROON OSC >= 50
+            //Cap bullBonus at 15
+            decimal bullBonus = (aroonAvgUp > aroonAvgDown && previousOscillatorValue >= 50) ? Math.Min(previousOscillatorValue / 5, 15) : 0;
 
-            //Add bear bonus if AROON avg down <= 70 per investopedia recommendation
-            decimal bearBonus = (aroonAvgDown > aroonAvgUp && aroonAvgDown <= 70) ? Math.Min((aroonAvgUp / 8) + 5, 20) : 0;
+            //Add bear bonus if last AROON UP > last AROON DOWN per investopedia recommendation
+            //This is the same as when last AROON OSC > 0
+            //Cap bearBonus at 10
+            decimal bearBonus = (aroonAvgDown > aroonAvgUp && previousOscillatorValue > 0) ? Math.Min(previousOscillatorValue / 5, 10) : 0;
 
             //calculate composite score based on the following values and weighted multipliers
             //if AROON avg up > AROON avg down, start score with 100 - (down as % of up)
@@ -336,12 +358,10 @@ namespace Sociosearch.NET.Middleware
             decimal composite = 0;
             composite += (aroonAvgUp > aroonAvgDown) ? bullResult : bearResult;
             composite += (bullBonus > bearBonus) ? bullBonus : bearBonus;
-            composite += (upSlope > -0.05M) ? (upSlope * upSlopeMultiplier) + 10 : 0;
-            composite += (downSlope < 0.05M) ? (downSlope * downSlopeMultiplier) + 10 : -(downSlope * downSlopeMultiplier);
-            //composite += (oscillatorSlope > -0.05M) ? (oscillatorSlope * oscillatorSlopeMultiplier) + 10 : 0;
-                //-(oscillatorSlope * oscillatorSlopeMultiplier) - 10;
-            composite += (aroonHasBuySignal) ? 40 : 0;
-            composite += (aroonHasSellSignal) ? -40 : 0;
+            composite += (upSlope > -0.05M) ? (upSlope * upSlopeMultiplier) + 5 : 0;
+            composite += (downSlope < 0.05M) ? (downSlope * downSlopeMultiplier) + 5 : -(downSlope * downSlopeMultiplier);
+            composite += (aroonHasBuySignal) ? 25 : 0;
+            composite += (aroonHasSellSignal) ? -25 : 0;
 
             return composite;
         }
@@ -476,12 +496,15 @@ namespace Sociosearch.NET.Middleware
             decimal zScoreSlope = GetSlope(zScores, obvXList);
             decimal zScoreSlopeMultiplier = GetSlopeMultiplier(zScoreSlope);
 
+            List<decimal> normalizedScores = GetNormalizedData(obvYList);
+            decimal normalizedSlope = GetSlope(normalizedScores, obvXList);
+            decimal normalizedSlopeMultiplier = GetSlopeMultiplier(normalizedSlope);
+
             decimal obvAverage = obvSum / numberOfResults;
 
             //look for buy and sell signals
             bool obvHasBuySignal = false;
             bool obvHasSellSignal = false;
-            bool obvIsTrending = false; //can do this if I have historical OCHL data provided
 
             decimal obvPrev = obvYList[0];
             bool obvPrevIsNegative = obvPrev < 0;
@@ -505,20 +528,35 @@ namespace Sociosearch.NET.Middleware
                 obvPrevIsNegative = obvPrev < 0;
             }
 
-            decimal trendingBonus = 0; //Math.Min((macdTotalHist * 5) + 5, 20); //cap trendingBonus at 20
-            decimal avgBonus = (obvAverage > 0) ? 25 : 10;
+            //Start with the average of the 2 most recent OBV Normalized Scores
+            //Only use the normalized scores if average OBV is greater than 0
+            decimal baseValue;
+            if (obvAverage > 0)
+                baseValue = ((normalizedScores[normalizedScores.Count - 1] + normalizedScores[normalizedScores.Count - 2]) / 2) * 100;
+            else
+            {
+                //ZScore bonus helps us score based on derivatives
+                //Only add ZScoreBonus if it is positive, divide by 4 instead of 2 (which would be classic mean)
+                decimal zScoreBonus = ((zScores[zScores.Count - 1] + zScores[zScores.Count - 2]) / 4) * 100;
+                if (zScoreBonus < 0)
+                    zScoreBonus = 15; //pity points
 
-            //Start with the average of the 2 most recent OBV Z Scores
-            decimal baseValue = ((zScores[zScores.Count - 1] + zScores[zScores.Count - 2]) / 2) * 100;
-            if (baseValue < 0)
-                baseValue = 15; //pity points
+                baseValue = zScoreBonus;
+            }
+
+            //Add bonus if average OBV is greater than 0
+            decimal obvAverageBonus = obvAverage > 0 ? 15 : 0;
+
+            //Add bonus if OBV slope positive
+            decimal obvSlopeBonus = (obvSlope > 0) ? 10 : 0;
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
             composite += baseValue;
-            composite += avgBonus;
-            composite += (zScoreSlope > 0) ? (zScoreSlope * zScoreSlopeMultiplier) + 10 : 0;
-            composite += (obvIsTrending) ? trendingBonus : 0; //Add trendingBonus if data shows that OBV is trending
+            composite += obvAverageBonus;
+            composite += obvSlopeBonus;
+            composite += (zScoreSlope > 0) ? (zScoreSlope * zScoreSlopeMultiplier) : 0;
+            composite += (normalizedSlope > 0) ? (normalizedSlope * normalizedSlopeMultiplier) : 0;
             composite += (obvHasBuySignal) ? 15 : 0;
             composite += (obvHasSellSignal) ? -15 : 0;
 
@@ -607,7 +645,7 @@ namespace Sociosearch.NET.Middleware
             return range / stdDev;
         }
 
-        // Transform input data into normalized scores
+        // Transform input data into normalized (or scaled) data
         public static List<decimal> GetNormalizedData(List<decimal> input)
         {
             // Estimate min and max from the input values using standard deviation

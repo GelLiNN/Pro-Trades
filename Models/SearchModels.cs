@@ -27,6 +27,22 @@ namespace Sociosearch.NET.Models
     }
 
     /*
+     * FINRA Models
+     */
+    public class FinraRecord
+    {
+         // URL: http://regsho.finra.org/CNMSshvol20181105.txt
+         // STRUCTURE: Date|Symbol|ShortVolume|ShortExemptVolume|TotalVolume
+
+        public DateTime Date { get; set; }
+        public string Symbol { get; set; }
+        public decimal ShortVolume { get; set; }
+        public decimal ShortExemptVolume { get; set; }
+        public decimal TotalVolume { get; set; }
+        public string Market { get; set; }
+    }
+
+    /*
      * IEX Models
      */
     public class CompanyStatsIEX

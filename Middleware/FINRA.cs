@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
@@ -74,10 +75,13 @@ namespace Sociosearch.NET.Middleware
             bool moderatelyBearish = (0.5M <= shortSlope && shortSlope <= 1.0M);
 
             //calculate composite score based on the following values and weighted multipliers
-            compositeScore += 100 - shortInterestAverage; //get score as 100 - short interest
-            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 20 : -5;
+            compositeScore += 100 - shortInterestAverage; //get base score as 100 - short interest
+            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 10 : 0;
             compositeScore += (shortSlope > 0 && slightlyBearish) ? 15 : 0;
             compositeScore += (shortSlope > 0 && moderatelyBearish) ? 10 : 0;
+
+            //Cap this compositeScore at 100 because we should not give it extra weight
+            compositeScore = Math.Min(compositeScore, 100);
 
             //Return ShortInterestResult
             return new ShortInterestResult
@@ -105,6 +109,7 @@ namespace Sociosearch.NET.Middleware
             {
                 var ochlResult = resultSet[i];
                 string ochlResultDate = ochlResult.Value<string>("datetime");
+                decimal ochlResultVolume = decimal.Parse(ochlResult.Value<string>("volume"));
 
                 DateTime date = DateTime.Parse(ochlResultDate);
                 //DateTime date = DateTime.Now.AddDays(-1 * i);
@@ -115,7 +120,18 @@ namespace Sociosearch.NET.Middleware
                     FinraRecord curDayRecord = allRecords.Where(x => x.Symbol == symbol).FirstOrDefault();
 
                     if (curDayRecord != null)
+                    {
+                        //Inject volume from TD since FINRA total volume CAN BE inaccurate
+                        decimal curDayVolume = Math.Max(ochlResultVolume, curDayRecord.TotalVolume);
+                        curDayRecord.TotalVolume = curDayVolume;
                         shortRecords.Add(curDayRecord);
+                    }
+                    else
+                    {
+                        //FINRA record was missing for this date, we should do something
+                        Debug.WriteLine(string.Format("INFO: FINRA record missing for {0} on date {1}",
+                            symbol, date.ToString("MM-dd-yyyy")));
+                    }
                 }
             }
             return shortRecords;
@@ -123,7 +139,6 @@ namespace Sociosearch.NET.Middleware
 
         public static async Task<List<FinraRecord>> GetAllShortVolume(DateTime date)
         {
-            // example URL: http://regsho.finra.org/CNMSshvol20181105.txt
             string dateString = date.ToString("yyyyMMdd");
             string fileName = $"CNMSshvol{dateString}.txt";
             string requestUrl = $"{BaseUrl}/{fileName}";
