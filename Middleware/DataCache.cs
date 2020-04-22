@@ -55,7 +55,7 @@ namespace Sociosearch.NET.Middleware
             switch (cacheId)
             {
                 case "iex-companies":
-                    CompanyIEX iexCompanyEntry;
+                    CompanyStatsIEX iexCompanyEntry;
                     if (!_iexCompaniesCache.TryGetValue(cacheKey, out iexCompanyEntry))
                     {
                         //Not in cache, so we can update the cache with private helper
@@ -64,7 +64,7 @@ namespace Sociosearch.NET.Middleware
                     }
                     return iexCompanyEntry;
                 case "yf-companies":
-                    CompanyYF yfCompanyEntry;
+                    CompanyStatsYF yfCompanyEntry;
                     if (!_yfCompaniesCache.TryGetValue(cacheKey, out yfCompanyEntry))
                     {
                         //Not in cache, so we can update the cache with private helper

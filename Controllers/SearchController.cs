@@ -95,9 +95,9 @@ namespace Sociosearch.NET.Controllers
         public CompositeScoreResult GetCompositeScoreTD(string symbol)
         {
             string adxResponse = TD.CompleteTwelveDataRequest("ADX", symbol).Result;
-            decimal adxCompositeScore = TD.GetCompositeScore("ADX", adxResponse, 7);
+            decimal adxCompositeScore = TD.GetCompositeScore("ADX", adxResponse, 10);
             string obvResponse = TD.CompleteTwelveDataRequest("OBV", symbol).Result;
-            decimal obvCompositeScore = TD.GetCompositeScore("OBV", obvResponse, 7);
+            decimal obvCompositeScore = TD.GetCompositeScore("OBV", obvResponse, 10);
             string aroonResponse = TD.CompleteTwelveDataRequest("AROON", symbol).Result;
             decimal aroonCompositeScore = TD.GetCompositeScore("AROON", aroonResponse, 7);
             string macdResponse = TD.CompleteTwelveDataRequest("MACD", symbol).Result;
@@ -216,18 +216,48 @@ namespace Sociosearch.NET.Controllers
         /*
          * Cache related endpoints
          */
-        [HttpGet("/GetCachedCompaniesYF")]
-        public HashSet<string> GetCachedCompaniesYF()
+        [HttpGet("/GetCachedSymbolsYF")]
+        public HashSet<string> GetCachedSymbolsYF()
         {
             HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
             return cachedSymbols;
         }
 
-        [HttpGet("/GetCachedCompaniesIEX")]
-        public HashSet<string> GetCachedCompaniesIEX()
+        [HttpGet("/GetCachedSymbolsIEX")]
+        public HashSet<string> GetCachedSymbolsIEX()
         {
             HashSet<string> cachedSymbols = _cache.GetCachedSymbols("iex-companies");
             return cachedSymbols;
+        }
+
+        [HttpGet("/GetCachedCompaniesYF")]
+        public List<CompanyStatsYF> GetCachedCompaniesYF()
+        {
+            List<CompanyStatsYF> cachedCompanies = new List<CompanyStatsYF>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompanyStatsYF company = (CompanyStatsYF)_cache.Get(cacheKey);
+                if (company != null)
+                    cachedCompanies.Add(company);
+            }
+            return cachedCompanies;
+        }
+
+        [HttpGet("/GetCachedCompaniesIEX")]
+        public List<CompanyStatsIEX> GetCachedCompaniesIEX()
+        {
+            List<CompanyStatsIEX> cachedCompanies = new List<CompanyStatsIEX>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("iex-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompanyStatsIEX company = (CompanyStatsIEX)_cache.Get(cacheKey);
+                if (company != null)
+                    cachedCompanies.Add(company);
+            }
+            return cachedCompanies;
         }
 
         /*
