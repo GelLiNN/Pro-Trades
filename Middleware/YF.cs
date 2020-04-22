@@ -89,6 +89,11 @@ namespace Sociosearch.NET.Middleware
                 var splits = await Yahoo.GetSplitsAsync(symbol, DateTime.Now.AddYears(-1), DateTime.Now);
                 foreach (var split in splits)
                     companyStat.Splits.Add(split);
+
+                //Composite Score
+                var score = Controllers.SearchController.GetCompositeScoreTD(symbol);
+                if (score.CompositeScore > 0)
+                    companyStat.CompositeScore = score;
             }
             catch (Exception e)
             {

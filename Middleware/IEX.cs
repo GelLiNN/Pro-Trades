@@ -52,6 +52,13 @@ namespace Sociosearch.NET.Middleware
                 //Key Stats
                 if (iexStat != null)
                 {
+                    companyStat.CompanyName = iexStat.companyName;
+                    companyStat.Symbol = symbol;
+                    companyStat.NumberOfEmployees = iexStat.employees;
+                    companyStat.SharesOutstanding = iexStat.sharesOutstanding;
+                    companyStat.MarketCap = iexStat.marketcap;
+                    companyStat.PeRatio = iexStat.peRatio;
+
                     decimal high = iexStat.week52high;
                     decimal low = iexStat.week52low;
                     decimal medianPrice52w = (high + low) / 2;
@@ -74,12 +81,7 @@ namespace Sociosearch.NET.Middleware
                     companyStat.VolumeAvg = avgVolume;
                     companyStat.VolumeAvgUSD = avgVolume * companyStat.PriceMedian52w;
 
-                    companyStat.CompanyName = iexStat.companyName;
-                    companyStat.NumberOfEmployees = iexStat.employees;
-                    companyStat.SharesOutstanding = iexStat.sharesOutstanding;
-                    companyStat.MarketCap = iexStat.marketcap;
                     companyStat.MovingAvg50d = iexStat.day50MovingAvg;
-                    companyStat.PeRatio = iexStat.peRatio;
 
                     //market capitalization per employee (capita)
                     if (companyStat.NumberOfEmployees > 0)
@@ -117,6 +119,11 @@ namespace Sociosearch.NET.Middleware
                     td.Source = "IEX";
                     companyStat.TradeData = td;
                 }
+
+                //Composite Score
+                var score = Controllers.SearchController.GetCompositeScoreTD(symbol);
+                if (score.CompositeScore > 0)
+                    companyStat.CompositeScore = score;
             }
             catch (Exception e)
             {

@@ -34,7 +34,7 @@ namespace Sociosearch.NET.Controllers
          * Composite Score Endpoints
          */
         [HttpGet("/GetIndicatorAV/{function}/{symbol}/{days}")] //indicator == function
-        public IActionResult GetIndicatorAV(string function, string symbol, string days)
+        public static IActionResult GetIndicatorAV(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
             string avResponse = AV.CompleteAlphaVantageRequest(function, symbol).Result;
@@ -47,7 +47,7 @@ namespace Sociosearch.NET.Controllers
         }
 
         [HttpGet("/GetCompositeScoreAV/{symbol}")]
-        public CompositeScoreResult GetCompositeScoreAV(string symbol)
+        public static CompositeScoreResult GetCompositeScoreAV(string symbol)
         {
             string adxResponse = AV.CompleteAlphaVantageRequest("ADX", symbol).Result;
             decimal adxCompositeScore = AV.GetCompositeScore("ADX", adxResponse, 7);
@@ -73,13 +73,13 @@ namespace Sociosearch.NET.Controllers
                 ADXComposite = adxCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
-                CompositeScore = (adxCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 4,
+                CompositeScoreValue = (adxCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 4,
                 ShortInterest = shortResult
             };
         }
 
         [HttpGet("/GetIndicatorTD/{function}/{symbol}/{days}")] //indicator == function
-        public IActionResult GetIndicatorTD(string function, string symbol, string days)
+        public static IActionResult GetIndicatorTD(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
             string tdResponse = TD.CompleteTwelveDataRequest(function, symbol).Result;
@@ -92,7 +92,7 @@ namespace Sociosearch.NET.Controllers
         }
 
         [HttpGet("/GetCompositeScoreTD/{symbol}")]
-        public CompositeScoreResult GetCompositeScoreTD(string symbol)
+        public static CompositeScoreResult GetCompositeScoreTD(string symbol)
         {
             string adxResponse = TD.CompleteTwelveDataRequest("ADX", symbol).Result;
             decimal adxCompositeScore = TD.GetCompositeScore("ADX", adxResponse, 10);
@@ -124,7 +124,7 @@ namespace Sociosearch.NET.Controllers
                 OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
-                CompositeScore = (adxCompositeScore + obvCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 5,
+                CompositeScoreValue = (adxCompositeScore + obvCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 5,
                 ShortInterest = shortResult
             };
         }

@@ -12,7 +12,7 @@ namespace Sociosearch.NET.Models
         public decimal OBVComposite { get; set; }
         public decimal AROONComposite { get; set; }
         public decimal MACDComposite { get; set; }
-        public decimal CompositeScore { get; set; }
+        public decimal CompositeScoreValue { get; set; }
         public ShortInterestResult ShortInterest { get; set; }
     }
 
@@ -47,7 +47,10 @@ namespace Sociosearch.NET.Models
      */
     public class CompanyStatsIEX
     {
+        public string Symbol { get; set; }
         public string CompanyName { get; set; }
+        public CompositeScoreResult CompositeScore { get; set; }
+
         public long NumberOfEmployees { get; set; }
         public long SharesOutstanding { get; set; }
         public long MarketCap { get; set; }
@@ -224,12 +227,14 @@ namespace Sociosearch.NET.Models
     public class CompanyStatsYF
     {
         public string Symbol { get; set; }
-        public string Exchange { get; set; }
-
         public string CompanyName { get; set; }
+        public CompositeScoreResult CompositeScore { get; set; }
+
+        public string Exchange { get; set; }
         public bool CompanyTrading { get; set; }
         public string CompanyQuoteType { get; set; }
         public string CompanyMarket { get; set; }
+
 
         public decimal MarketCap { get; set; }
         public decimal SharesOutstanding { get; set; }
