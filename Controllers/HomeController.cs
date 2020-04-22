@@ -19,7 +19,13 @@ namespace Sociosearch.NET.Controllers
             _logger = logger;
         }
 
-        [HttpGet("/")]
+        [Route(""), HttpGet]
+        [ApiExplorerSettings(IgnoreApi = true)]
+        public RedirectResult RedirectToSwaggerUi()
+        {
+            return Redirect("/swagger/");
+        }
+
         [HttpGet("/Home")]
         public IActionResult Home()
         {

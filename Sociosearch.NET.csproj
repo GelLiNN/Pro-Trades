@@ -21,6 +21,7 @@
     <PackageReference Include="VSLee.IEXSharp" Version="1.2.0" />
     <PackageReference Include="YahooFinanceApi" Version="2.1.2" />
     <PackageReference Include="TinyCsvParser" Version="2.5.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.3.3" />
   </ItemGroup>
 
   <ItemGroup>

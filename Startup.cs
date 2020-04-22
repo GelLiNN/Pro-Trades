@@ -8,6 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sociosearch.NET.Middleware;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.OpenApi.Models;
+using System.Collections.Generic;
 
 namespace Sociosearch.NET
 {
@@ -16,6 +18,12 @@ namespace Sociosearch.NET
         //This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //Setup the generated swagger JSON for swagger documentation
+            services.AddSwaggerGen(swagger =>
+            {
+                swagger.SwaggerDoc("v1", new OpenApiInfo { Title = "SocioSearch API", Version = "v1" });
+            });
+
             //Use Sqlite3 with Database Context
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlite(
@@ -47,12 +55,22 @@ namespace Sociosearch.NET
 
             //Use other .NET MVC modules
             services.AddControllersWithViews();
-            services.AddRazorPages();
+            services.AddRazorPages().AddRazorPagesOptions(options =>
+            {
+                options.Conventions.AddPageRoute("/Home", "");
+            });
         }
 
         //This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            //Enable middleware to serve generated Swagger as a JSON endpoint
+            app.UseSwagger();
+            app.UseSwaggerUI(swagger =>
+            {
+                swagger.SwaggerEndpoint("/swagger/v1/swagger.json", "SocioSearch API V1");
+            });
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -66,7 +84,6 @@ namespace Sociosearch.NET
             }
 
             app.UseHttpsRedirection();
-            app.UseStaticFiles();
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
