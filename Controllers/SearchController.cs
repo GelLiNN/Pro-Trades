@@ -52,19 +52,11 @@ namespace Sociosearch.NET.Controllers
             string adxResponse = AV.CompleteAlphaVantageRequest("ADX", symbol).Result;
             decimal adxCompositeScore = AV.GetCompositeScore("ADX", adxResponse, 7);
             string aroonResponse = AV.CompleteAlphaVantageRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = AV.GetCompositeScore("AROON", aroonResponse, 14);
+            decimal aroonCompositeScore = AV.GetCompositeScore("AROON", aroonResponse, 7);
             string macdResponse = AV.CompleteAlphaVantageRequest("MACD", symbol).Result;
             decimal macdCompositeScore = AV.GetCompositeScore("MACD", macdResponse, 7);
 
-            //QUANDL calls slightly different due to QUANDL Codes
-            string shortResponse = string.Empty;
-            foreach (string code in Q.FinraCodes)
-            {
-                shortResponse = Q.CompleteQuandlRequest("SHORT", String.Format("FINRA/{0}_{1}", code, symbol)).Result;
-                if (!String.IsNullOrEmpty(shortResponse))
-                    break;
-            }
-            ShortInterestResult shortResult = Q.GetShortInterest(shortResponse, 7);
+            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
 
             return new CompositeScoreResult
             {
@@ -103,17 +95,6 @@ namespace Sociosearch.NET.Controllers
             string macdResponse = TD.CompleteTwelveDataRequest("MACD", symbol).Result;
             decimal macdCompositeScore = TD.GetCompositeScore("MACD", macdResponse, 7);
 
-            //QUANDL calls slightly different due to QUANDL Codes
-            //string shortResponse = string.Empty;
-            //foreach (string code in Q.FinraCodes)
-            //{
-            //shortResponse = Q.CompleteQuandlRequest("SHORT", String.Format("FINRA/{0}_{1}", code, symbol)).Result;
-            //if (!String.IsNullOrEmpty(shortResponse))
-            //break;
-            //}
-            //ShortInterestResult shortResult = Q.GetShortInterest(shortResponse, 7);
-
-            //FINRA short interest directly (no API key or rate limits)
             ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
 
             return new CompositeScoreResult
