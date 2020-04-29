@@ -34,7 +34,7 @@ namespace Sociosearch.NET.Controllers
          * Composite Score Endpoints
          */
         [HttpGet("/GetIndicatorAV/{function}/{symbol}/{days}")] //indicator == function
-        public static IActionResult GetIndicatorAV(string function, string symbol, string days)
+        public IActionResult GetIndicatorAV(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
             string avResponse = AV.CompleteAlphaVantageRequest(function, symbol).Result;
@@ -47,7 +47,7 @@ namespace Sociosearch.NET.Controllers
         }
 
         [HttpGet("/GetCompositeScoreAV/{symbol}")]
-        public static CompositeScoreResult GetCompositeScoreAV(string symbol)
+        public CompositeScoreResult GetCompositeScoreAV(string symbol)
         {
             string adxResponse = AV.CompleteAlphaVantageRequest("ADX", symbol).Result;
             decimal adxCompositeScore = AV.GetCompositeScore("ADX", adxResponse, 7);
@@ -71,7 +71,7 @@ namespace Sociosearch.NET.Controllers
         }
 
         [HttpGet("/GetIndicatorTD/{function}/{symbol}/{days}")] //indicator == function
-        public static IActionResult GetIndicatorTD(string function, string symbol, string days)
+        public IActionResult GetIndicatorTD(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
             string tdResponse = TD.CompleteTwelveDataRequest(function, symbol).Result;
@@ -84,7 +84,33 @@ namespace Sociosearch.NET.Controllers
         }
 
         [HttpGet("/GetCompositeScoreTD/{symbol}")]
-        public static CompositeScoreResult GetCompositeScoreTD(string symbol)
+        public CompositeScoreResult GetCompositeScoreTD(string symbol)
+        {
+            string adxResponse = TD.CompleteTwelveDataRequest("ADX", symbol).Result;
+            decimal adxCompositeScore = TD.GetCompositeScore("ADX", adxResponse, 7);
+            string obvResponse = TD.CompleteTwelveDataRequest("OBV", symbol).Result;
+            decimal obvCompositeScore = TD.GetCompositeScore("OBV", obvResponse, 7);
+            string aroonResponse = TD.CompleteTwelveDataRequest("AROON", symbol).Result;
+            decimal aroonCompositeScore = TD.GetCompositeScore("AROON", aroonResponse, 7);
+            string macdResponse = TD.CompleteTwelveDataRequest("MACD", symbol).Result;
+            decimal macdCompositeScore = TD.GetCompositeScore("MACD", macdResponse, 7);
+
+            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
+
+            return new CompositeScoreResult
+            {
+                Symbol = symbol,
+                DataProvider = "TwelveData",
+                ADXComposite = adxCompositeScore,
+                OBVComposite = obvCompositeScore,
+                AROONComposite = aroonCompositeScore,
+                MACDComposite = macdCompositeScore,
+                CompositeScoreValue = (adxCompositeScore + obvCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 5,
+                ShortInterest = shortResult
+            };
+        }
+
+        public static CompositeScoreResult GetCompositeScoreInternalTD(string symbol)
         {
             string adxResponse = TD.CompleteTwelveDataRequest("ADX", symbol).Result;
             decimal adxCompositeScore = TD.GetCompositeScore("ADX", adxResponse, 7);

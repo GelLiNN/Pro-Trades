@@ -107,31 +107,41 @@ namespace Sociosearch.NET.Middleware
 
             for (int i = 0; i < days; i++)
             {
-                var ochlResult = resultSet[i];
-                string ochlResultDate = ochlResult.Value<string>("datetime");
-                decimal ochlResultVolume = decimal.Parse(ochlResult.Value<string>("volume"));
-
-                DateTime date = DateTime.Parse(ochlResultDate);
-                //DateTime date = DateTime.Now.AddDays(-1 * i);
-
-                if (DateTime.Compare(date, FirstDate) >= 0)
+                try
                 {
-                    List<FinraRecord> allRecords = GetAllShortVolume(date).Result;
-                    FinraRecord curDayRecord = allRecords.Where(x => x.Symbol == symbol).FirstOrDefault();
+                    var ochlResult = resultSet[i];
+                    string ochlResultDate = ochlResult.Value<string>("datetime");
+                    decimal ochlResultVolume = decimal.Parse(ochlResult.Value<string>("volume"));
 
-                    if (curDayRecord != null)
+                    DateTime date = DateTime.Parse(ochlResultDate);
+                    //DateTime date = DateTime.Now.AddDays(-1 * i);
+
+                    if (DateTime.Compare(date, FirstDate) >= 0)
                     {
-                        //Inject volume from TD since FINRA total volume CAN BE inaccurate
-                        decimal curDayVolume = Math.Max(ochlResultVolume, curDayRecord.TotalVolume);
-                        curDayRecord.TotalVolume = curDayVolume;
-                        shortRecords.Add(curDayRecord);
+                        List<FinraRecord> allRecords = GetAllShortVolume(date).Result;
+                        FinraRecord curDayRecord = allRecords.Where(x => x.Symbol == symbol).FirstOrDefault();
+
+                        if (curDayRecord != null)
+                        {
+                            //Inject volume from TD since FINRA total volume CAN BE inaccurate
+                            decimal curDayVolume = Math.Max(ochlResultVolume, curDayRecord.TotalVolume);
+                            curDayRecord.TotalVolume = curDayVolume;
+                            shortRecords.Add(curDayRecord);
+                        }
+                        else
+                        {
+                            //FINRA record was missing for this date, we should do something
+                            Debug.WriteLine(string.Format("INFO: FINRA record missing for {0} on date {1}",
+                                symbol, date.ToString("MM-dd-yyyy")));
+                        }
                     }
-                    else
-                    {
-                        //FINRA record was missing for this date, we should do something
-                        Debug.WriteLine(string.Format("INFO: FINRA record missing for {0} on date {1}",
-                            symbol, date.ToString("MM-dd-yyyy")));
-                    }
+                }
+                catch (Exception e)
+                {
+                    //FINRA record parsing failed, we should do something
+                    Debug.WriteLine(string.Format("EXCEPTION: FINRA record FAILED for {0} on day {1}",
+                        symbol, i));
+                    continue;
                 }
             }
             return shortRecords;

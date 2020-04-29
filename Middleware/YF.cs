@@ -91,7 +91,7 @@ namespace Sociosearch.NET.Middleware
                     companyStat.Splits.Add(split);
 
                 //Composite Score
-                var score = Controllers.SearchController.GetCompositeScoreTD(symbol);
+                var score = Controllers.SearchController.GetCompositeScoreInternalTD(symbol);
                 if (score.CompositeScoreValue > 0)
                     companyStat.CompositeScore = score;
             }

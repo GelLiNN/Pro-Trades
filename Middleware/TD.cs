@@ -560,7 +560,7 @@ namespace Sociosearch.NET.Middleware
             composite += (obvHasBuySignal) ? 15 : 0;
             composite += (obvHasSellSignal) ? -15 : 0;
 
-            return composite;
+            return Math.Min(composite, 100); //cap OBV composite at 100, no extra weight
         }
 
         public static decimal GetSlope(List<decimal> xList, List<decimal> yList)
@@ -570,6 +570,12 @@ namespace Sociosearch.NET.Middleware
             decimal xbar = xList.Average();
             decimal ybar = yList.Average();
             decimal slope = xys.Sum(xy => (xy.x - xbar) * (xy.y - ybar)) / xList.Sum(x => (x - xbar) * (x - xbar));
+            string s = "";
+            bool success = Int32.TryParse(s, out int n);
+            string[] stuff = new string[5];
+            List<string> list = new List<string>();
+            Dictionary<string, int> pris = new Dictionary<string, int>();
+            var ordered = pris.OrderBy(x => x.Value);
             return slope;
         }
 
@@ -609,6 +615,34 @@ namespace Sociosearch.NET.Middleware
             else
                 return 0;
         }
+
+        public static string result = "";
+        public static string GenerateLowestNumber(string number, int n)
+        {
+            Helper(number, n);
+            string retval = result;
+            result = string.Empty;
+            return retval;
+        }
+        private static void Helper(string str, int n)
+        {
+	        if (n == 0)
+	        {
+		        result += str;
+		        return;
+	        }
+	        if (str.Length <= n)
+		        return;
+	        // Find smallest characters
+	        int minIndex = 0;
+	        for (int i = 1; i <= n; i++)
+		        if (str[i] < str[minIndex])
+			        minIndex = i;
+	        result += str[minIndex];
+	        string newStr = str.Substring(minIndex + 1);
+            Helper(newStr, n - minIndex);
+        }
+
 
         public static List<decimal> GetZScores(List<decimal> input)
         {
