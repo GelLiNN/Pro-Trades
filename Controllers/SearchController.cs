@@ -86,54 +86,12 @@ namespace Sociosearch.NET.Controllers
         [HttpGet("/GetCompositeScoreTD/{symbol}")]
         public CompositeScoreResult GetCompositeScoreTD(string symbol)
         {
-            string adxResponse = TD.CompleteTwelveDataRequest("ADX", symbol).Result;
-            decimal adxCompositeScore = TD.GetCompositeScore("ADX", adxResponse, 7);
-            string obvResponse = TD.CompleteTwelveDataRequest("OBV", symbol).Result;
-            decimal obvCompositeScore = TD.GetCompositeScore("OBV", obvResponse, 7);
-            string aroonResponse = TD.CompleteTwelveDataRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = TD.GetCompositeScore("AROON", aroonResponse, 7);
-            string macdResponse = TD.CompleteTwelveDataRequest("MACD", symbol).Result;
-            decimal macdCompositeScore = TD.GetCompositeScore("MACD", macdResponse, 7);
-
-            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
-
-            return new CompositeScoreResult
-            {
-                Symbol = symbol,
-                DataProvider = "TwelveData",
-                ADXComposite = adxCompositeScore,
-                OBVComposite = obvCompositeScore,
-                AROONComposite = aroonCompositeScore,
-                MACDComposite = macdCompositeScore,
-                CompositeScoreValue = (adxCompositeScore + obvCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 5,
-                ShortInterest = shortResult
-            };
+            return TD.GetCompositeScoreResult(symbol);
         }
 
         public static CompositeScoreResult GetCompositeScoreInternalTD(string symbol)
         {
-            string adxResponse = TD.CompleteTwelveDataRequest("ADX", symbol).Result;
-            decimal adxCompositeScore = TD.GetCompositeScore("ADX", adxResponse, 7);
-            string obvResponse = TD.CompleteTwelveDataRequest("OBV", symbol).Result;
-            decimal obvCompositeScore = TD.GetCompositeScore("OBV", obvResponse, 7);
-            string aroonResponse = TD.CompleteTwelveDataRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = TD.GetCompositeScore("AROON", aroonResponse, 7);
-            string macdResponse = TD.CompleteTwelveDataRequest("MACD", symbol).Result;
-            decimal macdCompositeScore = TD.GetCompositeScore("MACD", macdResponse, 7);
-
-            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
-
-            return new CompositeScoreResult
-            {
-                Symbol = symbol,
-                DataProvider = "TwelveData",
-                ADXComposite = adxCompositeScore,
-                OBVComposite = obvCompositeScore,
-                AROONComposite = aroonCompositeScore,
-                MACDComposite = macdCompositeScore,
-                CompositeScoreValue = (adxCompositeScore + obvCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 5,
-                ShortInterest = shortResult
-            };
+            return TD.GetCompositeScoreResult(symbol);
         }
 
         /*

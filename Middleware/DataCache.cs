@@ -261,9 +261,11 @@ namespace Sociosearch.NET.Middleware
 
                 string nasdaqData = Companies.GetFromFtpUri(Companies.NasdaqSymbolsUri);
                 string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-                for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
+                Random r1 = new Random();
+                string[] randomizedNasdaqLines = nasdaqDataLines.OrderBy(x => r1.Next()).ToArray();
+                for (int i = 1; i < randomizedNasdaqLines.Length - 1; i++) //trim first and last row
                 {
-                    string line = nasdaqDataLines[i];
+                    string line = randomizedNasdaqLines[i];
                     string[] data = line.Split('|');
                     if (data.Count() > 3)
                     {
@@ -283,9 +285,11 @@ namespace Sociosearch.NET.Middleware
 
                 string otcData = Companies.GetFromFtpUri(Companies.OtcSymbolsUri);
                 string[] otcDataLines = otcData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-                for (int j = 1; j < otcDataLines.Length - 1; j++) //trim first and last row
+                Random r2 = new Random();
+                string[] randomizedOtcLines = otcDataLines.OrderBy(x => r2.Next()).ToArray();
+                for (int j = 1; j < randomizedOtcLines.Length - 1; j++) //trim first and last row
                 {
-                    string line = otcDataLines[j];
+                    string line = randomizedOtcLines[j];
                     string[] data = line.Split('|');
                     if (data.Count() > 3)
                     {
@@ -301,9 +305,11 @@ namespace Sociosearch.NET.Middleware
 
                 string otcMarketsData = Companies.GetFromUri(Companies.OtcMarketsUri);
                 string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-                for (int k = 1; k < otcMarketsDataLines.Length; k++) //trim first row
+                Random r3 = new Random();
+                string[] randomizedOtcMarketsLines = otcMarketsDataLines.OrderBy(x => r3.Next()).ToArray();
+                for (int k = 1; k < randomizedOtcMarketsLines.Length; k++) //trim first row
                 {
-                    string line = otcMarketsDataLines[k];
+                    string line = randomizedOtcMarketsLines[k];
                     string[] data = line.Split(',');
                     if (data.Count() > 3)
                     {

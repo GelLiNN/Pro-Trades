@@ -12,6 +12,7 @@ namespace Sociosearch.NET.Models
         public decimal OBVComposite { get; set; }
         public decimal AROONComposite { get; set; }
         public decimal MACDComposite { get; set; }
+        public string CompositeRank { get; set; }
         public decimal CompositeScoreValue { get; set; }
         public ShortInterestResult ShortInterest { get; set; }
     }
