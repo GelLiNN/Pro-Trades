@@ -44,6 +44,9 @@ namespace Sociosearch.NET.Middleware
             _requestManager = manager;
 
             CachedSymbols = new Dictionary<string, HashSet<string>>();
+            foreach (string cacheId in this.CacheIds)
+                CachedSymbols.Add(cacheId, new HashSet<string>());
+
             ExceptionReport = new Dictionary<string, string>();
         }
 
@@ -256,9 +259,6 @@ namespace Sociosearch.NET.Middleware
             int count = 0;
             await Task.Run(() =>
             {
-                //initialize the corresponding set of cached symbols for this cacheId
-                this.CachedSymbols.Add(cacheId, new HashSet<string>());
-
                 string nasdaqData = Companies.GetFromFtpUri(Companies.NasdaqSymbolsUri);
                 string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
                 Random r1 = new Random();
