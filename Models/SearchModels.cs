@@ -15,6 +15,7 @@ namespace Sociosearch.NET.Models
         public string CompositeRank { get; set; }
         public decimal CompositeScoreValue { get; set; }
         public ShortInterestResult ShortInterest { get; set; }
+        public FundamentalsResult Fundamentals { get; set; }
     }
 
     public class ShortInterestResult
@@ -25,6 +26,22 @@ namespace Sociosearch.NET.Models
         public decimal ShortInterestPercentAverage { get; set; }
         public decimal ShortInterestSlope { get; set; }
         public decimal ShortInterestCompositeScore { get; set; }
+    }
+
+    public class FundamentalsResult
+    {
+        public decimal VolumeUSD { get; set; }
+        public decimal AverageVolumeUSD { get; set; }
+        public decimal VolumeSlope { get; set; }
+        public decimal PriceSlope { get; set; }
+        public decimal AverageEPS { get; set; }
+        public decimal AveragePE { get; set; }
+        public decimal GrowthEPS { get; set; }
+        public decimal GrowthPE { get; set; }
+        public bool HasDividends { get; set; }
+        public bool Disqualified { get; set; }
+        public string Message { get; set; }
+        public decimal FundamentalsCompositeScore { get; set; }
     }
 
     /*

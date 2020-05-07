@@ -83,10 +83,23 @@ namespace Sociosearch.NET.Controllers
             };
         }
 
+        [HttpGet("/GetCompositeScoreNewTD/{symbol}")]
+        public CompositeScoreResult GetCompositeScoreNewTD(string symbol)
+        {
+            Security quote = YF.GetQuoteAsync(symbol).Result;
+            return TD.GetCompositeScoreResult(symbol, quote);
+        }
+
         [HttpGet("/GetCompositeScoreTD/{symbol}")]
         public CompositeScoreResult GetCompositeScoreTD(string symbol)
         {
             return TD.GetCompositeScoreResult(symbol);
+        }
+
+        //overload
+        public static CompositeScoreResult GetCompositeScoreInternalTD(string symbol, Security quote)
+        {
+            return TD.GetCompositeScoreResult(symbol, quote);
         }
 
         public static CompositeScoreResult GetCompositeScoreInternalTD(string symbol)

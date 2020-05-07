@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using Sociosearch.NET.Models;
+using YahooFinanceApi;
 
 namespace Sociosearch.NET.Middleware
 {
@@ -196,6 +197,7 @@ namespace Sociosearch.NET.Middleware
             return compositeScore;
         }
 
+        //non-overload
         public static CompositeScoreResult GetCompositeScoreResult(string symbol)
         {
             string adxResponse = CompleteTwelveDataRequest("ADX", symbol).Result;
@@ -217,12 +219,59 @@ namespace Sociosearch.NET.Middleware
                 OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
-                CompositeScoreValue = (adxCompositeScore + obvCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 5,
+                CompositeScoreValue = (adxCompositeScore + obvCompositeScore + aroonCompositeScore + macdCompositeScore +
+                    shortResult.ShortInterestCompositeScore) / 5,
                 ShortInterest = shortResult
             };
 
             string rank = string.Empty;
             if (scoreResult.CompositeScoreValue > 0 && scoreResult.CompositeScoreValue < 60)
+                rank = "BAD";
+            else if (scoreResult.CompositeScoreValue >= 60 && scoreResult.CompositeScoreValue < 70)
+                rank = "FAIR";
+            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < 80)
+                rank = "GOOD";
+            else if (scoreResult.CompositeScoreValue >= 80)
+                rank = "PRIME";
+            scoreResult.CompositeRank = rank;
+
+            return scoreResult;
+        }
+
+        //overload
+        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
+        {
+            string adxResponse = CompleteTwelveDataRequest("ADX", symbol).Result;
+            decimal adxCompositeScore = GetCompositeScore("ADX", adxResponse, 7);
+            string obvResponse = CompleteTwelveDataRequest("OBV", symbol).Result;
+            decimal obvCompositeScore = GetCompositeScore("OBV", obvResponse, 7);
+            string aroonResponse = CompleteTwelveDataRequest("AROON", symbol).Result;
+            decimal aroonCompositeScore = GetCompositeScore("AROON", aroonResponse, 7);
+            string macdResponse = CompleteTwelveDataRequest("MACD", symbol).Result;
+            decimal macdCompositeScore = GetCompositeScore("MACD", macdResponse, 7);
+
+            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
+
+            FundamentalsResult fundResult = GetFundamentals(quote);
+
+            CompositeScoreResult scoreResult = new CompositeScoreResult
+            {
+                Symbol = symbol,
+                DataProvider = "TwelveData",
+                ADXComposite = adxCompositeScore,
+                OBVComposite = obvCompositeScore,
+                AROONComposite = aroonCompositeScore,
+                MACDComposite = macdCompositeScore,
+                CompositeScoreValue = (adxCompositeScore + obvCompositeScore + aroonCompositeScore + macdCompositeScore +
+                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsCompositeScore) / 6,
+                ShortInterest = shortResult,
+                Fundamentals = fundResult
+            };
+
+            string rank = string.Empty;
+            if (scoreResult.Fundamentals.Disqualified)
+                rank = "DISQUALIFIED";
+            else if (scoreResult.CompositeScoreValue > 0 && scoreResult.CompositeScoreValue < 60)
                 rank = "BAD";
             else if (scoreResult.CompositeScoreValue >= 60 && scoreResult.CompositeScoreValue < 70)
                 rank = "FAIR";
@@ -601,6 +650,117 @@ namespace Sociosearch.NET.Middleware
             composite += (obvHasSellSignal) ? -15 : 0;
 
             return Math.Min(composite, 100); //cap OBV composite at 100, no extra weight
+        }
+
+        //Fundamentals (volume, price, earnings and filings up-to-date
+        //RELIES completely on unofficial yahoo finance API for now
+        public static FundamentalsResult GetFundamentals(Security quote)
+        {
+            List<decimal> priceYList = new List<decimal>();
+            priceYList.Add(Convert.ToDecimal(quote.TwoHundredDayAverage));
+            priceYList.Add(Convert.ToDecimal(quote.FiftyDayAverage));
+            priceYList.Add(Convert.ToDecimal(quote.RegularMarketPrice));
+
+            List<decimal> normalizedPrice = GetNormalizedData(priceYList);
+
+            List<decimal> priceXList = new List<decimal>();
+            for (int i = 1; i <= priceYList.Count; i++)
+                priceXList.Add(i);
+
+            decimal priceSlope = GetSlope(priceXList, priceYList);
+
+            decimal normalizedPriceSlope = GetSlope(priceXList, normalizedPrice);
+            decimal normalizedPriceSlopeMultiplier = GetSlopeMultiplier(normalizedPriceSlope);
+
+            List<decimal> volumeYList = new List<decimal>();
+            volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume3Month));
+            volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume10Day));
+            volumeYList.Add(Convert.ToDecimal(quote.RegularMarketVolume));
+
+            List<decimal> normalizedVolume = GetNormalizedData(volumeYList);
+
+            List<decimal> volumeXList = new List<decimal>();
+            for (int i = 1; i <= volumeYList.Count; i++)
+                volumeXList.Add(i);
+
+            decimal volumeSlope = GetSlope(volumeXList, volumeYList);
+
+            decimal normalizedVolumeSlope = GetSlope(volumeXList, normalizedVolume);
+            decimal normalizedVolumeSlopeMultiplier = GetSlopeMultiplier(normalizedVolumeSlope);
+
+            decimal volumeUSD = Convert.ToDecimal(quote.RegularMarketVolume) *
+                Convert.ToDecimal(quote.RegularMarketPrice);
+
+            decimal averageVolumeUSD = Convert.ToDecimal(quote.AverageDailyVolume3Month) *
+                Convert.ToDecimal(quote.FiftyDayAverage);
+
+            //Do stuff with PE and EPS data
+            decimal forwardEPS = 0.0M, trailingEPS = 0.0M, averageEPS = 0.0M, growthEPS = 0.0M;
+            decimal forwardPE = 0.0M, trailingPE = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
+            string message = string.Empty;
+            try
+            {
+                forwardEPS = Convert.ToDecimal(quote.EpsForward);
+                trailingEPS = Convert.ToDecimal(quote.EpsTrailingTwelveMonths);
+                averageEPS = (forwardEPS + trailingEPS) / 2;
+                growthEPS = forwardEPS - trailingEPS;
+
+                forwardPE = Convert.ToDecimal(quote.ForwardPE);
+                trailingPE = Convert.ToDecimal(quote.TrailingPE);
+                averagePE = (forwardPE + trailingPE) / 2;
+                growthPE = forwardPE - trailingPE;
+            }
+            catch (Exception e)
+            {
+                message = "EXCEPTION getting PE and EPS data: " + e.Message;
+            }
+
+            //Add bonus for dividends maybe?
+
+            //Add bonus if current volume is greater than average volume
+            decimal volumeTrendingBonus = (volumeUSD > averageVolumeUSD) ? 10 : 0;
+
+            //calculate composite score based on the following values and weighted multipliers
+            //Base value should be calculated based on PE and EPS
+            //Bonuses added for positive volume and price slopes, and PE / EPS Growth
+            decimal composite = 0;
+            composite += (averagePE > 1.0M) ? averagePE * 2 + 15 : 0;
+            composite += (averageEPS > 0.5M) ? averageEPS * 3 + 15 : 0;
+            composite += (growthPE > 0) ? growthPE + 10 : 0;
+            composite += (growthEPS > 0) ? growthEPS + 10 : 0;
+            composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier + 5 : 0;
+            composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier + 10 : 0;
+            composite += volumeTrendingBonus;
+
+            composite = Math.Min(composite, 100); //cap FUND composite at 100, no extra weight
+
+            decimal disqualifyingLimit = 1000000.0M;
+
+            //Add this later
+            //decimal annualDivRate = 0.0M;
+            //bool divs = Decimal.TryParse(quote.TrailingAnnualDividendRate.ToString(), out annualDivRate)
+
+            FundamentalsResult fundamentalsResult = new FundamentalsResult
+            {
+                VolumeUSD = volumeUSD,
+                AverageVolumeUSD = averageVolumeUSD,
+                VolumeSlope = volumeSlope,
+                PriceSlope = priceSlope,
+                AverageEPS = averageEPS,
+                AveragePE = averagePE,
+                GrowthEPS = growthEPS,
+                GrowthPE = growthPE,
+                HasDividends = false,
+                Disqualified = (volumeUSD < disqualifyingLimit && averageVolumeUSD < disqualifyingLimit),
+                Message = message,
+                FundamentalsCompositeScore = composite
+            };
+
+            //Pity Points for exceptions getting PE and EPS data
+            if (!string.IsNullOrEmpty(message))
+                fundamentalsResult.FundamentalsCompositeScore = Math.Max(fundamentalsResult.FundamentalsCompositeScore, 50);
+
+            return fundamentalsResult;
         }
 
         public static decimal GetSlope(List<decimal> xList, List<decimal> yList)
