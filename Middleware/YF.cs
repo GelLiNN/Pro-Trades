@@ -90,8 +90,9 @@ namespace Sociosearch.NET.Middleware
                 foreach (var split in splits)
                     companyStat.Splits.Add(split);
 
-                //Composite Score
-                var score = Controllers.SearchController.GetCompositeScoreInternalTD(symbol, quote);
+                //Composite Score, this gets the YF quote twice right now
+                //TODO: Update this method to not get YF quote twice during cache loading
+                var score = Controllers.SearchController.GetCompositeScoreInternalTD(symbol);
                 if (score.CompositeScoreValue > 0)
                     companyStat.CompositeScore = score;
             }

@@ -39,7 +39,7 @@ namespace Sociosearch.NET.Models
         public decimal GrowthEPS { get; set; }
         public decimal GrowthPE { get; set; }
         public bool HasDividends { get; set; }
-        public bool Disqualified { get; set; }
+        public bool IsBlacklisted { get; set; }
         public string Message { get; set; }
         public decimal FundamentalsCompositeScore { get; set; }
     }

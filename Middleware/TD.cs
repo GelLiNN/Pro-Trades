@@ -197,48 +197,6 @@ namespace Sociosearch.NET.Middleware
             return compositeScore;
         }
 
-        //non-overload
-        public static CompositeScoreResult GetCompositeScoreResult(string symbol)
-        {
-            string adxResponse = CompleteTwelveDataRequest("ADX", symbol).Result;
-            decimal adxCompositeScore = GetCompositeScore("ADX", adxResponse, 7);
-            string obvResponse = CompleteTwelveDataRequest("OBV", symbol).Result;
-            decimal obvCompositeScore = GetCompositeScore("OBV", obvResponse, 7);
-            string aroonResponse = CompleteTwelveDataRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = GetCompositeScore("AROON", aroonResponse, 7);
-            string macdResponse = CompleteTwelveDataRequest("MACD", symbol).Result;
-            decimal macdCompositeScore = GetCompositeScore("MACD", macdResponse, 7);
-
-            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
-
-            CompositeScoreResult scoreResult = new CompositeScoreResult
-            {
-                Symbol = symbol,
-                DataProvider = "TwelveData",
-                ADXComposite = adxCompositeScore,
-                OBVComposite = obvCompositeScore,
-                AROONComposite = aroonCompositeScore,
-                MACDComposite = macdCompositeScore,
-                CompositeScoreValue = (adxCompositeScore + obvCompositeScore + aroonCompositeScore + macdCompositeScore +
-                    shortResult.ShortInterestCompositeScore) / 5,
-                ShortInterest = shortResult
-            };
-
-            string rank = string.Empty;
-            if (scoreResult.CompositeScoreValue > 0 && scoreResult.CompositeScoreValue < 60)
-                rank = "BAD";
-            else if (scoreResult.CompositeScoreValue >= 60 && scoreResult.CompositeScoreValue < 70)
-                rank = "FAIR";
-            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < 80)
-                rank = "GOOD";
-            else if (scoreResult.CompositeScoreValue >= 80)
-                rank = "PRIME";
-            scoreResult.CompositeRank = rank;
-
-            return scoreResult;
-        }
-
-        //overload
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
         {
             string adxResponse = CompleteTwelveDataRequest("ADX", symbol).Result;
@@ -269,7 +227,7 @@ namespace Sociosearch.NET.Middleware
             };
 
             string rank = string.Empty;
-            if (scoreResult.Fundamentals.Disqualified)
+            if (scoreResult.Fundamentals.IsBlacklisted)
                 rank = "DISQUALIFIED";
             else if (scoreResult.CompositeScoreValue > 0 && scoreResult.CompositeScoreValue < 60)
                 rank = "BAD";
@@ -751,7 +709,7 @@ namespace Sociosearch.NET.Middleware
                 GrowthEPS = growthEPS,
                 GrowthPE = growthPE,
                 HasDividends = false,
-                Disqualified = (volumeUSD < disqualifyingLimit && averageVolumeUSD < disqualifyingLimit),
+                IsBlacklisted = (volumeUSD < disqualifyingLimit && averageVolumeUSD < disqualifyingLimit),
                 Message = message,
                 FundamentalsCompositeScore = composite
             };
