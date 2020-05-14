@@ -281,34 +281,11 @@ namespace Sociosearch.NET.Controllers
             //return string.Empty;
         }
 
-        //Below did not work "Win32Exception: No such file or directory System.Diagnostics.Process.ForkAndExecProcess"
-        public static string ZacksResult = string.Empty;
 
         [HttpGet("/GetZacksRank/{symbol}")]
         public string GetZacksRank(string symbol)
         {
-            var proc = new System.Diagnostics.Process();
-            proc.StartInfo.CreateNoWindow = true;
-            proc.StartInfo.RedirectStandardInput = true;
-            proc.StartInfo.RedirectStandardOutput = true;
-            proc.StartInfo.UseShellExecute = false;
-            proc.StartInfo.RedirectStandardError = true;
-            proc.StartInfo.FileName = "node.exe";
-            proc.StartInfo.Arguments = "-i";
-            proc.Start();
-            proc.BeginOutputReadLine();
-
-            proc.StandardInput.WriteLine(string.Format("zacks-api {0};", symbol));
-            proc.StandardInput.WriteLine("setTimeout(function(){ process.exit();}, 10000).suppressOut;");
-            proc.OutputDataReceived += proc_RecordResult;
-            proc.WaitForExit();
-            return ZacksResult;
-        }
-
-        static void proc_RecordResult(object sender, System.Diagnostics.DataReceivedEventArgs e)
-        {
-            Console.WriteLine(e.Data);
-            ZacksResult = e.Data;
+            return NodeInterop.GetZacksRank(symbol);
         }
     }
 }
