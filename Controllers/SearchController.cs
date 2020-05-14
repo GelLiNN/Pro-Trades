@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Sociosearch.NET.Middleware;
+using Sociosearch.NET.Node;
 using Sociosearch.NET.Models;
 using YahooFinanceApi;
 
@@ -18,10 +19,13 @@ namespace Sociosearch.NET.Controllers
 
         private static DataCache _cache;
 
-        public SearchController(ILogger<SearchController> logger, DataCache cache)
+        private readonly NodeInterop _node;
+
+        public SearchController(ILogger<SearchController> logger, DataCache cache, NodeInterop node)
         {
             _logger = logger;
             _cache = cache;
+            _node = node;
         }
 
         [HttpGet("/Search")]
@@ -285,7 +289,7 @@ namespace Sociosearch.NET.Controllers
         [HttpGet("/GetZacksRank/{symbol}")]
         public string GetZacksRank(string symbol)
         {
-            return NodeInterop.GetZacksRank(symbol);
+            return _node.GetZacksRank(symbol);
         }
     }
 }

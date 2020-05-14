@@ -10,6 +10,7 @@ using Sociosearch.NET.Middleware;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.OpenApi.Models;
 using System.Collections.Generic;
+using Sociosearch.NET.Node;
 
 namespace Sociosearch.NET
 {
@@ -59,6 +60,10 @@ namespace Sociosearch.NET
             {
                 swagger.SwaggerDoc("v1", new OpenApiInfo { Title = "SocioSearch API", Version = "v1" });
             });
+
+            //Setup NodeJS Interop
+            services.AddNodeServices();
+            services.AddSingleton<NodeInterop>();
         }
 
         //This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
