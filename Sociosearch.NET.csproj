@@ -22,11 +22,15 @@
     <PackageReference Include="YahooFinanceApi" Version="2.1.2" />
     <PackageReference Include="TinyCsvParser" Version="2.5.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.3.3" />
+    <PackageReference Include="Edge.js" Version="8.2.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Middleware\" />
     <Folder Include="Views\Search\" />
     <Folder Include="Views\About\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="package.json" />
   </ItemGroup>
 </Project>
