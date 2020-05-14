@@ -1,0 +1,22 @@
+{
+  "name": "sociosearch.net",
+  "version": "1.0.0",
+  "description": "Microsoft ASP.NET CORE C# implementation of Sociosearch.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GelLiNN/sociosearch.NET.git"
+  },
+  "author": "gellinn",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GelLiNN/sociosearch.NET/issues"
+  },
+  "homepage": "https://github.com/GelLiNN/sociosearch.NET#readme",
+  "dependencies": {
+    "zacks-api": "^1.0.5"
+  }
+}
