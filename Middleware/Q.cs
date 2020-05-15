@@ -9,9 +9,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
-using Sociosearch.NET.Models;
+using PT.Models;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     //QUANDL module useful for getting short interest data for a company
     //Mayble I should get more data from Q?

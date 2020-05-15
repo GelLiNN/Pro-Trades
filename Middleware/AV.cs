@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     //API Documentation https://www.alphavantage.co/documentation/
     public static class AV

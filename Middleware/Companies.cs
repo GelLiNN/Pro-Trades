@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Sociosearch.NET.Models;
+using PT.Models;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     //Module for getting all or most company symbols and names from all exchanges
     //Nasdaq FTP data dump files for loading large datasets
@@ -25,7 +25,7 @@ namespace Sociosearch.NET.Middleware
             request.Method = WebRequestMethods.Ftp.DownloadFile;
             string responseStr = string.Empty;
 
-            //Read the file from the server & write to destination                
+            //Read the file from the server & write to destination
             using (FtpWebResponse response = (FtpWebResponse)request.GetResponse()) // Error here
             using (Stream responseStream = response.GetResponseStream())
             using (StreamReader reader = new StreamReader(responseStream))
@@ -41,7 +41,7 @@ namespace Sociosearch.NET.Middleware
             request.Method = "GET";
             string responseStr = string.Empty;
 
-            //Read the file from the server & write to destination                
+            //Read the file from the server & write to destination
             using (HttpWebResponse response = (HttpWebResponse)request.GetResponse()) // Error here
             using (Stream responseStream = response.GetResponseStream())
             using (StreamReader reader = new StreamReader(responseStream))

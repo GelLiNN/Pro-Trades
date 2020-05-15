@@ -6,10 +6,10 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
-using Sociosearch.NET.Models;
+using PT.Models;
 using YahooFinanceApi;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     //Twelve Data https://twelvedata.com/docs#getting-started
     //API docs https://twelvedata.com/docs#technical-indicators

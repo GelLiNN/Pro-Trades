@@ -5,9 +5,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using Sociosearch.NET.Models;
+using PT.Models;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     //API Documentation https://financialmodelingprep.com/developer/docs/
     //No API key needed for this one?

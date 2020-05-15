@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace Sociosearch.NET.Data.Migrations
+namespace PT.Data.Migrations
 {
     public partial class CreateIdentitySchema : Migration
     {

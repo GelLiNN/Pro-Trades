@@ -3,7 +3,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     public static class Ratings
     {

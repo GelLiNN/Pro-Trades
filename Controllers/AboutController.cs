@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Sociosearch.NET.Controllers
+namespace PT.Controllers
 {
     public class AboutController : Controller
     {

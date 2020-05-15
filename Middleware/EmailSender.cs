@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     public class EmailSender : IEmailSender
     {
@@ -28,7 +28,7 @@ namespace Sociosearch.NET.Middleware
             var client = new SendGridClient(apiKey);
             var msg = new SendGridMessage()
             {
-                From = new EmailAddress("noreply@sociosearch.com", SendGridSendingUser),
+                From = new EmailAddress("noreply@pro-trades.com", SendGridSendingUser),
                 Subject = subject,
                 PlainTextContent = message,
                 HtmlContent = message
@@ -53,7 +53,7 @@ namespace Sociosearch.NET.Middleware
         {
             var apiKey = Program.Config.GetValue<string>("SendGridApiKey");
             var client = new SendGridClient(apiKey);
-            var from = new EmailAddress("noreply@sociosearch.com", "NOREPLY");
+            var from = new EmailAddress("noreply@pro-trades.com", "NOREPLY");
             var subject = "Sending with SendGrid is Fun";
             var to = new EmailAddress("Kellan.Nealy@gmail.com", "Kellan Nealy");
             var plainTextContent = "and easy to do anywhere, even with C#";

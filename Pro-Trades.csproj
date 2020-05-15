@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <UserSecretsId>aspnet-Sociosearch.NET-AC0D8A40-6DCF-4EC4-8169-89E9483576A9</UserSecretsId>
+    <UserSecretsId>aspnet-Pro-Trades-AC0D8A40-6DCF-4EC4-8169-89E9483576A9</UserSecretsId>
   </PropertyGroup>
 
 

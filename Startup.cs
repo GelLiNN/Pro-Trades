@@ -2,17 +2,17 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
-using Sociosearch.NET.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Sociosearch.NET.Middleware;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.OpenApi.Models;
 using System.Collections.Generic;
-using Sociosearch.NET.Node;
+using PT.Middleware;
+using PT.Data;
+using PT.Node;
 
-namespace Sociosearch.NET
+namespace PT
 {
     public class Startup
     {
@@ -24,7 +24,7 @@ namespace Sociosearch.NET
                 options.UseSqlite(
                     Program.Config.GetConnectionString("DefaultConnection")));
 
-            //Use Microsoft Identity for Sociosearch logins
+            //Use Microsoft Identity for PT logins
             services
                 .AddDefaultIdentity<IdentityUser>(options =>
                 {
@@ -58,7 +58,7 @@ namespace Sociosearch.NET
             //Setup the generated swagger JSON for swagger documentation
             services.AddSwaggerGen(swagger =>
             {
-                swagger.SwaggerDoc("v1", new OpenApiInfo { Title = "SocioSearch API", Version = "v1" });
+                swagger.SwaggerDoc("v1", new OpenApiInfo { Title = "Pro-Trades API", Version = "v1" });
             });
 
             //Setup NodeJS Interop
@@ -95,7 +95,7 @@ namespace Sociosearch.NET
             app.UseSwagger();
             app.UseSwaggerUI(swagger =>
             {
-                swagger.SwaggerEndpoint("/swagger/v1/swagger.json", "SocioSearch API V1");
+                swagger.SwaggerEndpoint("/swagger/v1/swagger.json", "Pro-Trades API V1");
             });
         }
     }

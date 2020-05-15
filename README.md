@@ -1,2 +1,2 @@
-# sociosearch.NET
-Microsoft ASP.NET CORE C# implementation of Sociosearch.
+# Pro-Trades
+Microsoft ASP.NET CORE C# implementation of Pro-Trades Investment Guidance.

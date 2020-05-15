@@ -6,13 +6,13 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using Sociosearch.NET.Models;
+using PT.Models;
 using TinyCsvParser;
 using TinyCsvParser.Mapping;
 using TinyCsvParser.Model;
 using TinyCsvParser.TypeConverter;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     public static class FINRA
     {

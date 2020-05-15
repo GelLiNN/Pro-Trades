@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using YahooFinanceApi;
 
-namespace Sociosearch.NET.Models
+namespace PT.Models
 {
     public class CompositeScoreResult
     {

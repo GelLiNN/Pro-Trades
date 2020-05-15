@@ -1,7 +1,7 @@
 ﻿{
   "iisSettings": {
-    "windowsAuthentication": false, 
-    "anonymousAuthentication": true, 
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
     "iisExpress": {
       "applicationUrl": "http://localhost:9353",
       "sslPort": 44327
@@ -15,7 +15,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "Sociosearch.NET": {
+    "Pro-Trades": {
       "commandName": "Project",
       "launchBrowser": false,
       "applicationUrl": "https://localhost:7777;http://localhost:7776",

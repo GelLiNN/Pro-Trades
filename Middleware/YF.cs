@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Sociosearch.NET.Models;
+using PT.Models;
 using YahooFinanceApi;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     //Yahoo Finance API Documentation https://github.com/lppkarl/YahooFinanceApi
     //No API key needed for this one?

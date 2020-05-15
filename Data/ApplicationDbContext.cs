@@ -4,7 +4,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace Sociosearch.NET.Data
+namespace PT.Data
 {
     public class ApplicationDbContext : IdentityDbContext
     {

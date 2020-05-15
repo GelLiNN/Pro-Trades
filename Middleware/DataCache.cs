@@ -5,9 +5,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
-using Sociosearch.NET.Models;
+using PT.Models;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     //MemoryCache wrapper for storing cache keys and otherwise assisting with cache functionality
     public class DataCache

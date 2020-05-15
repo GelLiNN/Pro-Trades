@@ -4,12 +4,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using Sociosearch.NET.Models;
+using PT.Models;
 using VSLee.IEXSharp;
 using VSLee.IEXSharp.Model.Stock.Request;
 using VSLee.IEXSharp.Model.Stock.Response;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     //API Key console https://iexcloud.io/console
     //API docs https://iexcloud.io/docs/api/#testing-sandbox

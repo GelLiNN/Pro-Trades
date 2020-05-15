@@ -5,10 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Sociosearch.NET.Middleware;
-using Sociosearch.NET.Models;
+using PT.Middleware;
+using PT.Models;
 
-namespace Sociosearch.NET.Controllers
+namespace PT.Controllers
 {
     public class HomeController : Controller
     {

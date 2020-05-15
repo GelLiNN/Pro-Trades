@@ -1,6 +1,6 @@
 using System;
 
-namespace Sociosearch.NET.Models
+namespace PT.Models
 {
     public class ErrorViewModel
     {

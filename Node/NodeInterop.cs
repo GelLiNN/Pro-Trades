@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.NodeServices;
 
-namespace Sociosearch.NET.Node
+namespace PT.Node
 {
     public class NodeInterop
     {

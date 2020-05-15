@@ -6,12 +6,12 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Sociosearch.NET.Middleware;
-using Sociosearch.NET.Node;
-using Sociosearch.NET.Models;
+using PT.Middleware;
+using PT.Node;
+using PT.Models;
 using YahooFinanceApi;
 
-namespace Sociosearch.NET.Controllers
+namespace PT.Controllers
 {
     public class SearchController : Controller
     {

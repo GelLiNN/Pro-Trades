@@ -7,7 +7,7 @@ using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
-namespace Sociosearch.NET.Middleware
+namespace PT.Middleware
 {
     //Request Manager class
     public class RequestManager
