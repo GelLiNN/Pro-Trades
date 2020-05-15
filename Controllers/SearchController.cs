@@ -231,6 +231,14 @@ namespace Sociosearch.NET.Controllers
             return cachedCompanies;
         }
 
+        [HttpGet("/GetZacksRank/{symbol}")]
+        public string GetZacksRank(string symbol)
+        {
+            //return _node.TestNodeInterop();
+            //did not actually need Node Interop for this, but will keep around just in case.
+            return Ratings.GetZacksRank(symbol.ToUpper());
+        }
+
         /*
          * Other endpoints
          */
@@ -277,19 +285,10 @@ namespace Sociosearch.NET.Controllers
             Array.Sort(combosArray);
             return String.Join(",", combosArray);
 
-
             //Stuff from 2-4 Interview for Jasleen / Collabera
             //Interviewees Veronica and Brad
 
-
             //return string.Empty;
-        }
-
-
-        [HttpGet("/GetZacksRank/{symbol}")]
-        public string GetZacksRank(string symbol)
-        {
-            return _node.GetZacksRank(symbol);
         }
     }
 }

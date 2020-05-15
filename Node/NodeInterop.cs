@@ -14,12 +14,13 @@ namespace Sociosearch.NET.Node
             _node = nodeServices;
         }
 
-        public string GetZacksRank(string symbol)
+        // Can also pass parameters to the Node scripts if needed
+        public string TestNodeInterop()
         {
-            return MyAction(_node).Result;
+            return TestNodeInteropHelper(_node).Result;
         }
 
-        public static async Task<string> MyAction([FromServices] INodeServices nodeServices)
+        public static async Task<string> TestNodeInteropHelper([FromServices] INodeServices nodeServices)
         {
             var result = await nodeServices.InvokeAsync<int>("Node/addNumbers", 1, 2);
             return "1 + 2 = " + result;
