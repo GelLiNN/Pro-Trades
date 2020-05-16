@@ -77,15 +77,6 @@ namespace PT.Middleware
                 totalNeutralSentiments += c.neutral != null ? (int)c.neutral : 0;
             }
 
-            List<string> sectorSiblings = new List<string>();
-            
-            foreach (TipRanksSentimentResponse.Sector sibling in trResponse.sector)
-            {
-                string res = string.Format("Sector Sibling: {0}, Symbol: {1}, BullishPercent: {2}, BearishPercent {3}",
-                    sibling.companyName, sibling.ticker, sibling.bullishPercent, sibling.bearishPercent);
-                sectorSiblings.Add(res);
-            }
-
             string bsn = "Buy Sentiments: " + totalBuySentiments + ", Sell Sentiments: " + totalSellSentiments + ", Neutral Sentiments: " + totalNeutralSentiments;
 
             //Have to do these annoying null checks apparently
@@ -104,10 +95,14 @@ namespace PT.Middleware
 
             string sectorBullish = "Sector Average Bullish Sentiment: " + trResponse.sectorAverageBullishPercent;
             string sectorAverageNews = "Sector Average News Score: " + trResponse.sectorAverageNewsScore;
-            string score = "Score: " + trResponse.score;
+            string score = "TipRanks Score: " + trResponse.score;
 
-            return String.Format("{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}",
-                bsn, bullish, bearish, sectorBullish, sectorAverageNews, String.Join("\n", sectorSiblings), score);
+            //TODO: formulate into Sentiment Analysis Composite Score
+            //TODO: do stuff with the word clouds possibly
+            //TODO: see if I can adjust the params on the API call to get better data back
+
+            return String.Format("{0}\n{1}\n{2}\n{3}\n{4}\n{5}",
+                bsn, bullish, bearish, sectorBullish, sectorAverageNews, score);
         }
 
         public static TipRanksTrendingCompany[] GetTrendingCompanies()
