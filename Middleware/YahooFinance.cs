@@ -10,7 +10,7 @@ namespace PT.Middleware
 {
     //Yahoo Finance API Documentation https://github.com/lppkarl/YahooFinanceApi
     //No API key needed for this one?
-    public class YF
+    public class YahooFinance
     {
         public static async Task<CompanyStatsYF> GetCompanyStatsAsync(string symbol)
         {
@@ -153,7 +153,7 @@ namespace PT.Middleware
                         bool isNasdaq = data[0] == "Y";
                         if (isNasdaq)
                         {
-                            CompanyStatsYF stats = YF.GetCompanyStatsAsync(symbol).Result;
+                            CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
                             CompanyYF company = new CompanyYF
                             {
                                 Symbol = symbol,
@@ -177,7 +177,7 @@ namespace PT.Middleware
                     string symbol = data[0];
                     if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
                     {
-                        CompanyStatsYF stats = YF.GetCompanyStatsAsync(symbol).Result;
+                        CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
                         CompanyYF company = new CompanyYF
                         {
                             Symbol = symbol,
@@ -200,7 +200,7 @@ namespace PT.Middleware
                     string symbol = data[0];
                     if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
                     {
-                        CompanyStatsYF stats = YF.GetCompanyStatsAsync(symbol).Result;
+                        CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
                         CompanyYF company = new CompanyYF
                         {
                             Symbol = symbol,

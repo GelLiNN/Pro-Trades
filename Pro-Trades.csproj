@@ -26,7 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Middleware\" />
     <Folder Include="Views\Search\" />
     <Folder Include="Views\About\" />
     <Folder Include="Node\" />

@@ -41,8 +41,8 @@ namespace PT.Controllers
         public IActionResult GetIndicatorAV(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
-            string avResponse = AV.CompleteAlphaVantageRequest(function, symbol).Result;
-            decimal avCompositeScore = AV.GetCompositeScore(function, avResponse, numOfDays);
+            string avResponse = AlphaVantage.CompleteAlphaVantageRequest(function, symbol).Result;
+            decimal avCompositeScore = AlphaVantage.GetCompositeScore(function, avResponse, numOfDays);
             return new ContentResult
             {
                 StatusCode = 200,
@@ -53,12 +53,12 @@ namespace PT.Controllers
         [HttpGet("/GetCompositeScoreAV/{symbol}")]
         public CompositeScoreResult GetCompositeScoreAV(string symbol)
         {
-            string adxResponse = AV.CompleteAlphaVantageRequest("ADX", symbol).Result;
-            decimal adxCompositeScore = AV.GetCompositeScore("ADX", adxResponse, 7);
-            string aroonResponse = AV.CompleteAlphaVantageRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = AV.GetCompositeScore("AROON", aroonResponse, 7);
-            string macdResponse = AV.CompleteAlphaVantageRequest("MACD", symbol).Result;
-            decimal macdCompositeScore = AV.GetCompositeScore("MACD", macdResponse, 7);
+            string adxResponse = AlphaVantage.CompleteAlphaVantageRequest("ADX", symbol).Result;
+            decimal adxCompositeScore = AlphaVantage.GetCompositeScore("ADX", adxResponse, 7);
+            string aroonResponse = AlphaVantage.CompleteAlphaVantageRequest("AROON", symbol).Result;
+            decimal aroonCompositeScore = AlphaVantage.GetCompositeScore("AROON", aroonResponse, 7);
+            string macdResponse = AlphaVantage.CompleteAlphaVantageRequest("MACD", symbol).Result;
+            decimal macdCompositeScore = AlphaVantage.GetCompositeScore("MACD", macdResponse, 7);
 
             ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
 
@@ -78,8 +78,8 @@ namespace PT.Controllers
         public IActionResult GetIndicatorTD(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
-            string tdResponse = TD.CompleteTwelveDataRequest(function, symbol).Result;
-            decimal tdCompositeScore = TD.GetCompositeScore(function, tdResponse, numOfDays);
+            string tdResponse = TwelveData.CompleteTwelveDataRequest(function, symbol).Result;
+            decimal tdCompositeScore = TwelveData.GetCompositeScore(function, tdResponse, numOfDays);
             return new ContentResult
             {
                 StatusCode = 200,
@@ -90,14 +90,14 @@ namespace PT.Controllers
         [HttpGet("/GetCompositeScoreTD/{symbol}")]
         public CompositeScoreResult GetCompositeScoreTD(string symbol)
         {
-            Security quote = YF.GetQuoteAsync(symbol).Result;
-            return TD.GetCompositeScoreResult(symbol, quote);
+            Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
+            return TwelveData.GetCompositeScoreResult(symbol, quote);
         }
 
         public static CompositeScoreResult GetCompositeScoreInternalTD(string symbol)
         {
-            Security quote = YF.GetQuoteAsync(symbol).Result;
-            return TD.GetCompositeScoreResult(symbol, quote);
+            Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
+            return TwelveData.GetCompositeScoreResult(symbol, quote);
         }
 
         /*
@@ -162,26 +162,26 @@ namespace PT.Controllers
         [HttpGet("/GetCompanyStatsYF/{symbol}")]
         public CompanyStatsYF GetCompanyStatsYF(string symbol)
         {
-            return YF.GetCompanyStatsAsync(symbol).Result;
+            return YahooFinance.GetCompanyStatsAsync(symbol).Result;
         }
 
         [HttpGet("/GetQuoteYF/{symbol}")]
         public Security GetQuoteYF(string symbol)
         {
-            return YF.GetQuoteAsync(symbol).Result;
+            return YahooFinance.GetQuoteAsync(symbol).Result;
         }
 
         [HttpGet("/GetAllCompaniesYF")]
         public CompaniesListYF GetAllCompaniesYF()
         {
-            return YF.GetAllCompaniesAsync().Result;
+            return YahooFinance.GetAllCompaniesAsync().Result;
         }
 
         [HttpGet("/GetScreenedCompaniesYF/{screenId}")]
         public CompaniesListYF GetScreenedCompaniesYF(string screenId)
         {
-            CompaniesListYF companies = YF.GetAllCompaniesAsync().Result;
-            return YF.GetScreenedCompaniesAsync(companies, screenId).Result;
+            CompaniesListYF companies = YahooFinance.GetAllCompaniesAsync().Result;
+            return YahooFinance.GetScreenedCompaniesAsync(companies, screenId).Result;
         }
 
         /*
@@ -236,7 +236,14 @@ namespace PT.Controllers
         {
             //return _node.TestNodeInterop();
             //did not actually need Node Interop for this, but will keep around just in case.
-            return Ratings.GetZacksRank(symbol.ToUpper());
+            return Zacks.GetZacksRank(symbol.ToUpper());
+        }
+
+        [HttpGet("/GetTipRanks/{symbol}")]
+        public string GetTipRanks(string symbol)
+        {
+            //TipRanks takes lower case symbols
+            return TipRanks.GetData(symbol.ToLower());
         }
 
         /*

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace PT.Middleware
 {
-    public static class Ratings
+    public static class Zacks
     {
         private static readonly string ZacksBaseUrl = @"https://quote-feed.zacks.com/";
 

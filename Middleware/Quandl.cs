@@ -19,7 +19,7 @@ namespace PT.Middleware
     //API Key https://www.quandl.com/account/profile
     //API docs https://docs.quandl.com/docs/in-depth-usage
     //FINRA Short Interest docs https://www.quandl.com/data/FINRA-Financial-Industry-Regulatory-Authority/usage/quickstart/api
-    public class Q
+    public class Quandl
     {
         private static readonly string APIKey = Program.Config.GetValue<string>("QuandlApiKey");
         private static readonly string QURI = "https://www.quandl.com/api/v3/datasets/";
@@ -127,8 +127,8 @@ namespace PT.Middleware
                 shortXList.Add(i);
 
             List<decimal> shortYList = shortInterestYList.ToList();
-            decimal shortSlope = TD.GetSlope(shortXList, shortYList);
-            decimal shortSlopeMultiplier = TD.GetSlopeMultiplier(shortSlope);
+            decimal shortSlope = TwelveData.GetSlope(shortXList, shortYList);
+            decimal shortSlopeMultiplier = TwelveData.GetSlopeMultiplier(shortSlope);
             decimal shortInterestAverage = (totalVolumeShort / totalVolume) * 100;
 
             //Add these bonuses to account for normal short interest fluctuations

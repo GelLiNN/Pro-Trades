@@ -13,7 +13,7 @@ namespace PT.Middleware
 {
     //Twelve Data https://twelvedata.com/docs#getting-started
     //API docs https://twelvedata.com/docs#technical-indicators
-    public class TD
+    public class TwelveData
     {
         private static readonly string APIKey = Program.Config.GetValue<string>("TwelveDataApiKey");
         private static readonly string TDURI = @"https://api.twelvedata.com/";

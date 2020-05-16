@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 namespace PT.Middleware
 {
     //API Documentation https://www.alphavantage.co/documentation/
-    public static class AV
+    public static class AlphaVantage
     {
         private static readonly string AVURI = "https://www.alphavantage.co/query?";
         private static readonly HttpClient HttpClient = new HttpClient();

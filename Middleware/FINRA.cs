@@ -66,8 +66,8 @@ namespace PT.Middleware
                 shortXList.Add(i);
 
             List<decimal> shortYList = shortInterestYList.ToList();
-            decimal shortSlope = TD.GetSlope(shortXList, shortYList);
-            decimal shortSlopeMultiplier = TD.GetSlopeMultiplier(shortSlope);
+            decimal shortSlope = TwelveData.GetSlope(shortXList, shortYList);
+            decimal shortSlopeMultiplier = TwelveData.GetSlopeMultiplier(shortSlope);
             decimal shortInterestAverage = (totalVolumeShort / totalVolume) * 100;
 
             //Add these bonuses to account for normal short interest fluctuations
@@ -101,7 +101,7 @@ namespace PT.Middleware
 
             //Get last 14 trading days for this symbol using TD
             //This way the FINRA short interest module completely relies on TD for dates
-            string ochlResponse = TD.CompleteTwelveDataRequest("time_series", symbol).Result;
+            string ochlResponse = TwelveData.CompleteTwelveDataRequest("time_series", symbol).Result;
             JObject data = JObject.Parse(ochlResponse);
             JArray resultSet = (JArray)data.GetValue("values");
 

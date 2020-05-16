@@ -45,9 +45,34 @@ namespace PT.Models
     }
 
     /*
-     * FINRA Models
+     * TipRanks Models
+     * Generated at https://app.quicktype.io/
      */
-    public class FinraRecord
+    /*public class TipRanksResult
+    {
+        public decimal RatingsComposite { get; set; }
+        public List<TipRanksRating> Ratings { get; set; }
+        public decimal InsiderComposite { get; set; }
+        public List<TipRanksInsiderTransaction> InsiderTransactions { get; set; }
+        public decimal InstitutionalComposite { get; set; }
+        public List<TipRanksInstitutionalHolding> InstitutionalHoldings { get; set; }
+        public TipRanksSentiment { get; set; }
+    }
+
+    public class TipRanksRating
+    {
+
+    }
+
+    public class TipRanksInsiderTransaction
+    {
+
+    }*/
+
+/*
+ * FINRA Models
+ */
+public class FinraRecord
     {
          // URL: http://regsho.finra.org/CNMSshvol20181105.txt
          // STRUCTURE: Date|Symbol|ShortVolume|ShortExemptVolume|TotalVolume
