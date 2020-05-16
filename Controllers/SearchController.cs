@@ -239,11 +239,24 @@ namespace PT.Controllers
             return Zacks.GetZacksRank(symbol.ToUpper());
         }
 
-        [HttpGet("/GetTipRanks/{symbol}")]
-        public string GetTipRanks(string symbol)
+        [HttpGet("/GetTipRanksData/{symbol}")]
+        public string GetTipRanksData(string symbol)
         {
             //TipRanks takes lower case symbols
             return TipRanks.GetData(symbol.ToLower());
+        }
+
+        [HttpGet("/GetTipRanksSentiment/{symbol}")]
+        public string GetTipRanksSentiment(string symbol)
+        {
+            //TipRanks takes lower case symbols
+            return TipRanks.GetSentiment(symbol.ToLower());
+        }
+
+        [HttpGet("/GetTipRanksTrending")]
+        public TipRanksTrendingCompany[] GetTipRanksTrending()
+        {
+            return TipRanks.GetTrendingCompanies();
         }
 
         /*
