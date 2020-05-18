@@ -27,39 +27,39 @@ namespace PT.Models
         public Price[] prices { get; set; }
         public Consensus[] consensuses { get; set; }
         public Expert[] experts { get; set; }
-        public Ptconsensu[] ptConsensus { get; set; }
-        public Similarstock[] similarStocks { get; set; }
+        public PtConsensus[] ptConsensus { get; set; }
+        public SimilarStock[] similarStocks { get; set; }
         public object insiderTrading { get; set; }
         public int? numOfAnalysts { get; set; }
         public int? numOfBloggers { get; set; }
         public int? numOfExperts { get; set; }
         public long? marketCap { get; set; }
-        public Tipranksstockscore tipranksStockScore { get; set; }
+        public TipRanksStockScore tipranksStockScore { get; set; }
         public int? expertRatingsFilteredCount { get; set; }
-        public Consensusovertime[] consensusOverTime { get; set; }
-        public Bestconsensusovertime[] bestConsensusOverTime { get; set; }
-        public Bpbloggers bpBloggers { get; set; }
-        public Bloggerarticledistribution[] bloggerArticleDistribution { get; set; }
-        public Bloggersentiment bloggerSentiment { get; set; }
-        public Corporateinsidertransaction[] corporateInsiderTransactions { get; set; }
-        public Corporateinsideractivity corporateInsiderActivity { get; set; }
-        public Insider1[] insiders { get; set; }
-        public Insidrconfidencesignal insidrConfidenceSignal { get; set; }
+        public ConsensusOverTime[] consensusOverTime { get; set; }
+        public BestConsensusOverTime[] bestConsensusOverTime { get; set; }
+        public BpBloggers bpBloggers { get; set; }
+        public BloggerArticleDistribution[] bloggerArticleDistribution { get; set; }
+        public BloggerSentiment bloggerSentiment { get; set; }
+        public CorporateInsiderTransaction[] corporateInsiderTransactions { get; set; }
+        public CorporateInsiderActivity corporateInsiderActivity { get; set; }
+        public Insider[] insiders { get; set; }
+        public InsiderConfidenceSignal insidrConfidenceSignal { get; set; }
         public object[] notRankedExperts { get; set; }
         public object notRankedConsensuses { get; set; }
-        public Topstocksbysector topStocksBySector { get; set; }
+        public TopStocksBySector topStocksBySector { get; set; }
         public int? indexStockId { get; set; }
         public int? numOfInsiders { get; set; }
         public float? yearlyDividendYield { get; set; }
         public float? yearlyDividend { get; set; }
         public float? insiderslast3MonthsSum { get; set; }
-        public Hedgefunddata hedgeFundData { get; set; }
+        public HedgeFundData hedgeFundData { get; set; }
         public int? stockId { get; set; }
         public int? followerCount { get; set; }
         public Momentum momentum { get; set; }
-        public Portfolioholdingdata portfolioHoldingData { get; set; }
+        public PortfolioHoldingData portfolioHoldingData { get; set; }
 
-        public class Tipranksstockscore
+        public class TipRanksStockScore
         {
             public int? score { get; set; }
             public float? returnOnAssets { get; set; }
@@ -72,13 +72,13 @@ namespace PT.Models
             public float? assetGrowth { get; set; }
         }
 
-        public class Bpbloggers
+        public class BpBloggers
         {
             public string[] bullish { get; set; }
             public object[] bearish { get; set; }
         }
 
-        public class Bloggersentiment
+        public class BloggerSentiment
         {
             public string bearish { get; set; }
             public string bullish { get; set; }
@@ -90,13 +90,13 @@ namespace PT.Models
             public int? neutralCount { get; set; }
         }
 
-        public class Corporateinsideractivity
+        public class CorporateInsiderActivity
         {
             public int? informativeSum { get; set; }
             public int? nonInformativeSum { get; set; }
             public int? totalSum { get; set; }
             public Informative[] informative { get; set; }
-            public Noninformative[] nonInformative { get; set; }
+            public NonInformative[] nonInformative { get; set; }
         }
 
         public class Informative
@@ -106,35 +106,35 @@ namespace PT.Models
             public float? amount { get; set; }
         }
 
-        public class Noninformative
+        public class NonInformative
         {
             public int? transactionTypeID { get; set; }
             public int? count { get; set; }
             public float? amount { get; set; }
         }
 
-        public class Insidrconfidencesignal
+        public class InsiderConfidenceSignal
         {
             public float? stockScore { get; set; }
             public float? sectorScore { get; set; }
             public int? score { get; set; }
         }
 
-        public class Topstocksbysector
+        public class TopStocksBySector
         {
             public Analyst[] analysts { get; set; }
             public Blogger[] bloggers { get; set; }
-            public Insider[] insiders { get; set; }
+            public SectorInsider[] insiders { get; set; }
         }
 
         public class Analyst
         {
             public string ticker { get; set; }
             public string name { get; set; }
-            public Consensusdata consensusData { get; set; }
+            public AnalystConsensusData consensusData { get; set; }
         }
 
-        public class Consensusdata
+        public class AnalystConsensusData
         {
             public int? rating { get; set; }
             public int? nB { get; set; }
@@ -167,31 +167,31 @@ namespace PT.Models
             public int? neutralCount { get; set; }
         }
 
-        public class Insider
+        public class SectorInsider
         {
             public string ticker { get; set; }
             public string name { get; set; }
-            public Confidencesignal confidenceSignal { get; set; }
+            public ConfidenceSignal confidenceSignal { get; set; }
         }
 
-        public class Confidencesignal
+        public class ConfidenceSignal
         {
             public float? stockScore { get; set; }
             public float? sectorScore { get; set; }
             public int? score { get; set; }
         }
 
-        public class Hedgefunddata
+        public class HedgeFundData
         {
             public int? stockID { get; set; }
-            public Holdingsbytime[] holdingsByTime { get; set; }
+            public HoldingsByTime[] holdingsByTime { get; set; }
             public float? sentiment { get; set; }
             public int? trendAction { get; set; }
             public float? trendValue { get; set; }
-            public Institutionalholding[] institutionalHoldings { get; set; }
+            public InstitutionalHolding[] institutionalHoldings { get; set; }
         }
 
-        public class Holdingsbytime
+        public class HoldingsByTime
         {
             public DateTime date { get; set; }
             public int? holdingAmount { get; set; }
@@ -199,7 +199,7 @@ namespace PT.Models
             public bool isComplete { get; set; }
         }
 
-        public class Institutionalholding
+        public class InstitutionalHolding
         {
             public int? institutionID { get; set; }
             public string managerName { get; set; }
@@ -225,16 +225,16 @@ namespace PT.Models
             public float? momentum { get; set; }
         }
 
-        public class Portfolioholdingdata
+        public class PortfolioHoldingData
         {
             public string ticker { get; set; }
             public string stockType { get; set; }
             public string sectorId { get; set; }
-            public Analystconsensus analystConsensus { get; set; }
-            public Bestanalystconsensus bestAnalystConsensus { get; set; }
+            public AnalystConsensus analystConsensus { get; set; }
+            public BestAnalystConsensus bestAnalystConsensus { get; set; }
             public object nextDividendDate { get; set; }
-            public Lastreportedeps lastReportedEps { get; set; }
-            public Nextearningsreport nextEarningsReport { get; set; }
+            public LastReportedEps lastReportedEps { get; set; }
+            public NextEarningsReport nextEarningsReport { get; set; }
             public string stockUid { get; set; }
             public string companyName { get; set; }
             public float? priceTarget { get; set; }
@@ -245,9 +245,9 @@ namespace PT.Models
             public int? stockId { get; set; }
             public object high52Weeks { get; set; }
             public object low52Weeks { get; set; }
-            public Hedgefundsentimentdata hedgeFundSentimentData { get; set; }
-            public Insidersentimentdata insiderSentimentData { get; set; }
-            public Bloggersentimentdata bloggerSentimentData { get; set; }
+            public HedgeFundSentimentData hedgeFundSentimentData { get; set; }
+            public InsiderSentimentData insiderSentimentData { get; set; }
+            public BloggerSentimentData bloggerSentimentData { get; set; }
             public bool shouldAddLinkToStockPage { get; set; }
             public object expenseRatio { get; set; }
             public long? marketCap { get; set; }
@@ -256,7 +256,14 @@ namespace PT.Models
             public int? priceTargetCurrencyId { get; set; }
         }
 
-        public class Analystconsensus
+        public class AnalystConsensus
+        {
+            public string consensus { get; set; }
+            public int? rawConsensus { get; set; }
+            public Distribution distribution { get; set; }
+        }
+
+        public class BestAnalystConsensus
         {
             public string consensus { get; set; }
             public int? rawConsensus { get; set; }
@@ -270,21 +277,7 @@ namespace PT.Models
             public float? sell { get; set; }
         }
 
-        public class Bestanalystconsensus
-        {
-            public string consensus { get; set; }
-            public int? rawConsensus { get; set; }
-            public Distribution1 distribution { get; set; }
-        }
-
-        public class Distribution1
-        {
-            public float? buy { get; set; }
-            public float? hold { get; set; }
-            public float? sell { get; set; }
-        }
-
-        public class Lastreportedeps
+        public class LastReportedEps
         {
             public DateTime date { get; set; }
             public string company { get; set; }
@@ -295,8 +288,8 @@ namespace PT.Models
             public string lastEps { get; set; }
             public object consensus { get; set; }
             public object bpConsensus { get; set; }
-            public Ratingsandpt ratingsAndPT { get; set; }
-            public Bpratingsandpt bpRatingsAndPT { get; set; }
+            public RatingsAndPt ratingsAndPT { get; set; }
+            public BpRatingsAndPt bpRatingsAndPT { get; set; }
             public long? marketCap { get; set; }
             public int? sector { get; set; }
             public int? stockId { get; set; }
@@ -306,7 +299,7 @@ namespace PT.Models
             public bool isConfirmed { get; set; }
         }
 
-        public class Ratingsandpt
+        public class RatingsAndPt
         {
             public object priceTarget { get; set; }
             public object numBuys { get; set; }
@@ -314,7 +307,7 @@ namespace PT.Models
             public object numSells { get; set; }
         }
 
-        public class Bpratingsandpt
+        public class BpRatingsAndPt
         {
             public object priceTarget { get; set; }
             public object numBuys { get; set; }
@@ -322,7 +315,7 @@ namespace PT.Models
             public object numSells { get; set; }
         }
 
-        public class Nextearningsreport
+        public class NextEarningsReport
         {
             public DateTime date { get; set; }
             public string company { get; set; }
@@ -333,8 +326,8 @@ namespace PT.Models
             public string lastEps { get; set; }
             public object consensus { get; set; }
             public object bpConsensus { get; set; }
-            public Ratingsandpt1 ratingsAndPT { get; set; }
-            public Bpratingsandpt1 bpRatingsAndPT { get; set; }
+            public RatingsAndPt ratingsAndPT { get; set; }
+            public BpRatingsAndPt bpRatingsAndPT { get; set; }
             public long? marketCap { get; set; }
             public int? sector { get; set; }
             public int? stockId { get; set; }
@@ -344,35 +337,19 @@ namespace PT.Models
             public bool isConfirmed { get; set; }
         }
 
-        public class Ratingsandpt1
-        {
-            public object priceTarget { get; set; }
-            public object numBuys { get; set; }
-            public object numHolds { get; set; }
-            public object numSells { get; set; }
-        }
-
-        public class Bpratingsandpt1
-        {
-            public object priceTarget { get; set; }
-            public object numBuys { get; set; }
-            public object numHolds { get; set; }
-            public object numSells { get; set; }
-        }
-
-        public class Hedgefundsentimentdata
+        public class HedgeFundSentimentData
         {
             public int? rating { get; set; }
             public float? score { get; set; }
         }
 
-        public class Insidersentimentdata
+        public class InsiderSentimentData
         {
             public int? rating { get; set; }
             public float? stockScore { get; set; }
         }
 
-        public class Bloggersentimentdata
+        public class BloggerSentimentData
         {
             public int? ratingIfExists { get; set; }
             public int? rating { get; set; }
@@ -382,26 +359,26 @@ namespace PT.Models
 
         public class Landmarkprices
         {
-            public Yeartodate yearToDate { get; set; }
-            public Threemonthsago threeMonthsAgo { get; set; }
-            public Yearago yearAgo { get; set; }
+            public YearToDate yearToDate { get; set; }
+            public ThreeMonthsAgo threeMonthsAgo { get; set; }
+            public YearAgo yearAgo { get; set; }
         }
 
-        public class Yeartodate
+        public class YearToDate
         {
             public DateTime date { get; set; }
             public string d { get; set; }
             public float? p { get; set; }
         }
 
-        public class Threemonthsago
+        public class ThreeMonthsAgo
         {
             public DateTime date { get; set; }
             public string d { get; set; }
             public float? p { get; set; }
         }
 
-        public class Yearago
+        public class YearAgo
         {
             public DateTime date { get; set; }
             public string d { get; set; }
@@ -494,7 +471,7 @@ namespace PT.Models
             public float? tPos { get; set; }
         }
 
-        public class Ptconsensu
+        public class PtConsensus
         {
             public int? period { get; set; }
             public int? bench { get; set; }
@@ -505,7 +482,7 @@ namespace PT.Models
             public float? low { get; set; }
         }
 
-        public class Similarstock
+        public class SimilarStock
         {
             public string uid { get; set; }
             public string name { get; set; }
@@ -513,10 +490,10 @@ namespace PT.Models
             public string mktCap { get; set; }
             public int? sectorId { get; set; }
             public int? stockTypeId { get; set; }
-            public Consensusdata1[] consensusData { get; set; }
+            public ConsensusData[] consensusData { get; set; }
         }
 
-        public class Consensusdata1
+        public class ConsensusData
         {
             public int? nTotal { get; set; }
             public int? nB { get; set; }
@@ -529,7 +506,7 @@ namespace PT.Models
             public object priceTargetCurrency { get; set; }
         }
 
-        public class Consensusovertime
+        public class ConsensusOverTime
         {
             public int? buy { get; set; }
             public int? hold { get; set; }
@@ -539,7 +516,7 @@ namespace PT.Models
             public float? priceTarget { get; set; }
         }
 
-        public class Bestconsensusovertime
+        public class BestConsensusOverTime
         {
             public int? buy { get; set; }
             public int? hold { get; set; }
@@ -549,14 +526,14 @@ namespace PT.Models
             public float? priceTarget { get; set; }
         }
 
-        public class Bloggerarticledistribution
+        public class BloggerArticleDistribution
         {
             public string site { get; set; }
             public string siteName { get; set; }
             public string percentage { get; set; }
         }
 
-        public class Corporateinsidertransaction
+        public class CorporateInsiderTransaction
         {
             public object sharesBought { get; set; }
             public int? insidersBuyCount { get; set; }
@@ -574,7 +551,7 @@ namespace PT.Models
             public float? informativeSellAmount { get; set; }
         }
 
-        public class Insider1
+        public class Insider
         {
             public string uId { get; set; }
             public string name { get; set; }
@@ -675,5 +652,20 @@ namespace PT.Models
         public string companyName { get; set; }
         public int? quarterlyTrend { get; set; }
         public DateTime lastRatingDate { get; set; }
+    }
+
+    public class TipRanksResult
+    {
+        //list of insider purchases with dates, ranks, names
+        //list of hedge funds with holdings with ranks, names
+        //list of institutional holdings by date going back 2 years
+        //list of hedge funds currently holding with amounts, dates
+        //list of TipRanks consensus ratings and price targets by date going back 3 months
+        //list of Expert Rankings with names, stars, original stars
+
+        //insider composite score
+        //institutional composite score
+        //rankings composite score
+        //computed price target
     }
 }
