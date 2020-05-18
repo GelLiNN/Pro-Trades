@@ -240,7 +240,7 @@ namespace PT.Controllers
         }
 
         [HttpGet("/GetTipRanksData/{symbol}")]
-        public string GetTipRanksData(string symbol)
+        public TipRanksResult GetTipRanksData(string symbol)
         {
             //TipRanks takes lower case symbols
             return TipRanks.GetData(symbol.ToLower());

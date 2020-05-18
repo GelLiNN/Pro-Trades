@@ -181,41 +181,6 @@ namespace PT.Models
             public int? score { get; set; }
         }
 
-        public class HedgeFundData
-        {
-            public int? stockID { get; set; }
-            public HoldingsByTime[] holdingsByTime { get; set; }
-            public float? sentiment { get; set; }
-            public int? trendAction { get; set; }
-            public float? trendValue { get; set; }
-            public InstitutionalHolding[] institutionalHoldings { get; set; }
-        }
-
-        public class HoldingsByTime
-        {
-            public DateTime date { get; set; }
-            public int? holdingAmount { get; set; }
-            public float? institutionHoldingPercentage { get; set; }
-            public bool isComplete { get; set; }
-        }
-
-        public class InstitutionalHolding
-        {
-            public int? institutionID { get; set; }
-            public string managerName { get; set; }
-            public string institutionName { get; set; }
-            public int? action { get; set; }
-            public int? value { get; set; }
-            public string expertUID { get; set; }
-            public float? change { get; set; }
-            public float? percentageOfPortfolio { get; set; }
-            public int? rank { get; set; }
-            public int? totalRankedInstitutions { get; set; }
-            public string imageURL { get; set; }
-            public bool isActive { get; set; }
-            public float? stars { get; set; }
-        }
-
         public class Momentum
         {
             public DateTime baseDate { get; set; }
@@ -406,71 +371,6 @@ namespace PT.Models
             public object priceTarget { get; set; }
         }
 
-        public class Expert
-        {
-            public string name { get; set; }
-            public string firm { get; set; }
-            public string eUid { get; set; }
-            public int? eTypeId { get; set; }
-            public string expertImg { get; set; }
-            public Rating[] ratings { get; set; }
-            public float? stockSuccessRate { get; set; }
-            public float? stockAverageReturn { get; set; }
-            public int? stockTotalRecommendations { get; set; }
-            public int? stockGoodRecommendations { get; set; }
-            public Ranking[] rankings { get; set; }
-            public int? stockid { get; set; }
-            public string newPictureUrl { get; set; }
-            public bool includedInConsensus { get; set; }
-        }
-
-        public class Rating
-        {
-            public int? ratingId { get; set; }
-            public int? actionId { get; set; }
-            public DateTime date { get; set; }
-            public string d { get; set; }
-            public string url { get; set; }
-            public int? pos { get; set; }
-            public DateTime time { get; set; }
-            public object priceTarget { get; set; }
-            public object convertedPriceTarget { get; set; }
-            public Quote quote { get; set; }
-            public string siteName { get; set; }
-            public string site { get; set; }
-            public int? id { get; set; }
-            public DateTime rD { get; set; }
-            public DateTime timestamp { get; set; }
-            public object priceTargetCurrency { get; set; }
-            public object convertedPriceTargetCurrency { get; set; }
-            public object convertedPriceTargetCurrencyCode { get; set; }
-            public object priceTargetCurrencyCode { get; set; }
-        }
-
-        public class Quote
-        {
-            public string title { get; set; }
-            public DateTime date { get; set; }
-            public object quote { get; set; }
-            public string site { get; set; }
-            public string link { get; set; }
-            public string siteName { get; set; }
-        }
-
-        public class Ranking
-        {
-            public int? period { get; set; }
-            public int? bench { get; set; }
-            public int? lRank { get; set; }
-            public int? gRank { get; set; }
-            public int? gRecs { get; set; }
-            public int? tRecs { get; set; }
-            public float? avgReturn { get; set; }
-            public float? stars { get; set; }
-            public float? originalStars { get; set; }
-            public float? tPos { get; set; }
-        }
-
         public class PtConsensus
         {
             public int? period { get; set; }
@@ -504,16 +404,6 @@ namespace PT.Models
             public int? wCon { get; set; }
             public float? priceTarget { get; set; }
             public object priceTargetCurrency { get; set; }
-        }
-
-        public class ConsensusOverTime
-        {
-            public int? buy { get; set; }
-            public int? hold { get; set; }
-            public int? sell { get; set; }
-            public DateTime date { get; set; }
-            public int? consensus { get; set; }
-            public float? priceTarget { get; set; }
         }
 
         public class BestConsensusOverTime
@@ -550,30 +440,141 @@ namespace PT.Models
             public float? informativeBuyAmount { get; set; }
             public float? informativeSellAmount { get; set; }
         }
+    }
 
-        public class Insider
-        {
-            public string uId { get; set; }
-            public string name { get; set; }
-            public string company { get; set; }
-            public bool isOfficer { get; set; }
-            public bool isDirector { get; set; }
-            public bool isTenPercentOwner { get; set; }
-            public bool isOther { get; set; }
-            public string officerTitle { get; set; }
-            public string otherText { get; set; }
-            public int? transTypeId { get; set; }
-            public int? action { get; set; }
-            public string date { get; set; }
-            public float? amount { get; set; }
-            public int? rank { get; set; }
-            public float? stars { get; set; }
-            public string expertImg { get; set; }
-            public DateTime rDate { get; set; }
-            public string newPictureUrl { get; set; }
-            public string link { get; set; }
-            public int? numberOfShares { get; set; }
-        }
+    //Data PT will use for Composite Score
+    public class Insider
+    {
+        public string uId { get; set; }
+        public string name { get; set; }
+        public string company { get; set; }
+        public bool isOfficer { get; set; }
+        public bool isDirector { get; set; }
+        public bool isTenPercentOwner { get; set; }
+        public bool isOther { get; set; }
+        public string officerTitle { get; set; }
+        public string otherText { get; set; }
+        public int? transTypeId { get; set; }
+        public int? action { get; set; }
+        public string date { get; set; }
+        public float? amount { get; set; }
+        public int? rank { get; set; }
+        public float? stars { get; set; }
+        public string expertImg { get; set; }
+        public DateTime rDate { get; set; }
+        public string newPictureUrl { get; set; }
+        public string link { get; set; }
+        public int? numberOfShares { get; set; }
+    }
+
+    public class HedgeFundData
+    {
+        public int? stockID { get; set; }
+        public HoldingsByTime[] holdingsByTime { get; set; }
+        public float? sentiment { get; set; }
+        public int? trendAction { get; set; }
+        public float? trendValue { get; set; }
+        public InstitutionalHolding[] institutionalHoldings { get; set; }
+    }
+
+    public class HoldingsByTime
+    {
+        public DateTime date { get; set; }
+        public int? holdingAmount { get; set; }
+        public float? institutionHoldingPercentage { get; set; }
+        public bool isComplete { get; set; }
+    }
+
+    public class InstitutionalHolding
+    {
+        public int? institutionID { get; set; }
+        public string managerName { get; set; }
+        public string institutionName { get; set; }
+        public int? action { get; set; }
+        public int? value { get; set; }
+        public string expertUID { get; set; }
+        public float? change { get; set; }
+        public float? percentageOfPortfolio { get; set; }
+        public int? rank { get; set; }
+        public int? totalRankedInstitutions { get; set; }
+        public string imageURL { get; set; }
+        public bool isActive { get; set; }
+        public float? stars { get; set; }
+    }
+
+    public class ConsensusOverTime
+    {
+        public int? buy { get; set; }
+        public int? hold { get; set; }
+        public int? sell { get; set; }
+        public DateTime date { get; set; }
+        public int? consensus { get; set; }
+        public float? priceTarget { get; set; }
+    }
+
+    public class Expert
+    {
+        public string name { get; set; }
+        public string firm { get; set; }
+        public string eUid { get; set; }
+        public int? eTypeId { get; set; }
+        public string expertImg { get; set; }
+        public Rating[] ratings { get; set; }
+        public float? stockSuccessRate { get; set; }
+        public float? stockAverageReturn { get; set; }
+        public int? stockTotalRecommendations { get; set; }
+        public int? stockGoodRecommendations { get; set; }
+        public Ranking[] rankings { get; set; }
+        public int? stockid { get; set; }
+        public string newPictureUrl { get; set; }
+        public bool includedInConsensus { get; set; }
+    }
+
+    public class Rating
+    {
+        public int? ratingId { get; set; }
+        public int? actionId { get; set; }
+        public DateTime date { get; set; }
+        public string d { get; set; }
+        public string url { get; set; }
+        public int? pos { get; set; }
+        public DateTime time { get; set; }
+        public object priceTarget { get; set; }
+        public object convertedPriceTarget { get; set; }
+        public Quote quote { get; set; }
+        public string siteName { get; set; }
+        public string site { get; set; }
+        public int? id { get; set; }
+        public DateTime rD { get; set; }
+        public DateTime timestamp { get; set; }
+        public object priceTargetCurrency { get; set; }
+        public object convertedPriceTargetCurrency { get; set; }
+        public object convertedPriceTargetCurrencyCode { get; set; }
+        public object priceTargetCurrencyCode { get; set; }
+    }
+
+    public class Quote
+    {
+        public string title { get; set; }
+        public DateTime date { get; set; }
+        public object quote { get; set; }
+        public string site { get; set; }
+        public string link { get; set; }
+        public string siteName { get; set; }
+    }
+
+    public class Ranking
+    {
+        public int? period { get; set; }
+        public int? bench { get; set; }
+        public int? lRank { get; set; }
+        public int? gRank { get; set; }
+        public int? gRecs { get; set; }
+        public int? tRecs { get; set; }
+        public float? avgReturn { get; set; }
+        public float? stars { get; set; }
+        public float? originalStars { get; set; }
+        public float? tPos { get; set; }
     }
 
     public class TipRanksSentimentResponse
@@ -657,15 +658,28 @@ namespace PT.Models
     public class TipRanksResult
     {
         //list of insider purchases with dates, ranks, names
-        //list of hedge funds with holdings with ranks, names
+        public List<Insider> Insiders { get; set; }
+
+        //list of hedge funds with holdings with amounts, ranks, names
         //list of institutional holdings by date going back 2 years
-        //list of hedge funds currently holding with amounts, dates
+        public HedgeFundData Institutions { get; set; }
+
+        //list of Expert Ratings with names, stars, original stars
+        public List<Expert> ThirdPartyRatings { get; set; }
+
         //list of TipRanks consensus ratings and price targets by date going back 3 months
-        //list of Expert Rankings with names, stars, original stars
+        public List<ConsensusOverTime> ConsensusOverTime { get; set; }
 
         //insider composite score
+        public decimal InsiderComposite { get; set; }
+
         //institutional composite score
+        public decimal InstitutionalComposite { get; set; }
+
         //rankings composite score
-        //computed price target
+        public decimal RankingsComposite { get; set; }
+        
+        //price target
+        public decimal PriceTarget { get; set; }
     }
 }

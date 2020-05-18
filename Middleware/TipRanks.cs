@@ -24,7 +24,7 @@ namespace PT.Middleware
         private static readonly int InsiderNonInformativeBuyTypeId = 4;
         private static readonly int InsiderNonInformativeSellTypeId = 51;
 
-        public static string GetData(string symbol)
+        public static TipRanksResult GetData(string symbol)
         {
             //Return a data object that contains:
             //Aggregated ratings data and ratings providers
@@ -43,8 +43,18 @@ namespace PT.Middleware
                 response.Close();
             }
             TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseString);
-            return "Price Target: " + trResponse.portfolioHoldingData.priceTarget
-                + ", Best Price Target: " + trResponse.portfolioHoldingData.bestPriceTarget.ToString();
+
+            return new TipRanksResult
+            {
+                Insiders = trResponse.insiders.ToList(),
+                Institutions = trResponse.hedgeFundData,
+                ThirdPartyRatings = trResponse.experts.ToList(),
+                ConsensusOverTime = trResponse.consensusOverTime.ToList(),
+                InsiderComposite = 0.0M,
+                InstitutionalComposite = 0.0M,
+                RankingsComposite = 0.0M,
+                PriceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.priceTarget)
+            };
         }
 
         public static string GetSentiment(string symbol)
