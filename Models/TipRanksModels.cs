@@ -677,7 +677,7 @@ namespace PT.Models
         public decimal InstitutionalComposite { get; set; }
 
         //rankings composite score
-        public decimal RankingsComposite { get; set; }
+        public decimal RatingsComposite { get; set; }
         
         //price target
         public decimal PriceTarget { get; set; }

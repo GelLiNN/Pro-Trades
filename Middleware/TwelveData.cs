@@ -201,8 +201,8 @@ namespace PT.Middleware
         {
             string adxResponse = CompleteTwelveDataRequest("ADX", symbol).Result;
             decimal adxCompositeScore = GetCompositeScore("ADX", adxResponse, 7);
-            string obvResponse = CompleteTwelveDataRequest("OBV", symbol).Result;
-            decimal obvCompositeScore = GetCompositeScore("OBV", obvResponse, 7);
+            //string obvResponse = CompleteTwelveDataRequest("OBV", symbol).Result;
+            //decimal obvCompositeScore = GetCompositeScore("OBV", obvResponse, 7);
             string aroonResponse = CompleteTwelveDataRequest("AROON", symbol).Result;
             decimal aroonCompositeScore = GetCompositeScore("AROON", aroonResponse, 7);
             string macdResponse = CompleteTwelveDataRequest("MACD", symbol).Result;
@@ -212,18 +212,24 @@ namespace PT.Middleware
 
             FundamentalsResult fundResult = GetFundamentals(quote);
 
+            TipRanksResult trResult = TipRanks.GetData(symbol);
+
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
                 Symbol = symbol,
                 DataProvider = "TwelveData",
                 ADXComposite = adxCompositeScore,
-                OBVComposite = obvCompositeScore,
+                //OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
-                CompositeScoreValue = (adxCompositeScore + obvCompositeScore + aroonCompositeScore + macdCompositeScore +
-                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsCompositeScore) / 6,
+                RatingsComposite = trResult.RatingsComposite,
+                ShortInterestComposite = shortResult.ShortInterestCompositeScore,
+                FundamentalsComposite = fundResult.FundamentalsCompositeScore,
+                CompositeScoreValue = (adxCompositeScore + /*obvCompositeScore +*/ aroonCompositeScore + macdCompositeScore +
+                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsCompositeScore + trResult.RatingsComposite) / 6,
                 ShortInterest = shortResult,
-                Fundamentals = fundResult
+                Fundamentals = fundResult,
+                TipRanks = trResult
             };
 
             string rank = string.Empty;
@@ -500,6 +506,7 @@ namespace PT.Middleware
             return composite;
         }
 
+        //unused for now
         public static decimal GetOBVComposite(JArray resultSet, int daysToCalculate)
         {
             int daysCalulated = 0;
