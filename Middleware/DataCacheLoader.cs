@@ -51,9 +51,9 @@ namespace PT.Middleware
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                //var cacheLoadTask1 = _cache.LoadCacheAsync("yf-companies"); //Yahoo Finance YF.cs
-                //var cacheLoadTask2 = _cache.LoadCacheAsync("iex-companies"); //Investors Exchange IEX.cs
-                //await Task.WhenAll(cacheLoadTask1, cacheLoadTask2);
+                var cacheLoadTask1 = _cache.LoadCacheAsync("yf-companies"); //Yahoo Finance YF.cs
+                var cacheLoadTask2 = _cache.LoadCacheAsync("iex-companies"); //Investors Exchange IEX.cs
+                await Task.WhenAll(cacheLoadTask1, cacheLoadTask2);
 
                 //Set this Task to cancel now that it is complete
                 await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);

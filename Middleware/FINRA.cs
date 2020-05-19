@@ -18,8 +18,12 @@ namespace PT.Middleware
     {
         public static readonly DateTime FirstDate = new DateTime(2018, 11, 5);
         public static string BaseUrl = @"http://regsho.finra.org";
-
         private static readonly HttpClient Client = new HttpClient();
+
+        private static readonly decimal SlightlyBearishLowerBound = 0.0M;
+        private static readonly decimal SlightlyBearishUpperBound = 0.25M;
+        private static readonly decimal ModeratelyBearishLowerBound = 0.25M;
+        private static readonly decimal ModeratelyBearishUpperBound = 0.5M;
 
         public static ShortInterestResult GetShortInterest(string symbol, int daysToCalculate)
         {
@@ -71,12 +75,14 @@ namespace PT.Middleware
             decimal shortInterestAverage = (totalVolumeShort / totalVolume) * 100;
 
             //Add these bonuses to account for normal short interest fluctuations
-            bool slightlyBearish = (0.0M <= shortSlope && shortSlope <= 0.5M);
-            bool moderatelyBearish = (0.5M <= shortSlope && shortSlope <= 1.0M);
+            //The slope cannot be in both ranges if the ranges do not overlap
+            //This prevents adding both bonuses
+            bool slightlyBearish = (SlightlyBearishLowerBound <= shortSlope && shortSlope <= SlightlyBearishUpperBound);
+            bool moderatelyBearish = (ModeratelyBearishLowerBound <= shortSlope && shortSlope <= ModeratelyBearishUpperBound);
 
             //calculate composite score based on the following values and weighted multipliers
             compositeScore += 100 - shortInterestAverage; //get base score as 100 - short interest
-            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 10 : 0;
+            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 10 : -15;
             compositeScore += (shortSlope > 0 && slightlyBearish) ? 10 : 0;
             compositeScore += (shortSlope > 0 && moderatelyBearish) ? 5 : 0;
 
