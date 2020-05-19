@@ -77,8 +77,8 @@ namespace PT.Middleware
             //calculate composite score based on the following values and weighted multipliers
             compositeScore += 100 - shortInterestAverage; //get base score as 100 - short interest
             compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 10 : 0;
-            compositeScore += (shortSlope > 0 && slightlyBearish) ? 15 : 0;
-            compositeScore += (shortSlope > 0 && moderatelyBearish) ? 10 : 0;
+            compositeScore += (shortSlope > 0 && slightlyBearish) ? 10 : 0;
+            compositeScore += (shortSlope > 0 && moderatelyBearish) ? 5 : 0;
 
             //Cap this compositeScore at 100 because we should not give it extra weight
             compositeScore = Math.Min(compositeScore, 100);

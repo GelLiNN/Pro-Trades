@@ -689,11 +689,11 @@ namespace PT.Middleware
             //Base value should be calculated based on PE and EPS
             //Bonuses added for positive volume and price slopes, and PE / EPS Growth
             decimal composite = 0;
-            composite += (averagePE > 1.0M) ? averagePE * 2 + 15 : 0;
-            composite += (averageEPS > 0.5M) ? averageEPS * 3 + 15 : 0;
+            composite += (averagePE > 2.0M) ? averagePE * 2 + 10 : 0;
+            composite += (averageEPS > 0.75M) ? averageEPS * 3 + 10 : 0;
             composite += (growthPE > 0) ? growthPE + 10 : 0;
             composite += (growthEPS > 0) ? growthEPS + 10 : 0;
-            composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier + 5 : 0;
+            composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
             composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier + 10 : 0;
             composite += volumeTrendingBonus;
 
