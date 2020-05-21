@@ -10,6 +10,7 @@ using YahooFinanceApi;
 namespace PT.Middleware
 {
     //https://github.com/DaveSkender/Stock.Indicators
+    //https://www.codeproject.com/Articles/15047/Creating-a-Mechanical-Trading-System-Part-1-Techni
     public static class Indicators
     {
         public static decimal GetIndicatorComposite(string symbol, string function, IEnumerable<Skender.Stock.Indicators.Quote> history, int daysToCalculate)
@@ -134,7 +135,7 @@ namespace PT.Middleware
             //string macdResponse = CompleteTwelveDataRequest("MACD", symbol).Result;
             //decimal macdCompositeScore = GetCompositeScore(symbol, "MACD", macdResponse, 7);
 
-            IReadOnlyList<Candle> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 7).Result;
+            IReadOnlyList<Candle> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 100).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
             foreach (Candle data in yahooHistory)
             {
@@ -195,6 +196,7 @@ namespace PT.Middleware
 
         public static decimal GetMACDComposite(IEnumerable<MacdResult> resultSet, int daysToCalculate)
         {
+            List<MacdResult> results = resultSet.ToList();
             int daysCalulated = 0;
             int numberOfResults = 0;
             HashSet<string> dates = new HashSet<string>();
@@ -204,8 +206,9 @@ namespace PT.Middleware
             Stack<decimal> macdSignalYList = new Stack<decimal>();
             decimal macdTotalHist = 0;
 
-            foreach (var result in resultSet)
+            for (int i = results.Count - 1; i >= 0; i--)
             {
+                MacdResult result = results[i];
                 if (daysCalulated < daysToCalculate)
                 {
                     decimal macdBaseValue = result.Macd != null ? (decimal) result.Macd : 0.0M;
