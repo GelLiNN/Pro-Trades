@@ -110,6 +110,14 @@ namespace PT.Middleware
             return quote;
         }
 
+        public static async Task<IReadOnlyList<Candle>> GetHistoryAsync(string symbol, int days)
+        {
+            // You should be able to query data from various markets including US, HK, TW
+            // The startTime & endTime here defaults to EST timezone
+            var history = await Yahoo.GetHistoricalAsync(symbol, DateTime.Now.AddDays(-1 * (days + 1)), DateTime.Now, Period.Daily);
+            return history;
+        }
+
         public static async Task<CompaniesListYF> GetScreenedCompaniesAsync(CompaniesListYF allCompanies, string screenId)
         {
             CompaniesListYF screened = new CompaniesListYF

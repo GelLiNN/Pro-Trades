@@ -7,7 +7,7 @@ namespace PT.Models
     public class CompositeScoreResult
     {
         public string Symbol { get; set; }
-        public string DataProvider { get; set; }
+        public string DataProviders { get; set; }
         public decimal ADXComposite { get; set; }
         //public decimal OBVComposite { get; set; }
         public decimal AROONComposite { get; set; }
@@ -123,7 +123,7 @@ public class FinraRecord
 
     public class DividendsIEX
     {
-        public string LastDividendDate { get; set; }
+        public DateTime? LastDividendDate { get; set; }
         public decimal DividendYield { get; set; }
         public decimal DividendRate { get; set; }
     }

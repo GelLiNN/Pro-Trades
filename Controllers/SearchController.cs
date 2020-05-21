@@ -37,6 +37,21 @@ namespace PT.Controllers
         /*
          * Composite Score Endpoints
          */
+        [HttpGet("/GetCompositeScore/{symbol}")]
+        public CompositeScoreResult GetCompositeScore(string symbol)
+        {
+            symbol = symbol.ToUpper();
+            Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
+            return Indicators.GetCompositeScoreResult(symbol, quote); //no indicator API needed
+        }
+
+        //Used internally for cache loading
+        public static CompositeScoreResult GetCompositeScoreInternal(string symbol, Security quote)
+        {
+            return Indicators.GetCompositeScoreResult(symbol, quote); //no indicator API needed
+        }
+
+
         [HttpGet("/GetIndicatorAV/{function}/{symbol}/{days}")] //indicator == function
         public IActionResult GetIndicatorAV(string function, string symbol, string days)
         {
@@ -65,7 +80,7 @@ namespace PT.Controllers
             return new CompositeScoreResult
             {
                 Symbol = symbol,
-                DataProvider = "AlphaVantage",
+                DataProviders = "AlphaVantage",
                 ADXComposite = adxCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
@@ -110,7 +125,7 @@ namespace PT.Controllers
         }
 
         [HttpGet("/GetQuoteIEX/{symbol}")]
-        public VSLee.IEXSharp.Model.Shared.Response.Quote GetQuoteIEX(string symbol)
+        public IEXSharp.Model.Shared.Response.Quote GetQuoteIEX(string symbol)
         {
             return IEX.GetQuoteAsync(symbol).Result;
         }

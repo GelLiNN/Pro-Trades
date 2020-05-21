@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using IEXSharp;
+using IEXSharp.Model.StockPrices.Request;
+using IEXSharp.Model.StockPrices.Response;
+using IEXSharp.Model.StockResearch.Response;
 using Microsoft.Extensions.Configuration;
 using PT.Models;
-using VSLee.IEXSharp;
-using VSLee.IEXSharp.Model.Stock.Request;
-using VSLee.IEXSharp.Model.Stock.Response;
 
 namespace PT.Middleware
 {
@@ -22,7 +23,7 @@ namespace PT.Middleware
 
         public static async Task<string> GetHistoricalPricesAsync(string symbol, ChartRange range)
         {
-            var response = await IEXClient.Stock.HistoricalPriceAsync(symbol, range);
+            var response = await IEXClient.StockPrices.HistoricalPriceAsync(symbol, range);
             IEnumerable<HistoricalPriceResponse> prices = response.Data;
             string result = "";
             foreach (HistoricalPriceResponse price in prices)
@@ -44,8 +45,8 @@ namespace PT.Middleware
             CompanyStatsIEX companyStat = new CompanyStatsIEX();
             try
             {
-                var keyStatsResponse = await IEXClient.Stock.KeyStatsAsync(symbol);
-                var tradesResponse = await IEXClient.Stock.IntradayPriceAsync(symbol);
+                var keyStatsResponse = await IEXClient.StockResearch.KeyStatsAsync(symbol);
+                var tradesResponse = await IEXClient.StockPrices.IntradayPricesAsync(symbol);
                 KeyStatsResponse iexStat = keyStatsResponse.Data;
                 IEnumerable<IntradayPriceResponse> iexTrades = tradesResponse.Data;
 
@@ -132,10 +133,10 @@ namespace PT.Middleware
             return await Task.FromResult(companyStat);
         }
 
-        public static async Task<VSLee.IEXSharp.Model.Shared.Response.Quote> GetQuoteAsync(string symbol)
+        public static async Task<IEXSharp.Model.Shared.Response.Quote> GetQuoteAsync(string symbol)
         {
-            var response = await IEXClient.Stock.QuoteAsync(symbol);
-            VSLee.IEXSharp.Model.Shared.Response.Quote quote = response.Data;
+            var response = await IEXClient.StockPrices.QuoteAsync(symbol);
+            IEXSharp.Model.Shared.Response.Quote quote = response.Data;
             return quote;
         }
 

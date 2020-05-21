@@ -224,7 +224,7 @@ namespace PT.Middleware
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
                 Symbol = symbol,
-                DataProvider = "TwelveData",
+                DataProviders = "TwelveData, FINRA, YahooFinance, TipRanks",
                 ADXComposite = adxCompositeScore,
                 //OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
