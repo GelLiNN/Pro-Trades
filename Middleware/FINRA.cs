@@ -25,11 +25,11 @@ namespace PT.Middleware
         private static readonly decimal ModeratelyBearishLowerBound = 0.25M;
         private static readonly decimal ModeratelyBearishUpperBound = 0.5M;
 
-        public static ShortInterestResult GetShortInterest(string symbol, int daysToCalculate)
+        public static ShortInterestResult GetShortInterest(string symbol, IEnumerable<Skender.Stock.Indicators.Quote> history, int daysToCalculate)
         {
             decimal compositeScore = 0;
 
-            List<FinraRecord> shortRecords = GetShortVolume(symbol, daysToCalculate);
+            List<FinraRecord> shortRecords = GetShortVolume(symbol, history, daysToCalculate);
 
             int daysCalulated = 0;
             int numberOfResults = 0;
@@ -101,26 +101,25 @@ namespace PT.Middleware
             };
         }
 
-        public static List<FinraRecord> GetShortVolume(string symbol, int days)
+        public static List<FinraRecord> GetShortVolume(string symbol, IEnumerable<Skender.Stock.Indicators.Quote> history, int days)
         {
             List<FinraRecord> shortRecords = new List<FinraRecord>();
 
             //Get last 14 trading days for this symbol using TD
             //This way the FINRA short interest module completely relies on TD for dates
-            string ochlResponse = TwelveData.CompleteTwelveDataRequest("time_series", symbol).Result;
-            JObject data = JObject.Parse(ochlResponse);
-            JArray resultSet = (JArray)data.GetValue("values");
+            //string ochlResponse = TwelveData.CompleteTwelveDataRequest("time_series", symbol).Result;
+            //JObject data = JObject.Parse(ochlResponse);
+            //JArray resultSet = (JArray)data.GetValue("values");
 
-            for (int i = 0; i < days; i++)
+            List<Skender.Stock.Indicators.Quote> historyList = history.ToList();
+
+            for (int i = 1; i <= days; i++)
             {
                 try
                 {
-                    var ochlResult = resultSet[i];
-                    string ochlResultDate = ochlResult.Value<string>("datetime");
-                    decimal ochlResultVolume = decimal.Parse(ochlResult.Value<string>("volume"));
-
-                    DateTime date = DateTime.Parse(ochlResultDate);
-                    //DateTime date = DateTime.Now.AddDays(-1 * i);
+                    var ochlResult = historyList[historyList.Count - i];
+                    decimal ochlResultVolume = Convert.ToDecimal(ochlResult.Volume);
+                    DateTime date = ochlResult.Date;
 
                     if (DateTime.Compare(date, FirstDate) >= 0)
                     {

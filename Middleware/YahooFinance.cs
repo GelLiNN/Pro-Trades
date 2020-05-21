@@ -91,7 +91,7 @@ namespace PT.Middleware
 
                 //Composite Score, this gets the YF quote twice right now
                 //TODO: Update this method to not get YF quote twice during cache loading
-                var score = Controllers.SearchController.GetCompositeScoreInternalTD(symbol, quote);
+                var score = Controllers.SearchController.GetCompositeScoreInternal(symbol, quote);
                 if (score.CompositeScoreValue > 0)
                     companyStat.CompositeScoreResult = score;
             }

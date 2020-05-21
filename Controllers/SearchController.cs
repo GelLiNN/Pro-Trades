@@ -75,7 +75,7 @@ namespace PT.Controllers
             string macdResponse = AlphaVantage.CompleteAlphaVantageRequest("MACD", symbol).Result;
             decimal macdCompositeScore = AlphaVantage.GetCompositeScore("MACD", macdResponse, 7);
 
-            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
+            ShortInterestResult shortResult = new ShortInterestResult(); //FINRA.GetShortInterest(symbol, 7);
 
             return new CompositeScoreResult
             {

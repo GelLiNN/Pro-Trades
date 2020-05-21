@@ -28,8 +28,9 @@ namespace PT.Middleware
                         //When the -DMI is above the +DMI, prices are moving down, and ADX measures the strength of the downtrend.
                         //Many traders will use ADX readings above 25 to suggest that the trend is strong enough for trend-trading strategies.
                         //Conversely, when ADX is below 25, many will avoid trend-trading strategies.
-                        //resultSet = (JArray)data.GetValue("values");
-                        //compositeScore = GetADXComposite(resultSet, daysToCalculate);
+                        int loopbackPeriod = 14;
+                        IEnumerable<AdxResult> adxResults = Indicator.GetAdx(history, loopbackPeriod);
+                        compositeScore = GetADXComposite(adxResults, daysToCalculate);
                         break;
 
                     case "aroon":
@@ -53,8 +54,8 @@ namespace PT.Middleware
                         int fastPeriod = 12;
                         int slowPeriod = 26;
                         int signalPeriod = 9;
-                        IEnumerable<MacdResult> results = Indicator.GetMacd(history, fastPeriod, slowPeriod, signalPeriod);
-                        compositeScore = GetMACDComposite(results, daysToCalculate);
+                        IEnumerable<MacdResult> macdResults = Indicator.GetMacd(history, fastPeriod, slowPeriod, signalPeriod);
+                        compositeScore = GetMACDComposite(macdResults, daysToCalculate);
                         break;
 
                     case "obv":
@@ -126,15 +127,6 @@ namespace PT.Middleware
 
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
         {
-            //string adxResponse = CompleteTwelveDataRequest("ADX", symbol).Result;
-            //decimal adxCompositeScore = GetCompositeScore(symbol, "ADX", adxResponse, 7);
-            //string obvResponse = CompleteTwelveDataRequest("OBV", symbol).Result;
-            //decimal obvCompositeScore = GetCompositeScore("OBV", obvResponse, 7);
-            //string aroonResponse = CompleteTwelveDataRequest("AROON", symbol).Result;
-            //decimal aroonCompositeScore = GetCompositeScore(symbol, "AROON", aroonResponse, 7);
-            //string macdResponse = CompleteTwelveDataRequest("MACD", symbol).Result;
-            //decimal macdCompositeScore = GetCompositeScore(symbol, "MACD", macdResponse, 7);
-
             IReadOnlyList<Candle> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 100).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
             foreach (Candle data in yahooHistory)
@@ -151,10 +143,10 @@ namespace PT.Middleware
             IEnumerable<Skender.Stock.Indicators.Quote> history = historyList.AsEnumerable();
             Cleaners.PrepareHistory(history);
 
-            decimal adxCompositeScore = 0;
+            decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
             decimal macdCompositeScore = GetIndicatorComposite(symbol, "MACD", history, 7);
 
-            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
+            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7);
 
             FundamentalsResult fundResult = TwelveData.GetFundamentals(symbol, quote);
 
@@ -172,7 +164,7 @@ namespace PT.Middleware
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
                 CompositeScoreValue = (adxCompositeScore + /*obvCompositeScore + aroonCompositeScore +*/ macdCompositeScore +
-                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + trResult.RatingsComposite) / 6,
+                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + trResult.RatingsComposite) / 5,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
                 TipRanks = trResult
@@ -192,6 +184,73 @@ namespace PT.Middleware
             scoreResult.CompositeRank = rank;
 
             return scoreResult;
+        }
+
+        public static decimal GetADXComposite(IEnumerable<AdxResult> resultSet, int daysToCalculate)
+        {
+            List<AdxResult> results = resultSet.ToList();
+            int daysCalulated = 0;
+            int numberOfResults = 0;
+            HashSet<string> dates = new HashSet<string>();
+
+            Stack<decimal> adxValueYList = new Stack<decimal>();
+            decimal adxTotal = 0;
+
+            for (int i = results.Count - 1; i >= 0; i--)
+            {
+                if (daysCalulated < daysToCalculate)
+                {
+                    AdxResult result = results[i];
+                    decimal adxVal = result.Adx != null ? (decimal)result.Adx : 0.0M;
+                    adxValueYList.Push(adxVal);
+                    adxTotal += adxVal;
+                    numberOfResults++;
+
+                    string adxDate = result.Date.ToString("yyyy-MM-dd");
+                    if (!dates.Contains(adxDate))
+                    {
+                        dates.Add(adxDate);
+                        daysCalulated++;
+                    }
+                }
+                else
+                    break;
+            }
+
+            List<decimal> adxXList = new List<decimal>();
+            for (int i = 1; i <= numberOfResults; i++)
+                adxXList.Add(i);
+
+            List<decimal> adxYList = adxValueYList.ToList();
+            decimal adxSlope = TwelveData.GetSlope(adxXList, adxYList);
+            decimal adxSlopeMultiplier = TwelveData.GetSlopeMultiplier(adxSlope);
+            decimal adxAvg = adxTotal / numberOfResults;
+
+            List<decimal> adxZScores = TwelveData.GetZScores(adxYList);
+            decimal zScoreSlope = TwelveData.GetSlope(adxXList, adxZScores);
+            decimal zScoreSlopeMultiplier = TwelveData.GetSlopeMultiplier(zScoreSlope);
+
+            //Start with the average of the 2 most recent ADX values
+            decimal baseValue = (adxYList[adxYList.Count - 1] + adxYList[adxYList.Count - 2]) / 2;
+
+            //Add based on the most recent Z Score * 100 if it is positive
+            decimal recentZScore = adxZScores[adxZScores.Count - 1];
+            if (recentZScore > 0)
+                baseValue += (recentZScore * 100) / 2; //to even it out
+            else
+                baseValue += 10; //pity points
+
+            //Add bonus for ADX average above 25 per investopedia recommendation
+            decimal averageBonus = adxAvg > 25 ? 25 : 0;
+
+            //calculate composite score based on the following values and weighted multipliers
+            decimal composite = 0;
+            composite += baseValue;
+            composite += averageBonus;
+            composite += (adxSlope > 0.1M) ? (adxSlope * adxSlopeMultiplier) + 10 : -10; //penalty
+            composite += (zScoreSlope > 0.1M) ? (zScoreSlope * zScoreSlopeMultiplier) + 10 : 0;
+
+            return Math.Min(composite, 100); //cap ADX composite at 100, no extra weight
         }
 
         public static decimal GetMACDComposite(IEnumerable<MacdResult> resultSet, int daysToCalculate)

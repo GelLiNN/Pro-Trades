@@ -215,7 +215,7 @@ namespace PT.Middleware
             string macdResponse = CompleteTwelveDataRequest("MACD", symbol).Result;
             decimal macdCompositeScore = GetCompositeScore(symbol, "MACD", macdResponse, 7);
 
-            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
+            ShortInterestResult shortResult = new ShortInterestResult(); //FINRA.GetShortInterest(symbol, 7);
 
             FundamentalsResult fundResult = GetFundamentals(symbol, quote);
 
