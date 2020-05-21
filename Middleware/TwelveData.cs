@@ -94,105 +94,112 @@ namespace PT.Middleware
             }
         }
 
-        public static decimal GetCompositeScore(string function, string twelveDataResponse, int daysToCalculate)
+        public static decimal GetCompositeScore(string symbol, string function, string twelveDataResponse, int daysToCalculate)
         {
             decimal compositeScore = 0;
             JObject data = JObject.Parse(twelveDataResponse);
             JArray resultSet;
             function = function.ToLower();
 
-            //different processing for each indicator
-            switch (function)
+            try
             {
-                case "adx":
-                    //When the +DMI is above the -DMI, prices are moving up, and ADX measures the strength of the uptrend.
-                    //When the -DMI is above the +DMI, prices are moving down, and ADX measures the strength of the downtrend.
-                    //Many traders will use ADX readings above 25 to suggest that the trend is strong enough for trend-trading strategies.
-                    //Conversely, when ADX is below 25, many will avoid trend-trading strategies.
-                    resultSet = (JArray)data.GetValue("values");
-                    compositeScore = GetADXComposite(resultSet, daysToCalculate);
-                    break;
+                //different processing for each indicator
+                switch (function)
+                {
+                    case "adx":
+                        //When the +DMI is above the -DMI, prices are moving up, and ADX measures the strength of the uptrend.
+                        //When the -DMI is above the +DMI, prices are moving down, and ADX measures the strength of the downtrend.
+                        //Many traders will use ADX readings above 25 to suggest that the trend is strong enough for trend-trading strategies.
+                        //Conversely, when ADX is below 25, many will avoid trend-trading strategies.
+                        resultSet = (JArray)data.GetValue("values");
+                        compositeScore = GetADXComposite(resultSet, daysToCalculate);
+                        break;
 
-                case "aroon":
-                    //Indicator Movements Around the Key Levels, 30 and 70 - Movements above 70 indicate a strong trend,
-                    //while movements below 30 indicate low trend strength. Movements between 30 and 70 indicate indecision.
-                    //For example, if the bullish indicator remains above 70 while the bearish indicator remains below 30,
-                    //the trend is definitively bullish.
-                    //Crossovers Between the Bullish and Bearish Indicators - Crossovers indicate confirmations if they occur
-                    //between 30 and 70.For example, if the bullish indicator crosses above the bearish indicator, it confirms a bullish trend.
-                    //The two Aroon indicators(bullish and bearish) can also be made into a single oscillator by
-                    //making the bullish indicator 100 to 0 and the bearish indicator 0 to - 100 and finding the
-                    //difference between the two values. This oscillator then varies between 100 and - 100, with 0 indicating no trend.
-                    resultSet = (JArray)data.GetValue("values");
-                    compositeScore = GetAROONComposite(resultSet, daysToCalculate);
-                    break;
+                    case "aroon":
+                        //Indicator Movements Around the Key Levels, 30 and 70 - Movements above 70 indicate a strong trend,
+                        //while movements below 30 indicate low trend strength. Movements between 30 and 70 indicate indecision.
+                        //For example, if the bullish indicator remains above 70 while the bearish indicator remains below 30,
+                        //the trend is definitively bullish.
+                        //Crossovers Between the Bullish and Bearish Indicators - Crossovers indicate confirmations if they occur
+                        //between 30 and 70.For example, if the bullish indicator crosses above the bearish indicator, it confirms a bullish trend.
+                        //The two Aroon indicators(bullish and bearish) can also be made into a single oscillator by
+                        //making the bullish indicator 100 to 0 and the bearish indicator 0 to - 100 and finding the
+                        //difference between the two values. This oscillator then varies between 100 and - 100, with 0 indicating no trend.
+                        resultSet = (JArray)data.GetValue("values");
+                        compositeScore = GetAROONComposite(resultSet, daysToCalculate);
+                        break;
 
-                case "macd":
-                    //Positive rate-of-change for the MACD Histogram values indicate bullish movement
-                    //Recent Buy signal measured by MACD base value crossing (becoming greater than) the MACD signal value
-                    //Recent Sell signal measured by MACD signal value crossing (becoming greater than) the MACD base value
-                    resultSet = (JArray)data.GetValue("values");
-                    compositeScore = GetMACDComposite(resultSet, daysToCalculate);
-                    break;
+                    case "macd":
+                        //Positive rate-of-change for the MACD Histogram values indicate bullish movement
+                        //Recent Buy signal measured by MACD base value crossing (becoming greater than) the MACD signal value
+                        //Recent Sell signal measured by MACD signal value crossing (becoming greater than) the MACD base value
+                        resultSet = (JArray)data.GetValue("values");
+                        compositeScore = GetMACDComposite(resultSet, daysToCalculate);
+                        break;
 
-                case "obv":
-                    //The On Balance Volume (OBV) is a cumulative total of the up and down volume.
-                    //When the close is higher than the previous close, the volume is added to the running total,
-                    //and when the close is lower than the previous close, the volume is subtracted from the running total.
-                    //To interpret the OBV, look for the OBV to move with the price or precede price moves.
-                    //If the price moves before the OBV, then it is a non-confirmed move. A series of rising peaks, or falling troughs
-                    //in the OBV indicates a strong trend. If the OBV is flat, then the market is not trending.
-                    //https://www.investopedia.com/articles/technical/100801.asp
-                    resultSet = (JArray)data.GetValue("values");
-                    compositeScore = GetOBVComposite(resultSet, daysToCalculate);
-                    break;
+                    case "obv":
+                        //The On Balance Volume (OBV) is a cumulative total of the up and down volume.
+                        //When the close is higher than the previous close, the volume is added to the running total,
+                        //and when the close is lower than the previous close, the volume is subtracted from the running total.
+                        //To interpret the OBV, look for the OBV to move with the price or precede price moves.
+                        //If the price moves before the OBV, then it is a non-confirmed move. A series of rising peaks, or falling troughs
+                        //in the OBV indicates a strong trend. If the OBV is flat, then the market is not trending.
+                        //https://www.investopedia.com/articles/technical/100801.asp
+                        resultSet = (JArray)data.GetValue("values");
+                        compositeScore = GetOBVComposite(resultSet, daysToCalculate);
+                        break;
 
-                //Below cases need to be migrated to use TD's conventions
-                case "BBANDS":
-                    //Bollinger Bands consist of three lines. The middle band is a simple moving average (generally 20 periods)
-                    //of the typical price (TP). The upper and lower bands are F standard deviations (generally 2) above and below the middle band.
-                    //The bands widen and narrow when the volatility of the price is higher or lower, respectively.
-                    //Bollinger Bands do not, in themselves, generate buy or sell signals; they are an indicator of overbought or oversold conditions.
-                    //When the price is near the upper or lower band it indicates that a reversal may be imminent.
-                    //The middle band becomes a support or resistance level.The upper and lower bands can also be interpreted as price targets.
-                    //When the price bounces off of the lower band and crosses the middle band, then the upper band becomes the price target.
-                    //See also Bollinger Width, Envelope, Price Channels and Projection Bands.
-                    //https://www.investopedia.com/articles/technical/04/030304.asp
-                    //https://www.fmlabs.com/reference/default.htm?url=Bollinger.htm
-                    //https://www.alphavantage.co/query?function=BBANDS&symbol=MSFT&interval=weekly&time_period=5&series_type=close&nbdevup=3&nbdevdn=3&apikey=demo
-                    break;
+                    //Below cases need to be migrated to use TD's conventions
+                    case "BBANDS":
+                        //Bollinger Bands consist of three lines. The middle band is a simple moving average (generally 20 periods)
+                        //of the typical price (TP). The upper and lower bands are F standard deviations (generally 2) above and below the middle band.
+                        //The bands widen and narrow when the volatility of the price is higher or lower, respectively.
+                        //Bollinger Bands do not, in themselves, generate buy or sell signals; they are an indicator of overbought or oversold conditions.
+                        //When the price is near the upper or lower band it indicates that a reversal may be imminent.
+                        //The middle band becomes a support or resistance level.The upper and lower bands can also be interpreted as price targets.
+                        //When the price bounces off of the lower band and crosses the middle band, then the upper band becomes the price target.
+                        //See also Bollinger Width, Envelope, Price Channels and Projection Bands.
+                        //https://www.investopedia.com/articles/technical/04/030304.asp
+                        //https://www.fmlabs.com/reference/default.htm?url=Bollinger.htm
+                        //https://www.alphavantage.co/query?function=BBANDS&symbol=MSFT&interval=weekly&time_period=5&series_type=close&nbdevup=3&nbdevdn=3&apikey=demo
+                        break;
 
-                case "STOCH":
-                    //The Stochastic Oscillator measures where the close is in relation to the recent trading range.
-                    //The values range from zero to 100. D values over 75 indicate an overbought condition; values under 25 indicate an oversold condition.
-                    //When the Fast D crosses above the Slow D, it is a buy signal; when it crosses below, it is a sell signal.
-                    //The Raw K is generally considered too erratic to use for crossover signals.
-                    //https://www.fmlabs.com/reference/default.htm?url=StochasticOscillator.htm
-                    //https://www.investopedia.com/articles/technical/073001.asp
-                    //https://www.alphavantage.co/query?function=STOCH&symbol=MSFT&interval=daily&apikey=
-                    break;
+                    case "STOCH":
+                        //The Stochastic Oscillator measures where the close is in relation to the recent trading range.
+                        //The values range from zero to 100. D values over 75 indicate an overbought condition; values under 25 indicate an oversold condition.
+                        //When the Fast D crosses above the Slow D, it is a buy signal; when it crosses below, it is a sell signal.
+                        //The Raw K is generally considered too erratic to use for crossover signals.
+                        //https://www.fmlabs.com/reference/default.htm?url=StochasticOscillator.htm
+                        //https://www.investopedia.com/articles/technical/073001.asp
+                        //https://www.alphavantage.co/query?function=STOCH&symbol=MSFT&interval=daily&apikey=
+                        break;
 
-                case "RSI":
-                    //The Relative Strength Index (RSI) calculates a ratio of the recent upward price movements to the absolute price movement.
-                    //The RSI ranges from 0 to 100. The RSI is interpreted as an overbought/oversold indicator when the value is over 70/below 30.
-                    //You can also look for divergence with price. If the price is making new highs/lows, and the RSI is not, it indicates a reversal.
-                    //https://www.investopedia.com/articles/active-trading/042114/overbought-or-oversold-use-relative-strength-index-find-out.asp
-                    //https://www.alphavantage.co/query?function=RSI&symbol=MSFT&interval=weekly&time_period=10&series_type=open&apikey=demo
-                    break;
+                    case "RSI":
+                        //The Relative Strength Index (RSI) calculates a ratio of the recent upward price movements to the absolute price movement.
+                        //The RSI ranges from 0 to 100. The RSI is interpreted as an overbought/oversold indicator when the value is over 70/below 30.
+                        //You can also look for divergence with price. If the price is making new highs/lows, and the RSI is not, it indicates a reversal.
+                        //https://www.investopedia.com/articles/active-trading/042114/overbought-or-oversold-use-relative-strength-index-find-out.asp
+                        //https://www.alphavantage.co/query?function=RSI&symbol=MSFT&interval=weekly&time_period=10&series_type=open&apikey=demo
+                        break;
 
-                case "CCI":
-                    //Possible sell signals:
-                    //The CCI crosses above 100 and has started to curve downward.
-                    //There is bearish divergence between the CCI and the actual price movement, characterized by downward movement
-                    //in the CCI while the price of the asset continues to move higher or moves sideways.
-                    //Possible buy signals:
-                    //The CCI crosses below -100 and has started to curve upward.
-                    //There is a bullish divergence between the CCI and the actual price movement, characterized by upward movement
-                    //in the CCI while the price of the asset continues to move downward or sideways.
-                    //https://www.investopedia.com/investing/timing-trades-with-commodity-channel-index/
-                    //https://www.alphavantage.co/query?function=CCI&symbol=MSFT&interval=daily&time_period=10&apikey=
-                    break;
+                    case "CCI":
+                        //Possible sell signals:
+                        //The CCI crosses above 100 and has started to curve downward.
+                        //There is bearish divergence between the CCI and the actual price movement, characterized by downward movement
+                        //in the CCI while the price of the asset continues to move higher or moves sideways.
+                        //Possible buy signals:
+                        //The CCI crosses below -100 and has started to curve upward.
+                        //There is a bullish divergence between the CCI and the actual price movement, characterized by upward movement
+                        //in the CCI while the price of the asset continues to move downward or sideways.
+                        //https://www.investopedia.com/investing/timing-trades-with-commodity-channel-index/
+                        //https://www.alphavantage.co/query?function=CCI&symbol=MSFT&interval=daily&time_period=10&apikey=
+                        break;
 
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("EXCEPTION CAUGHT: TwelveData.cs GetCompositeScore for symbol " + symbol + ", function " + function + ", message: " + e.Message);
             }
             return compositeScore;
         }
@@ -200,19 +207,19 @@ namespace PT.Middleware
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
         {
             string adxResponse = CompleteTwelveDataRequest("ADX", symbol).Result;
-            decimal adxCompositeScore = GetCompositeScore("ADX", adxResponse, 7);
+            decimal adxCompositeScore = GetCompositeScore(symbol, "ADX", adxResponse, 7);
             //string obvResponse = CompleteTwelveDataRequest("OBV", symbol).Result;
             //decimal obvCompositeScore = GetCompositeScore("OBV", obvResponse, 7);
             string aroonResponse = CompleteTwelveDataRequest("AROON", symbol).Result;
-            decimal aroonCompositeScore = GetCompositeScore("AROON", aroonResponse, 7);
+            decimal aroonCompositeScore = GetCompositeScore(symbol, "AROON", aroonResponse, 7);
             string macdResponse = CompleteTwelveDataRequest("MACD", symbol).Result;
-            decimal macdCompositeScore = GetCompositeScore("MACD", macdResponse, 7);
+            decimal macdCompositeScore = GetCompositeScore(symbol, "MACD", macdResponse, 7);
 
             ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, 7);
 
-            FundamentalsResult fundResult = GetFundamentals(quote);
+            FundamentalsResult fundResult = GetFundamentals(symbol, quote);
 
-            TipRanksResult trResult = TipRanks.GetData(symbol);
+            TipRanksResult trResult = TipRanks.GetTipRanksResult(symbol);
 
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
@@ -224,9 +231,9 @@ namespace PT.Middleware
                 MACDComposite = macdCompositeScore,
                 RatingsComposite = trResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
-                FundamentalsComposite = fundResult.FundamentalsCompositeScore,
+                FundamentalsComposite = fundResult.FundamentalsComposite,
                 CompositeScoreValue = (adxCompositeScore + /*obvCompositeScore +*/ aroonCompositeScore + macdCompositeScore +
-                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsCompositeScore + trResult.RatingsComposite) / 6,
+                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + trResult.RatingsComposite) / 6,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
                 TipRanks = trResult
@@ -619,113 +626,134 @@ namespace PT.Middleware
 
         //Fundamentals (volume, price, earnings and filings up-to-date
         //RELIES completely on unofficial yahoo finance API for now
-        public static FundamentalsResult GetFundamentals(Security quote)
+        public static FundamentalsResult GetFundamentals(string symbol, Security quote)
         {
-            List<decimal> priceYList = new List<decimal>();
-            priceYList.Add(Convert.ToDecimal(quote.TwoHundredDayAverage));
-            priceYList.Add(Convert.ToDecimal(quote.FiftyDayAverage));
-            priceYList.Add(Convert.ToDecimal(quote.RegularMarketPrice));
-
-            List<decimal> normalizedPrice = GetNormalizedData(priceYList);
-
-            List<decimal> priceXList = new List<decimal>();
-            for (int i = 1; i <= priceYList.Count; i++)
-                priceXList.Add(i);
-
-            decimal priceSlope = GetSlope(priceXList, priceYList);
-
-            decimal normalizedPriceSlope = GetSlope(priceXList, normalizedPrice);
-            decimal normalizedPriceSlopeMultiplier = GetSlopeMultiplier(normalizedPriceSlope);
-
-            List<decimal> volumeYList = new List<decimal>();
-            volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume3Month));
-            volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume10Day));
-            volumeYList.Add(Convert.ToDecimal(quote.RegularMarketVolume));
-
-            List<decimal> normalizedVolume = GetNormalizedData(volumeYList);
-
-            List<decimal> volumeXList = new List<decimal>();
-            for (int i = 1; i <= volumeYList.Count; i++)
-                volumeXList.Add(i);
-
-            decimal volumeSlope = GetSlope(volumeXList, volumeYList);
-
-            decimal normalizedVolumeSlope = GetSlope(volumeXList, normalizedVolume);
-            decimal normalizedVolumeSlopeMultiplier = GetSlopeMultiplier(normalizedVolumeSlope);
-
-            decimal volumeUSD = Convert.ToDecimal(quote.RegularMarketVolume) *
-                Convert.ToDecimal(quote.RegularMarketPrice);
-
-            decimal averageVolumeUSD = Convert.ToDecimal(quote.AverageDailyVolume3Month) *
-                Convert.ToDecimal(quote.FiftyDayAverage);
-
-            //Do stuff with PE and EPS data
-            decimal forwardEPS = 0.0M, trailingEPS = 0.0M, averageEPS = 0.0M, growthEPS = 0.0M;
-            decimal forwardPE = 0.0M, trailingPE = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
             string message = string.Empty;
             try
             {
-                forwardEPS = Convert.ToDecimal(quote.EpsForward);
-                trailingEPS = Convert.ToDecimal(quote.EpsTrailingTwelveMonths);
-                averageEPS = (forwardEPS + trailingEPS) / 2;
-                growthEPS = forwardEPS - trailingEPS;
+                List<decimal> priceYList = new List<decimal>();
+                priceYList.Add(Convert.ToDecimal(quote.TwoHundredDayAverage));
+                priceYList.Add(Convert.ToDecimal(quote.FiftyDayAverage));
+                priceYList.Add(Convert.ToDecimal(quote.RegularMarketPrice));
 
-                forwardPE = Convert.ToDecimal(quote.ForwardPE);
-                trailingPE = Convert.ToDecimal(quote.TrailingPE);
-                averagePE = (forwardPE + trailingPE) / 2;
-                growthPE = forwardPE - trailingPE;
+                List<decimal> normalizedPrice = GetNormalizedData(priceYList);
+
+                List<decimal> priceXList = new List<decimal>();
+                for (int i = 1; i <= priceYList.Count; i++)
+                    priceXList.Add(i);
+
+                decimal priceSlope = GetSlope(priceXList, priceYList);
+
+                decimal normalizedPriceSlope = GetSlope(priceXList, normalizedPrice);
+                decimal normalizedPriceSlopeMultiplier = GetSlopeMultiplier(normalizedPriceSlope);
+
+                List<decimal> volumeYList = new List<decimal>();
+                volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume3Month));
+                volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume10Day));
+                volumeYList.Add(Convert.ToDecimal(quote.RegularMarketVolume));
+
+                List<decimal> normalizedVolume = GetNormalizedData(volumeYList);
+
+                List<decimal> volumeXList = new List<decimal>();
+                for (int i = 1; i <= volumeYList.Count; i++)
+                    volumeXList.Add(i);
+
+                decimal volumeSlope = GetSlope(volumeXList, volumeYList);
+
+                decimal normalizedVolumeSlope = GetSlope(volumeXList, normalizedVolume);
+                decimal normalizedVolumeSlopeMultiplier = GetSlopeMultiplier(normalizedVolumeSlope);
+
+                decimal volumeUSD = Convert.ToDecimal(quote.RegularMarketVolume) *
+                    Convert.ToDecimal(quote.RegularMarketPrice);
+
+                decimal averageVolumeUSD = Convert.ToDecimal(quote.AverageDailyVolume3Month) *
+                    Convert.ToDecimal(quote.FiftyDayAverage);
+
+                //Do stuff with PE and EPS data
+                decimal peTrailing = 0.0M;
+                try { peTrailing = decimal.Parse(quote.TrailingPE.ToString()); }
+                catch (Exception e) { /*do nothing*/ }
+
+                decimal peForward = 0.0M;
+                try { peForward = decimal.Parse(quote.ForwardPE.ToString()); }
+                catch (Exception e) { /*set to trailing*/ peForward = peTrailing; }
+
+                decimal epsTrailing = 0.0M;
+                try { epsTrailing = decimal.Parse(quote.EpsTrailingTwelveMonths.ToString()); }
+                catch (Exception e) { /*do nothing*/ }
+
+                decimal epsForward = 0.0M;
+                try { epsForward = decimal.Parse(quote.EpsForward.ToString()); }
+                catch (Exception e) { /*set to trailing*/ epsForward = epsTrailing; }
+
+                decimal averageEPS = 0.0M, growthEPS = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
+
+                averageEPS = (epsForward + epsTrailing) / 2;
+                growthEPS = epsForward - epsTrailing;
+
+                averagePE = (peForward + peTrailing) / 2;
+                growthPE = peForward - peTrailing;
+
+                //Add bonus for dividends maybe?
+
+                //Add bonus if current volume is greater than average volume
+                decimal volumeTrendingBonus = (volumeUSD > averageVolumeUSD) ? 10 : 0;
+
+                //calculate composite score based on the following values and weighted multipliers
+                //Base value should be calculated based on PE and EPS
+                //Bonuses added for positive volume and price slopes, and PE / EPS Growth
+                decimal composite = 0;
+                composite += (averagePE > 2.0M) ? averagePE * 2 + 10 : 0;
+                composite += (averageEPS > 0.75M) ? averageEPS * 3 + 10 : 0;
+                composite += (growthPE > 0) ? growthPE + 10 : 0;
+                composite += (growthEPS > 0) ? growthEPS + 10 : 0;
+                composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
+                composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier + 10 : 0;
+                composite += volumeTrendingBonus;
+
+                composite = Math.Min(composite, 100); //cap FUND composite at 100, no extra weight
+
+                decimal disqualifyingLimit = 1000000.0M;
+
+                //Add this later
+                //decimal annualDivRate = 0.0M;
+                //bool divs = Decimal.TryParse(quote.TrailingAnnualDividendRate.ToString(), out annualDivRate)
+
+                return new FundamentalsResult
+                {
+                    VolumeUSD = volumeUSD,
+                    AverageVolumeUSD = averageVolumeUSD,
+                    VolumeSlope = volumeSlope,
+                    PriceSlope = priceSlope,
+                    AverageEPS = averageEPS,
+                    AveragePE = averagePE,
+                    GrowthEPS = growthEPS,
+                    GrowthPE = growthPE,
+                    HasDividends = false,
+                    IsBlacklisted = (volumeUSD < disqualifyingLimit && averageVolumeUSD < disqualifyingLimit),
+                    Message = message,
+                    FundamentalsComposite = composite
+                };
             }
             catch (Exception e)
             {
-                message = "EXCEPTION getting PE and EPS data: " + e.Message;
+                Debug.WriteLine("EXCEPTION CAUGHT: TwelveData.cs GetFundamentals for symbol " + symbol + ", message: " + e.Message);
+                return new FundamentalsResult
+                {
+                    VolumeUSD = 0.0M,
+                    AverageVolumeUSD = 0.0M,
+                    VolumeSlope = 0.0M,
+                    PriceSlope = 0.0M,
+                    AverageEPS = 0.0M,
+                    AveragePE = 0.0M,
+                    GrowthEPS = 0.0M,
+                    GrowthPE = 0.0M,
+                    HasDividends = false,
+                    IsBlacklisted = false,
+                    Message = e.Message,
+                    FundamentalsComposite = 50.0M //Pity Points for exceptions getting data
+                };
             }
-
-            //Add bonus for dividends maybe?
-
-            //Add bonus if current volume is greater than average volume
-            decimal volumeTrendingBonus = (volumeUSD > averageVolumeUSD) ? 10 : 0;
-
-            //calculate composite score based on the following values and weighted multipliers
-            //Base value should be calculated based on PE and EPS
-            //Bonuses added for positive volume and price slopes, and PE / EPS Growth
-            decimal composite = 0;
-            composite += (averagePE > 2.0M) ? averagePE * 2 + 10 : 0;
-            composite += (averageEPS > 0.75M) ? averageEPS * 3 + 10 : 0;
-            composite += (growthPE > 0) ? growthPE + 10 : 0;
-            composite += (growthEPS > 0) ? growthEPS + 10 : 0;
-            composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
-            composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier + 10 : 0;
-            composite += volumeTrendingBonus;
-
-            composite = Math.Min(composite, 100); //cap FUND composite at 100, no extra weight
-
-            decimal disqualifyingLimit = 1000000.0M;
-
-            //Add this later
-            //decimal annualDivRate = 0.0M;
-            //bool divs = Decimal.TryParse(quote.TrailingAnnualDividendRate.ToString(), out annualDivRate)
-
-            FundamentalsResult fundamentalsResult = new FundamentalsResult
-            {
-                VolumeUSD = volumeUSD,
-                AverageVolumeUSD = averageVolumeUSD,
-                VolumeSlope = volumeSlope,
-                PriceSlope = priceSlope,
-                AverageEPS = averageEPS,
-                AveragePE = averagePE,
-                GrowthEPS = growthEPS,
-                GrowthPE = growthPE,
-                HasDividends = false,
-                IsBlacklisted = (volumeUSD < disqualifyingLimit && averageVolumeUSD < disqualifyingLimit),
-                Message = message,
-                FundamentalsCompositeScore = composite
-            };
-
-            //Pity Points for exceptions getting PE and EPS data
-            if (!string.IsNullOrEmpty(message))
-                fundamentalsResult.FundamentalsCompositeScore = Math.Max(fundamentalsResult.FundamentalsCompositeScore, 50);
-
-            return fundamentalsResult;
         }
 
         public static decimal GetSlope(List<decimal> xList, List<decimal> yList)

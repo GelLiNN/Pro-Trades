@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using PT.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -24,7 +25,7 @@ namespace PT.Middleware
         private static readonly int InsiderNonInformativeBuyTypeId = 4;
         private static readonly int InsiderNonInformativeSellTypeId = 51;
 
-        public static TipRanksResult GetData(string symbol)
+        public static TipRanksResult GetTipRanksResult(string symbol)
         {
             //Return a data object that contains:
             //Aggregated ratings data and ratings providers
@@ -36,70 +37,88 @@ namespace PT.Middleware
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(TipRanksBaseUrl + "getData/" + symbol);
             request.Method = "GET";
 
-            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            try
             {
-                StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
-                responseString = reader.ReadToEnd();
-                response.Close();
+                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                {
+                    StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+                    responseString = reader.ReadToEnd();
+                    response.Close();
+                }
+                TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseString);
+
+                //filter results to the last 3 months
+                DateTime startDate = DateTime.Now.AddMonths(-3);
+                List<Insider> insiders = trResponse.insiders
+                    .Where(x => DateTime.Compare(x.rDate, startDate) > 0)
+                    .ToList();
+                List<ConsensusOverTime> bsns = trResponse.consensusOverTime
+                    .Where(x => DateTime.Compare(x.date, startDate) > 0)
+                    .ToList();
+                List<Expert> ratings = trResponse.experts
+                    .Where(x => DateTime.Compare(x.ratings.FirstOrDefault().date, startDate) > 0 && x.rankings.FirstOrDefault().stars > 0)
+                    .ToList();
+
+
+                //find the slope of the buy and sell consensuses (net)
+                List<decimal> bsnYList = bsns
+                    .Select(x => Convert.ToDecimal(x.consensus - 3 + x.buy - x.sell))
+                    .ToList();
+
+                List<decimal> bsnXList = new List<decimal>();
+                int counter = 1;
+                foreach (decimal bsn in bsnYList)
+                {
+                    bsnXList.Add(counter);
+                    counter++;
+                }
+
+                decimal bsnSlope = TwelveData.GetSlope(bsnXList, bsnYList);
+                decimal bsnSlopeMultiplier = 10.0M; //TwelveData.GetSlopeMultiplier(bsnSlope);
+
+                //find the average rating
+                List<decimal> ratingNums = ratings
+                    .Select(x => Convert.ToDecimal(x.rankings.FirstOrDefault().stars))
+                    .ToList();
+
+                decimal averageRating = ratingNums.Sum() / ratingNums.Count;
+
+                decimal priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.priceTarget);
+                decimal lastPrice = Convert.ToDecimal(trResponse.prices[trResponse.prices.Length - 1].p);
+
+                decimal ratingsComposite = 0;
+                ratingsComposite += (averageRating / 6.0M) * 100; //Get score using the average rating as a percentage of (max rating + 1)
+                ratingsComposite += bsnSlope > 0 ? (bsnSlope * bsnSlopeMultiplier) + 5 : -(bsnSlope * bsnSlopeMultiplier) - 5;
+                ratingsComposite += priceTarget > lastPrice ? 10 : -10; //Adjust with price target
+                ratingsComposite = Math.Min(ratingsComposite, 100);
+
+                return new TipRanksResult
+                {
+                    Insiders = insiders,
+                    Institutions = trResponse.hedgeFundData,
+                    ThirdPartyRatings = ratings,
+                    ConsensusOverTime = bsns,
+                    InsiderComposite = 0.0M,
+                    InstitutionalComposite = 0.0M,
+                    RatingsComposite = ratingsComposite,
+                    PriceTarget = priceTarget
+                };
             }
-            TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseString);
-
-            //filter results to the last 3 months
-            DateTime startDate = DateTime.Now.AddMonths(-3);
-            List<Insider> insiders = trResponse.insiders
-                .Where(x => DateTime.Compare(x.rDate, startDate) > 0)
-                .ToList();
-            List<ConsensusOverTime> bsns = trResponse.consensusOverTime
-                .Where(x => DateTime.Compare(x.date, startDate) > 0)
-                .ToList();
-            List<Expert> ratings = trResponse.experts
-                .Where(x => DateTime.Compare(x.ratings.FirstOrDefault().date, startDate) > 0 && x.rankings.FirstOrDefault().stars > 0)
-                .ToList();
-
-
-            //find the slope of the buy and sell consensuses (net)
-            List<decimal> bsnYList = bsns
-                .Select(x => Convert.ToDecimal(x.consensus - 3 + x.buy - x.sell))
-                .ToList();
-
-            List<decimal> bsnXList = new List<decimal>();
-            int counter = 1;
-            foreach (decimal bsn in bsnYList)
+            catch (Exception e)
             {
-                bsnXList.Add(counter);
-                counter++;
+                Debug.WriteLine("EXCEPTION CAUGHT: TipRanks.cs GetTipRanksResult for symbol " + symbol + ", message: " + e.Message);
+                return new TipRanksResult
+                {
+                    Insiders = null,
+                    Institutions = null,
+                    ThirdPartyRatings = null,
+                    ConsensusOverTime = null,
+                    InsiderComposite = 0.0M,
+                    InstitutionalComposite = 0.0M,
+                    RatingsComposite = 50.0M,
+                    PriceTarget = 0.0M
+                };
             }
-
-            decimal bsnSlope = TwelveData.GetSlope(bsnXList, bsnYList);
-            decimal bsnSlopeMultiplier = 10.0M; //TwelveData.GetSlopeMultiplier(bsnSlope);
-
-            //find the average rating
-            List<decimal> ratingNums = ratings
-                .Select(x => Convert.ToDecimal(x.rankings.FirstOrDefault().stars))
-                .ToList();
-
-            decimal averageRating = ratingNums.Sum() / ratingNums.Count;
-
-            decimal priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.priceTarget);
-            decimal lastPrice = Convert.ToDecimal(trResponse.prices[trResponse.prices.Length - 1].p);
-
-            decimal ratingsComposite = 0;
-            ratingsComposite += (averageRating / 6.0M) * 100; //Get score using the average rating as a percentage of (max rating + 1)
-            ratingsComposite += bsnSlope > 0 ? (bsnSlope * bsnSlopeMultiplier) + 5 : -(bsnSlope * bsnSlopeMultiplier) - 5;
-            ratingsComposite += priceTarget > lastPrice ? 10 : -10; //Adjust with price target
-            ratingsComposite = Math.Min(ratingsComposite, 100);
-
-            return new TipRanksResult
-            {
-                Insiders = insiders,
-                Institutions = trResponse.hedgeFundData,
-                ThirdPartyRatings = ratings,
-                ConsensusOverTime = bsns,
-                InsiderComposite = 0.0M,
-                InstitutionalComposite = 0.0M,
-                RatingsComposite = ratingsComposite,
-                PriceTarget = priceTarget
-            };
         }
 
         public static string GetSentiment(string symbol)

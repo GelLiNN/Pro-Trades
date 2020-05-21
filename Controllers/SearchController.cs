@@ -79,7 +79,7 @@ namespace PT.Controllers
         {
             int numOfDays = Int32.Parse(days);
             string tdResponse = TwelveData.CompleteTwelveDataRequest(function, symbol).Result;
-            decimal tdCompositeScore = TwelveData.GetCompositeScore(function, tdResponse, numOfDays);
+            decimal tdCompositeScore = TwelveData.GetCompositeScore(symbol, function, tdResponse, numOfDays);
             return new ContentResult
             {
                 StatusCode = 200,
@@ -94,9 +94,9 @@ namespace PT.Controllers
             return TwelveData.GetCompositeScoreResult(symbol, quote);
         }
 
-        public static CompositeScoreResult GetCompositeScoreInternalTD(string symbol)
+        //Used internally for cache loading
+        public static CompositeScoreResult GetCompositeScoreInternalTD(string symbol, Security quote)
         {
-            Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
             return TwelveData.GetCompositeScoreResult(symbol, quote);
         }
 
@@ -243,7 +243,7 @@ namespace PT.Controllers
         public TipRanksResult GetTipRanksData(string symbol)
         {
             //TipRanks takes lower case symbols
-            return TipRanks.GetData(symbol.ToLower());
+            return TipRanks.GetTipRanksResult(symbol.ToLower());
         }
 
         [HttpGet("/GetTipRanksSentiment/{symbol}")]

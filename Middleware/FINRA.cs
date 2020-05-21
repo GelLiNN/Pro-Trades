@@ -17,7 +17,7 @@ namespace PT.Middleware
     public static class FINRA
     {
         public static readonly DateTime FirstDate = new DateTime(2018, 11, 5);
-        public static string BaseUrl = @"http://regsho.finra.org";
+        public static readonly string BaseUrl = @"http://regsho.finra.org";
         private static readonly HttpClient Client = new HttpClient();
 
         private static readonly decimal SlightlyBearishLowerBound = 0.0M;
@@ -70,9 +70,9 @@ namespace PT.Middleware
                 shortXList.Add(i);
 
             List<decimal> shortYList = shortInterestYList.ToList();
-            decimal shortSlope = TwelveData.GetSlope(shortXList, shortYList);
+            decimal shortSlope = shortYList.Count > 0 ? TwelveData.GetSlope(shortXList, shortYList) : 0.0M; //set to 0 if not found
             decimal shortSlopeMultiplier = TwelveData.GetSlopeMultiplier(shortSlope);
-            decimal shortInterestAverage = (totalVolumeShort / totalVolume) * 100;
+            decimal shortInterestAverage = totalVolume > 0 ? (totalVolumeShort / totalVolume) * 100 : 30.0M; //set to 30 if not found
 
             //Add these bonuses to account for normal short interest fluctuations
             //The slope cannot be in both ranges if the ranges do not overlap
@@ -145,7 +145,7 @@ namespace PT.Middleware
                 catch (Exception e)
                 {
                     //FINRA record parsing failed, we should do something
-                    Debug.WriteLine(string.Format("EXCEPTION: FINRA record FAILED for {0} on day {1}",
+                    Debug.WriteLine(string.Format("EXCEPTION CAUGHT: FINRA record FAILED for {0} on day {1}",
                         symbol, i));
                     continue;
                 }

@@ -120,8 +120,8 @@ namespace PT.Middleware
                     companyStat.TradeData = td;
                 }
 
-                //Composite Score
-                var score = Controllers.SearchController.GetCompositeScoreInternalTD(symbol);
+                //Composite Score not implemented for IEX for now due to rate limits
+                var score = new CompositeScoreResult(); //Controllers.SearchController.GetCompositeScoreInternalTD(symbol);
                 if (score.CompositeScoreValue > 0)
                     companyStat.CompositeScore = score;
             }
