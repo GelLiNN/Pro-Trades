@@ -13,7 +13,7 @@ namespace PT.Middleware
     //https://www.codeproject.com/Articles/15047/Creating-a-Mechanical-Trading-System-Part-1-Techni
     public static class Indicators
     {
-        public static decimal GetIndicatorComposite(string symbol, string function, IEnumerable<Skender.Stock.Indicators.Quote> history, int daysToCalculate)
+        public static decimal GetIndicatorComposite(string symbol, string function, IEnumerable<Skender.Stock.Indicators.Quote> history, int daysToCalculate, object supplement = null)
         {
             decimal compositeScore = 0;
             function = function.ToLower();
@@ -28,8 +28,8 @@ namespace PT.Middleware
                         //When the -DMI is above the +DMI, prices are moving down, and ADX measures the strength of the downtrend.
                         //Many traders will use ADX readings above 25 to suggest that the trend is strong enough for trend-trading strategies.
                         //Conversely, when ADX is below 25, many will avoid trend-trading strategies.
-                        int loopbackPeriod = 14;
-                        IEnumerable<AdxResult> adxResults = Indicator.GetAdx(history, loopbackPeriod);
+                        int adxPeriod = 14;
+                        IEnumerable<AdxResult> adxResults = Indicator.GetAdx(history, adxPeriod);
                         compositeScore = GetADXComposite(adxResults, daysToCalculate);
                         break;
 
@@ -71,7 +71,7 @@ namespace PT.Middleware
                         break;
 
                     //Below cases need to be migrated to use TD's conventions
-                    case "BBANDS":
+                    case "bbands":
                         //Bollinger Bands consist of three lines. The middle band is a simple moving average (generally 20 periods)
                         //of the typical price (TP). The upper and lower bands are F standard deviations (generally 2) above and below the middle band.
                         //The bands widen and narrow when the volatility of the price is higher or lower, respectively.
@@ -83,6 +83,10 @@ namespace PT.Middleware
                         //https://www.investopedia.com/articles/technical/04/030304.asp
                         //https://www.fmlabs.com/reference/default.htm?url=Bollinger.htm
                         //https://www.alphavantage.co/query?function=BBANDS&symbol=MSFT&interval=weekly&time_period=5&series_type=close&nbdevup=3&nbdevdn=3&apikey=demo
+                        int bbandsPeriod = 20;
+                        int standardDeviations = 2;
+                        IEnumerable<BollingerBandsResult> bbandsResults = Indicator.GetBollingerBands(history, bbandsPeriod, standardDeviations);
+                        compositeScore = GetBBANDSComposite(bbandsResults, (List<Skender.Stock.Indicators.Quote>) supplement, daysToCalculate);
                         break;
 
                     case "STOCH":
@@ -143,8 +147,11 @@ namespace PT.Middleware
             IEnumerable<Skender.Stock.Indicators.Quote> history = historyList.AsEnumerable();
             Cleaners.PrepareHistory(history);
 
+            List<Skender.Stock.Indicators.Quote> supplement = historyList.TakeLast(7).ToList();
+
             decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
             decimal macdCompositeScore = GetIndicatorComposite(symbol, "MACD", history, 7);
+            decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
 
             ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7);
 
@@ -160,6 +167,7 @@ namespace PT.Middleware
                 //OBVComposite = obvCompositeScore,
                 //AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
+                BBANDSComposite = bbandsCompositeScore,
                 RatingsComposite = trResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
@@ -339,6 +347,90 @@ namespace PT.Middleware
             composite += (macdHasSellSignal) ? -40 : 0;
 
             return composite;
+        }
+
+        public static decimal GetBBANDSComposite(IEnumerable<BollingerBandsResult> resultSet, List<Skender.Stock.Indicators.Quote> supplement, int daysToCalculate)
+        {
+            List<BollingerBandsResult> results = resultSet.ToList();
+            int daysCalulated = 0;
+            int numberOfResults = 0;
+            HashSet<string> dates = new HashSet<string>();
+
+            Stack<decimal> lowerBandYList = new Stack<decimal>();
+            Stack<decimal> middleBandYList = new Stack<decimal>();
+            Stack<decimal> upperBandYList = new Stack<decimal>();
+            Stack<bool> diverging = new Stack<bool>();
+
+            for (int i = results.Count - 1; i >= 0; i--)
+            {
+                BollingerBandsResult result = results[i];
+                if (daysCalulated < daysToCalculate)
+                {
+                    decimal lowerBandValue = result.LowerBand != null ? (decimal) result.LowerBand : 0.0M;
+                    decimal middleBandValue = result.Sma != null ? (decimal) result.Sma : 0.0M;
+                    decimal upperBandValue = result.UpperBand != null ? (decimal) result.UpperBand : 0.0M;
+                    bool isDiverging = result.IsDiverging != null ? (bool) result.IsDiverging : false;
+
+                    lowerBandYList.Push(lowerBandValue);
+                    middleBandYList.Push(middleBandValue);
+                    upperBandYList.Push(upperBandValue);
+                    diverging.Push(isDiverging);
+                    numberOfResults++;
+
+                    string bbandsDate = result.Date.ToString("yyyy-MM-dd");
+                    if (!dates.Contains(bbandsDate))
+                    {
+                        dates.Add(bbandsDate);
+                        daysCalulated++;
+                    }
+                }
+                else
+                    break;
+            }
+
+            List<decimal> bbandsXList = new List<decimal>();
+            for (int i = 1; i <= numberOfResults; i++)
+                bbandsXList.Add(i);
+
+            List<decimal> lowerYList = lowerBandYList.ToList();
+            decimal lowerSlope = TwelveData.GetSlope(bbandsXList, lowerYList);
+            List<decimal> middleYList = middleBandYList.ToList();
+            decimal middleSlope = TwelveData.GetSlope(bbandsXList, middleYList);
+            List<decimal> upperYList = upperBandYList.ToList();
+            decimal upperSlope = TwelveData.GetSlope(bbandsXList, upperYList);
+            List<bool> divergingList = diverging.ToList();
+
+            //look for buy and sell signals
+            bool bbandsHasBuySignal = false;
+            bool bbandsHasSellSignal = false;
+
+            //if there is more divergence than convergence in the last N days and there's positive price movement
+            //if the current price is approaching the lower band and there's positive prive volume action
+
+            //if there's more convergence than divergence we have low volatility, we don't want to subtract from the score
+            //1 negative day when the price is approaching the upper band would probably generate a good enough sell signal
+
+            decimal lowerSlopeMultiplier = TwelveData.GetSlopeMultiplier(lowerSlope);
+            decimal middleSlopeMultiplier = TwelveData.GetSlopeMultiplier(middleSlope);
+            decimal upperSlopeMultiplier = TwelveData.GetSlopeMultiplier(upperSlope);
+
+            decimal entryBonus = 0; //cap entryBonus at 20
+
+            //calculate composite score based on the following values and weighted multipliers
+            decimal composite = 0;
+            composite += (lowerSlope > -0.05M) ? (lowerSlope * lowerSlopeMultiplier) + 10 : 0;
+            composite += (middleSlope > 0.0M) ? (middleSlope * middleSlopeMultiplier) + 10 : 0;
+            composite += (upperSlope > -0.05M) ? (upperSlope * upperSlopeMultiplier) + 10 : 0;
+            composite += (entryBonus > 0) ? entryBonus : 0;
+            composite += (bbandsHasBuySignal) ? 30 : 0;
+            composite += (bbandsHasSellSignal) ? -30 : 0;
+
+            return composite;
+        }
+
+        public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int N)
+        {
+            return source.Skip(Math.Max(0, source.Count() - N));
         }
     }
 }
