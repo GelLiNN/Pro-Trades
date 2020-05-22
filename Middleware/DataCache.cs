@@ -87,6 +87,8 @@ namespace PT.Middleware
             string cacheId = tokens[0] + "-" + tokens[1];
             int expirationMinutes = new Random().Next(MinCacheUpdateAge, MaxCacheUpdateAge);
             var expirationTime = DateTime.Now.Add(new TimeSpan(0, expirationMinutes, 0));
+
+            //If you want the cache entry to expire
             //var expirationToken = new CancellationChangeToken(
             //new CancellationTokenSource(TimeSpan.FromMinutes(expirationMinutes + .01)).Token);
 
@@ -270,35 +272,15 @@ namespace PT.Middleware
                     if (data.Count() > 3)
                     {
                         string symbol = data[1];
-                        if (!String.IsNullOrEmpty(symbol) && !this.CachedSymbols[cacheId].Contains(symbol))
+                        if (!string.IsNullOrEmpty(symbol) && !CachedSymbols[cacheId].Contains(symbol))
                         {
                             bool isNasdaq = data[0] == "Y";
                             if (isNasdaq)
                             {
-                                string cacheKey = String.Format("{0}-{1}", cacheId, symbol);
-                                this.Get(cacheKey);
+                                string cacheKey = string.Format("{0}-{1}", cacheId, symbol);
+                                Get(cacheKey);
                                 count++;
                             }
-                        }
-                    }
-                }
-
-                string otcData = Companies.GetFromFtpUri(Companies.OtcSymbolsUri);
-                string[] otcDataLines = otcData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-                Random r2 = new Random();
-                string[] randomizedOtcLines = otcDataLines.OrderBy(x => r2.Next()).ToArray();
-                for (int j = 1; j < randomizedOtcLines.Length - 1; j++) //trim first and last row
-                {
-                    string line = randomizedOtcLines[j];
-                    string[] data = line.Split('|');
-                    if (data.Count() > 3)
-                    {
-                        string symbol = data[0];
-                        if (!String.IsNullOrEmpty(symbol) && !this.CachedSymbols[cacheId].Contains(symbol))
-                        {
-                            string cacheKey = String.Format("{0}-{1}", cacheId, symbol);
-                            this.Get(cacheKey);
-                            count++;
                         }
                     }
                 }
@@ -311,13 +293,13 @@ namespace PT.Middleware
                 {
                     string line = randomizedOtcMarketsLines[k];
                     string[] data = line.Split(',');
-                    if (data.Count() > 3)
+                    if (data.Length > 3)
                     {
                         string symbol = data[0];
-                        if (!String.IsNullOrEmpty(symbol) && !this.CachedSymbols[cacheId].Contains(symbol))
+                        if (!string.IsNullOrEmpty(symbol) && !CachedSymbols[cacheId].Contains(symbol))
                         {
-                            string cacheKey = String.Format("{0}-{1}", cacheId, symbol);
-                            this.Get(cacheKey);
+                            string cacheKey = string.Format("{0}-{1}", cacheId, symbol);
+                            Get(cacheKey);
                             count++;
                         }
                     }
@@ -342,29 +324,7 @@ namespace PT.Middleware
                     }
                 });*/
 
-                /*Single-Thread edition
-                for (int i = 0; i < ids.Count(); i++)
-                {
-                    string entityId = ids[i].ToString();
-                    string cacheKey = string.Format("{0}-{1}", cacheId, entityId);
-                    try
-                    {
-                        if (!this.CachedStyles.ContainsKey(cacheKey))
-                        {
-                            this.Get(cacheKey);
-                            count++;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        lock (ExceptionReport)
-                        {
-                            ExceptionReport.Add(cacheKey, "Error: " + e.Message + ", StackTrace: " + e.StackTrace);
-                        }
-                        continue;
-                    }
-                }*/
-            });
+            }).ConfigureAwait(false);
         }
     }
 }

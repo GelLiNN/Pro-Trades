@@ -171,8 +171,8 @@ namespace PT.Middleware
                 RatingsComposite = trResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
-                CompositeScoreValue = (adxCompositeScore + /*obvCompositeScore + aroonCompositeScore +*/ macdCompositeScore +
-                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + trResult.RatingsComposite) / 5,
+                CompositeScoreValue = (adxCompositeScore + /*obvCompositeScore + aroonCompositeScore +*/ + bbandsCompositeScore + macdCompositeScore +
+                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + trResult.RatingsComposite) / 6,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
                 TipRanks = trResult
@@ -359,6 +359,7 @@ namespace PT.Middleware
             Stack<decimal> lowerBandYList = new Stack<decimal>();
             Stack<decimal> middleBandYList = new Stack<decimal>();
             Stack<decimal> upperBandYList = new Stack<decimal>();
+            Stack<decimal> differenceValueYList = new Stack<decimal>();
             Stack<bool> diverging = new Stack<bool>();
 
             for (int i = results.Count - 1; i >= 0; i--)
@@ -369,11 +370,13 @@ namespace PT.Middleware
                     decimal lowerBandValue = result.LowerBand != null ? (decimal) result.LowerBand : 0.0M;
                     decimal middleBandValue = result.Sma != null ? (decimal) result.Sma : 0.0M;
                     decimal upperBandValue = result.UpperBand != null ? (decimal) result.UpperBand : 0.0M;
+                    decimal difference = upperBandValue - lowerBandValue;
                     bool isDiverging = result.IsDiverging != null ? (bool) result.IsDiverging : false;
 
                     lowerBandYList.Push(lowerBandValue);
                     middleBandYList.Push(middleBandValue);
                     upperBandYList.Push(upperBandValue);
+                    differenceValueYList.Push(difference);
                     diverging.Push(isDiverging);
                     numberOfResults++;
 
@@ -398,7 +401,13 @@ namespace PT.Middleware
             decimal middleSlope = TwelveData.GetSlope(bbandsXList, middleYList);
             List<decimal> upperYList = upperBandYList.ToList();
             decimal upperSlope = TwelveData.GetSlope(bbandsXList, upperYList);
+            List<decimal> differenceYList = differenceValueYList.ToList();
+            decimal differenceSlope = TwelveData.GetSlope(bbandsXList, differenceYList);
             List<bool> divergingList = diverging.ToList();
+
+            decimal lowerSlopeMultiplier = TwelveData.GetSlopeMultiplier(lowerSlope);
+            decimal middleSlopeMultiplier = TwelveData.GetSlopeMultiplier(middleSlope);
+            decimal upperSlopeMultiplier = TwelveData.GetSlopeMultiplier(upperSlope);
 
             //look for buy and sell signals
             bool bbandsHasBuySignal = false;
@@ -406,22 +415,49 @@ namespace PT.Middleware
 
             //if there is more divergence than convergence in the last N days and there's positive price movement
             //if the current price is approaching the lower band and there's positive prive volume action
+            //measure arbitrary base value minus the percentage difference between the current price and the upper band
 
             //if there's more convergence than divergence we have low volatility, we don't want to subtract from the score
             //1 negative day when the price is approaching the upper band would probably generate a good enough sell signal
+            //measure arbitrary base value minus the percentage difference between the current price and the lower band
 
-            decimal lowerSlopeMultiplier = TwelveData.GetSlopeMultiplier(lowerSlope);
-            decimal middleSlopeMultiplier = TwelveData.GetSlopeMultiplier(middleSlope);
-            decimal upperSlopeMultiplier = TwelveData.GetSlopeMultiplier(upperSlope);
+            List<Skender.Stock.Indicators.Quote> ochlvList = supplement.ToList();
+            decimal breakoutSlopeCutoff = 0.3M;
+            List<decimal> prices = new List<decimal>();
+            for (int i = 0; i < ochlvList.Count; i++)
+            {
+                var ochlv = ochlvList[i];
+                prices.Add(ochlv.Close);
+                if ((i - 1 >= 0 && prices[i - 1] < prices[i]) && differenceSlope > breakoutSlopeCutoff)
+                {
+                    //positive bbands breakout
+                    bbandsHasBuySignal = true;
+                    bbandsHasSellSignal = false;
+                }
+                else if ((i - 1 >= 0 && prices[i - 1] > prices[i]) && differenceSlope > breakoutSlopeCutoff)
+                {
+                    //negative bbands breakout
+                    bbandsHasBuySignal = false;
+                    bbandsHasSellSignal = true;
+                }
+            }
+            decimal priceSlope = TwelveData.GetSlope(bbandsXList, prices);
 
-            decimal entryBonus = 0; //cap entryBonus at 20
+            //To calculate the percentage increase:
+            //First: work out the difference between the two numbers you are comparing.
+            //Diff = New Number - Original Number
+            //Then: divide the difference by the original number and multiply the answer by 100.
+            //% increase = Increase ÷ Original Number × 100.
+            decimal baseValue = 40 - ((prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100);
+            decimal priceSlopeBonus = priceSlope > 0.1M ? 10 : 0;
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
+            composite += baseValue;
+            composite += priceSlopeBonus;
             composite += (lowerSlope > -0.05M) ? (lowerSlope * lowerSlopeMultiplier) + 10 : 0;
-            composite += (middleSlope > 0.0M) ? (middleSlope * middleSlopeMultiplier) + 10 : 0;
+            composite += (middleSlope > 0.0M) ? (middleSlope * middleSlopeMultiplier) + 10 : -10;
             composite += (upperSlope > -0.05M) ? (upperSlope * upperSlopeMultiplier) + 10 : 0;
-            composite += (entryBonus > 0) ? entryBonus : 0;
             composite += (bbandsHasBuySignal) ? 30 : 0;
             composite += (bbandsHasSellSignal) ? -30 : 0;
 
