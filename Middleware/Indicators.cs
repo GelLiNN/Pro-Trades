@@ -43,8 +43,9 @@ namespace PT.Middleware
                         //The two Aroon indicators(bullish and bearish) can also be made into a single oscillator by
                         //making the bullish indicator 100 to 0 and the bearish indicator 0 to - 100 and finding the
                         //difference between the two values. This oscillator then varies between 100 and - 100, with 0 indicating no trend.
-                        //resultSet = (JArray)data.GetValue("values");
-                        //compositeScore = GetAROONComposite(resultSet, daysToCalculate);
+                        int aroonPeriod = 14;
+                        IEnumerable<AroonResult> aroonResults = Indicator.GetAroon(history, aroonPeriod);
+                        compositeScore = GetAROONComposite(aroonResults, daysToCalculate);
                         break;
 
                     case "macd":
@@ -131,7 +132,7 @@ namespace PT.Middleware
 
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
         {
-            IReadOnlyList<Candle> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 100).Result;
+            IReadOnlyList<Candle> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 150).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
             foreach (Candle data in yahooHistory)
             {
@@ -152,6 +153,7 @@ namespace PT.Middleware
             decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
             decimal macdCompositeScore = GetIndicatorComposite(symbol, "MACD", history, 7);
             decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
+            decimal aroonCompositeScore = GetIndicatorComposite(symbol, "AROON", history, 7);
 
             ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7);
 
@@ -164,15 +166,14 @@ namespace PT.Middleware
                 Symbol = symbol,
                 DataProviders = "YahooFinance, FINRA, TipRanks",
                 ADXComposite = adxCompositeScore,
-                //OBVComposite = obvCompositeScore,
-                //AROONComposite = aroonCompositeScore,
+                AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
                 BBANDSComposite = bbandsCompositeScore,
                 RatingsComposite = trResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
-                CompositeScoreValue = (adxCompositeScore + /*obvCompositeScore + aroonCompositeScore +*/ + bbandsCompositeScore + macdCompositeScore +
-                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + trResult.RatingsComposite) / 6,
+                CompositeScoreValue = (adxCompositeScore + aroonCompositeScore + bbandsCompositeScore + macdCompositeScore +
+                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + trResult.RatingsComposite) / 7,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
                 TipRanks = trResult
@@ -460,6 +461,110 @@ namespace PT.Middleware
             composite += (upperSlope > -0.05M) ? (upperSlope * upperSlopeMultiplier) + 10 : 0;
             composite += (bbandsHasBuySignal) ? 30 : 0;
             composite += (bbandsHasSellSignal) ? -30 : 0;
+
+            return composite;
+        }
+
+        public static decimal GetAROONComposite(IEnumerable<AroonResult> resultSet, int daysToCalculate)
+        {
+            List<AroonResult> results = resultSet.ToList();
+            int daysCalulated = 0;
+            int numberOfResults = 0;
+            HashSet<string> dates = new HashSet<string>();
+
+            Stack<decimal> aroonUpYList = new Stack<decimal>();
+            Stack<decimal> aroonDownYList = new Stack<decimal>();
+            Stack<decimal> aroonOscillatorYList = new Stack<decimal>();
+            decimal aroonUpTotal = 0;
+            decimal aroonDownTotal = 0;
+
+            for (int i = results.Count - 1; i >= 0; i--)
+            {
+                if (daysCalulated < daysToCalculate)
+                {
+                    AroonResult result = results[i];
+                    decimal aroonUpVal = result.AroonUp != null ? (decimal) result.AroonUp : 0.0M;
+                    decimal aroonDownVal = result.AroonDown != null ? (decimal)result.AroonDown : 0.0M;
+                    aroonUpYList.Push(aroonUpVal);
+                    aroonDownYList.Push(aroonDownVal);
+                    aroonOscillatorYList.Push(aroonUpVal - aroonDownVal);
+                    aroonUpTotal += aroonUpVal;
+                    aroonDownTotal += aroonDownVal;
+                    numberOfResults++;
+
+                    string aroonDate = result.Date.ToString("yyyy-MM-dd");
+                    if (!dates.Contains(aroonDate))
+                    {
+                        dates.Add(aroonDate);
+                        daysCalulated++;
+                    }
+                }
+                else
+                    break;
+            }
+
+            List<decimal> aroonXList = new List<decimal>();
+            for (int i = 1; i <= numberOfResults; i++)
+                aroonXList.Add(i);
+
+            List<decimal> upYList = aroonUpYList.ToList();
+            decimal upSlope = TwelveData.GetSlope(aroonXList, upYList);
+            List<decimal> downYList = aroonDownYList.ToList();
+            decimal downSlope = TwelveData.GetSlope(aroonXList, downYList);
+            List<decimal> oscillatorYList = aroonOscillatorYList.ToList();
+
+            decimal upSlopeMultiplier = TwelveData.GetSlopeMultiplier(upSlope);
+            decimal downSlopeMultiplier = TwelveData.GetSlopeMultiplier(downSlope);
+
+            //look for buy and sell signals
+            bool aroonHasBuySignal = false;
+            bool aroonHasSellSignal = false;
+            decimal previousOscillatorValue = oscillatorYList[0];
+            bool previousIsNegative = previousOscillatorValue <= 0;
+            for (int i = 1; i < oscillatorYList.Count(); i++)
+            {
+                decimal currentOscillatorValue = oscillatorYList[i];
+                bool currentIsNegative = currentOscillatorValue <= 0;
+                if (!currentIsNegative && previousIsNegative && (upYList[i] >= 30 && downYList[i] <= 70))
+                {
+                    aroonHasBuySignal = true;
+                }
+                else if (currentIsNegative && !previousIsNegative && (upYList[i] <= 30 && downYList[i] >= 70))
+                {
+                    aroonHasSellSignal = true;
+                }
+                previousOscillatorValue = currentOscillatorValue;
+                previousIsNegative = previousOscillatorValue <= 0;
+            }
+
+            decimal aroonAvgUp = Math.Max(aroonUpTotal / numberOfResults, 1.0M);
+            decimal aroonAvgDown = Math.Max(aroonDownTotal / numberOfResults, 1.0M);
+            decimal percentDiffDown = (aroonAvgDown / aroonAvgUp) * 100;
+            decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
+
+            decimal bullResult = Math.Min(100 - percentDiffDown, 50); //bull result caps at 50
+            decimal bearResult = Math.Min(percentDiffUp + 15, 20); //bear result caps at 20
+
+            //Add bull bonus if last AROON UP >= 70 per investopedia recommendation
+            //This is the same as when last AROON OSC >= 50
+            //Cap bullBonus at 15
+            decimal bullBonus = (aroonAvgUp > aroonAvgDown && previousOscillatorValue >= 50) ? Math.Min(previousOscillatorValue / 5, 15) : 0;
+
+            //Add bear bonus if last AROON UP > last AROON DOWN per investopedia recommendation
+            //This is the same as when last AROON OSC > 0
+            //Cap bearBonus at 10
+            decimal bearBonus = (aroonAvgDown > aroonAvgUp && previousOscillatorValue > 0) ? Math.Min(previousOscillatorValue / 5, 10) : 0;
+
+            //calculate composite score based on the following values and weighted multipliers
+            //if AROON avg up > AROON avg down, start score with 100 - (down as % of up)
+            //if AROON avg up < AROON avg down, start score with 100 - (up as % of down)
+            decimal composite = 0;
+            composite += (aroonAvgUp > aroonAvgDown) ? bullResult : bearResult;
+            composite += (bullBonus > bearBonus) ? bullBonus : bearBonus;
+            composite += (upSlope > -0.05M) ? (upSlope * upSlopeMultiplier) + 5 : 0;
+            composite += (downSlope < 0.05M) ? (downSlope * downSlopeMultiplier) + 5 : -(downSlope * downSlopeMultiplier);
+            composite += (aroonHasBuySignal) ? 25 : 0;
+            composite += (aroonHasSellSignal) ? -25 : 0;
 
             return composite;
         }
