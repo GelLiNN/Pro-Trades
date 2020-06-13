@@ -449,7 +449,8 @@ namespace PT.Middleware
             //Diff = New Number - Original Number
             //Then: divide the difference by the original number and multiply the answer by 100.
             //% increase = Increase ÷ Original Number × 100.
-            decimal baseValue = 40 - ((prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100);
+            decimal baseValue = 40 - Math.Abs((prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100);
+            baseValue = baseValue < 0 ? 0 : baseValue;
             decimal priceSlopeBonus = priceSlope > 0.1M ? 10 : 0;
 
             //calculate composite score based on the following values and weighted multipliers
