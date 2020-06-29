@@ -132,7 +132,7 @@ namespace PT.Middleware
 
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
         {
-            IReadOnlyList<Candle> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 150).Result;
+            IReadOnlyList<Candle> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 200).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
             foreach (Candle data in yahooHistory)
             {
