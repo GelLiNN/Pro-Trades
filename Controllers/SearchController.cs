@@ -116,34 +116,6 @@ namespace PT.Controllers
         }
 
         /*
-         * Investors Exchange dependent endpoints
-         */
-        [HttpGet("/GetCompanyStatsIEX/{symbol}")]
-        public CompanyStatsIEX GetCompanyStatsIEX(string symbol)
-        {
-            return IEX.GetCompanyStatsAsync(symbol).Result;
-        }
-
-        [HttpGet("/GetQuoteIEX/{symbol}")]
-        public IEXSharp.Model.Shared.Response.Quote GetQuoteIEX(string symbol)
-        {
-            return IEX.GetQuoteAsync(symbol).Result;
-        }
-
-        [HttpGet("/GetAllCompaniesIEX")]
-        public CompaniesListIEX GetAllCompaniesIEX()
-        {
-            return IEX.GetAllCompaniesAsync().Result;
-        }
-
-        [HttpGet("/GetScreenedCompaniesIEX/{screenId}")]
-        public CompaniesListIEX GetScreenedCompaniesIEX(string screenId)
-        {
-            CompaniesListIEX companies = IEX.GetAllCompaniesAsync().Result;
-            return IEX.GetScreenedCompaniesAsync(companies, screenId).Result;
-        }
-
-        /*
          * Financial Modeling Prep dependent endpoints
          */
         [HttpGet("/GetCompanyStatsFMP/{symbol}")]

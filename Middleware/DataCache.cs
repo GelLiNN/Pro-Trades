@@ -62,7 +62,7 @@ namespace PT.Middleware
                     if (!_iexCompaniesCache.TryGetValue(cacheKey, out iexCompanyEntry))
                     {
                         //Not in cache, so we can update the cache with private helper
-                        UpdateIEXCompanyCacheEntry(cacheKey, null, EvictionReason.None, this);
+                        UpdateIEXCompanyCacheEntry(cacheKey, null, EvictionReason.None, this); //DEPRECATED
                         _iexCompaniesCache.TryGetValue(cacheKey, out iexCompanyEntry);
                     }
                     return iexCompanyEntry;
@@ -108,7 +108,7 @@ namespace PT.Middleware
             switch (cacheId)
             {
                 case "iex-companies":
-                    options.RegisterPostEvictionCallback(callback: UpdateIEXCompanyCacheEntry, state: this);
+                    options.RegisterPostEvictionCallback(callback: UpdateIEXCompanyCacheEntry, state: this); //DEPRECATED
                     _iexCompaniesCache.Set(cacheKey, product, options);
                     break;
                 case "yf-companies":
@@ -127,6 +127,7 @@ namespace PT.Middleware
         }
 
         //Investors Exchange Company Cache Entry Update Routine
+        //DEPRECATED
         public void UpdateIEXCompanyCacheEntry(object key, object value, EvictionReason reason, object state = null)
         {
             try
@@ -139,7 +140,7 @@ namespace PT.Middleware
                 //Remove before updating and re-adding
                 RemoveCachedSymbol(cacheKey);
 
-                CompanyStatsIEX companyStats = IEX.GetCompanyStatsAsync(symbol).Result;
+                CompanyStatsIEX companyStats = new CompanyStatsIEX(); //IEX.GetCompanyStatsAsync(symbol).Result;
 
                 //Save IEX Company to cache
                 this.Add(companyStats, cacheKey);
