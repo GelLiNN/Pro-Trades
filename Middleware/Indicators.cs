@@ -347,7 +347,7 @@ namespace PT.Middleware
             composite += (macdHasBuySignal) ? 40 : 0;
             composite += (macdHasSellSignal) ? -40 : 0;
 
-            return composite;
+            return Math.Max(0, composite);
         }
 
         public static decimal GetBBANDSComposite(IEnumerable<BollingerBandsResult> resultSet, List<Skender.Stock.Indicators.Quote> supplement, int daysToCalculate)
@@ -451,6 +451,7 @@ namespace PT.Middleware
             //% increase = Increase ÷ Original Number × 100.
             decimal baseValue = 40 - Math.Abs((prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100);
             baseValue = baseValue < 0 ? 0 : baseValue;
+            baseValue = baseValue > 40 ? 40 : baseValue;
             decimal priceSlopeBonus = priceSlope > 0.1M ? 10 : 0;
 
             //calculate composite score based on the following values and weighted multipliers
@@ -462,8 +463,8 @@ namespace PT.Middleware
             composite += (upperSlope > -0.05M) ? (upperSlope * upperSlopeMultiplier) + 10 : 0;
             composite += (bbandsHasBuySignal) ? 30 : 0;
             composite += (bbandsHasSellSignal) ? -30 : 0;
-
-            return composite;
+            composite = composite > 100 ? 100 : composite;
+            return Math.Max(0, composite);
         }
 
         public static decimal GetAROONComposite(IEnumerable<AroonResult> resultSet, int daysToCalculate)
@@ -567,7 +568,7 @@ namespace PT.Middleware
             composite += (aroonHasBuySignal) ? 25 : 0;
             composite += (aroonHasSellSignal) ? -25 : 0;
 
-            return composite;
+            return Math.Max(0, composite);
         }
 
         public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int N)

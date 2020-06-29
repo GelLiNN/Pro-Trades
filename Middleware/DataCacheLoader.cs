@@ -55,7 +55,7 @@ namespace PT.Middleware
                 //var cacheLoadTask2 = _cache.LoadCacheAsync("iex-companies"); //Investors Exchange IEX.cs
                 //await Task.WhenAll(cacheLoadTask1, cacheLoadTask2);
 
-                //await _cache.LoadCacheAsync("yf-companies");
+                await _cache.LoadCacheAsync("yf-companies");
 
                 //Set this Task to cancel now that it is complete
                 await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
