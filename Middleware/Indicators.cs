@@ -69,6 +69,9 @@ namespace PT.Middleware
                         //https://www.investopedia.com/articles/technical/100801.asp
                         //resultSet = (JArray)data.GetValue("values");
                         //compositeScore = GetOBVComposite(resultSet, daysToCalculate);
+                        int obvPeriod = 14;
+                        IEnumerable<ObvResult> obvResults = Indicator.GetObv(history);
+                        compositeScore = GetOBVComposite(obvResults, daysToCalculate);
                         break;
 
                     //Below cases need to be migrated to use TD's conventions
@@ -151,8 +154,9 @@ namespace PT.Middleware
             List<Skender.Stock.Indicators.Quote> supplement = historyList.TakeLast(7).ToList();
 
             decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
+            decimal obvCompositeScore = GetIndicatorComposite(symbol, "OBV", history, 7);
             decimal macdCompositeScore = GetIndicatorComposite(symbol, "MACD", history, 7);
-            decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
+            //decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
             decimal aroonCompositeScore = GetIndicatorComposite(symbol, "AROON", history, 7);
 
             ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7);
@@ -166,13 +170,14 @@ namespace PT.Middleware
                 Symbol = symbol,
                 DataProviders = "YahooFinance, FINRA, TipRanks",
                 ADXComposite = adxCompositeScore,
+                OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
-                BBANDSComposite = bbandsCompositeScore,
+                //BBANDSComposite = bbandsCompositeScore,
                 RatingsComposite = trResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
-                CompositeScoreValue = (adxCompositeScore + aroonCompositeScore + bbandsCompositeScore + macdCompositeScore +
+                CompositeScoreValue = (adxCompositeScore + aroonCompositeScore + obvCompositeScore + macdCompositeScore +
                     shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + trResult.RatingsComposite) / 7,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
@@ -260,6 +265,116 @@ namespace PT.Middleware
             composite += (zScoreSlope > 0.1M) ? (zScoreSlope * zScoreSlopeMultiplier) + 10 : 0;
 
             return Math.Min(composite, 100); //cap ADX composite at 100, no extra weight
+        }
+
+        public static decimal GetOBVComposite(IEnumerable<ObvResult> resultSet, int daysToCalculate)
+        {
+            List<ObvResult> results = resultSet.ToList();
+            int daysCalulated = 0;
+            int numberOfResults = 0;
+            HashSet<string> dates = new HashSet<string>();
+
+            Stack<decimal> obvValueYList = new Stack<decimal>();
+            decimal obvSum = 0;
+
+            foreach (var result in resultSet)
+            {
+                if (daysCalulated < daysToCalculate)
+                {
+                    decimal obvValue = Convert.ToDecimal(result.Obv);
+
+                    obvValueYList.Push(obvValue);
+                    obvSum += obvValue;
+                    numberOfResults++;
+
+                    string obvDate = result.Date.ToString("yyyy-MM-dd");
+                    if (!dates.Contains(obvDate))
+                    {
+                        dates.Add(obvDate);
+                        daysCalulated++;
+                    }
+                }
+                else
+                    break;
+            }
+
+            List<decimal> obvXList = new List<decimal>();
+            for (int i = 1; i <= numberOfResults; i++)
+                obvXList.Add(i);
+
+            List<decimal> obvYList = obvValueYList.ToList();
+            decimal obvSlope = TwelveData.GetSlope(obvXList, obvYList);
+            decimal obvSlopeMultiplier = TwelveData.GetSlopeMultiplier(obvSlope);
+
+            List<decimal> zScores = TwelveData.GetZScores(obvYList);
+            decimal zScoreSlope = TwelveData.GetSlope(zScores, obvXList);
+            decimal zScoreSlopeMultiplier = TwelveData.GetSlopeMultiplier(zScoreSlope);
+
+            List<decimal> normalizedScores = TwelveData.GetNormalizedData(obvYList);
+            decimal normalizedSlope = TwelveData.GetSlope(normalizedScores, obvXList);
+            decimal normalizedSlopeMultiplier = TwelveData.GetSlopeMultiplier(normalizedSlope);
+
+            decimal obvAverage = obvSum / numberOfResults;
+
+            //look for buy and sell signals
+            bool obvHasBuySignal = false;
+            bool obvHasSellSignal = false;
+
+            decimal obvPrev = obvYList[0];
+            bool obvPrevIsNegative = obvPrev < 0;
+            for (int i = 1; i < obvYList.Count(); i++)
+            {
+                decimal current = obvYList[i];
+                bool currentIsNegative = current < 0;
+                if (!currentIsNegative && obvPrevIsNegative)
+                {
+                    obvHasBuySignal = true;
+                    if (obvHasSellSignal)
+                        obvHasSellSignal = false; //cancel the previous sell signal if buy signal is most recent
+                }
+                else if (currentIsNegative && !obvPrevIsNegative)
+                {
+                    obvHasSellSignal = true;
+                    if (obvHasBuySignal)
+                        obvHasBuySignal = false; //cancel the previous buy signal if sell signal is most recent
+                }
+                obvPrev = current;
+                obvPrevIsNegative = obvPrev < 0;
+            }
+
+            //Start with the average of the 2 most recent OBV Normalized Scores
+            //Only use the normalized scores if average OBV is greater than 0
+            decimal baseValue;
+            if (obvAverage > 0)
+                baseValue = ((normalizedScores[normalizedScores.Count - 1] + normalizedScores[normalizedScores.Count - 2]) / 2) * 100;
+            else
+            {
+                //ZScore bonus helps us score based on derivatives
+                //Only add ZScoreBonus if it is positive, divide by 4 instead of 2 (which would be classic mean)
+                decimal zScoreBonus = ((zScores[zScores.Count - 1] + zScores[zScores.Count - 2]) / 4) * 100;
+                if (zScoreBonus < 0)
+                    zScoreBonus = 15; //pity points
+
+                baseValue = zScoreBonus;
+            }
+
+            //Add bonus if average OBV is greater than 0
+            decimal obvAverageBonus = obvAverage > 0 ? 15 : 0;
+
+            //Add bonus if OBV slope positive
+            decimal obvSlopeBonus = (obvSlope > 0) ? 10 : 0;
+
+            //calculate composite score based on the following values and weighted multipliers
+            decimal composite = 0;
+            composite += baseValue;
+            composite += obvAverageBonus;
+            composite += obvSlopeBonus;
+            composite += (zScoreSlope > 0) ? (zScoreSlope * zScoreSlopeMultiplier) : 0;
+            composite += (normalizedSlope > 0) ? (normalizedSlope * normalizedSlopeMultiplier) : 0;
+            composite += (obvHasBuySignal) ? 15 : 0;
+            composite += (obvHasSellSignal) ? -15 : 0;
+
+            return Math.Min(composite, 100); //cap OBV composite at 100, no extra weight
         }
 
         public static decimal GetMACDComposite(IEnumerable<MacdResult> resultSet, int daysToCalculate)
