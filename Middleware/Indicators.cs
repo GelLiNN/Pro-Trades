@@ -277,10 +277,11 @@ namespace PT.Middleware
             Stack<decimal> obvValueYList = new Stack<decimal>();
             decimal obvSum = 0;
 
-            foreach (var result in resultSet)
+            for (int i = results.Count - 1; i >= 0; i--)
             {
                 if (daysCalulated < daysToCalculate)
                 {
+                    ObvResult result = results[i];
                     decimal obvValue = Convert.ToDecimal(result.Obv);
 
                     obvValueYList.Push(obvValue);
@@ -358,8 +359,11 @@ namespace PT.Middleware
                 baseValue = zScoreBonus;
             }
 
+            //Cap base value at 60
+            baseValue = Math.Min(baseValue, 45.0M);
+
             //Add bonus if average OBV is greater than 0
-            decimal obvAverageBonus = obvAverage > 0 ? 15 : 0;
+            decimal obvAverageBonus = obvAverage > 0 ? 10 : 0;
 
             //Add bonus if OBV slope positive
             decimal obvSlopeBonus = (obvSlope > 0) ? 10 : 0;
@@ -371,7 +375,7 @@ namespace PT.Middleware
             composite += obvSlopeBonus;
             composite += (zScoreSlope > 0) ? (zScoreSlope * zScoreSlopeMultiplier) : 0;
             composite += (normalizedSlope > 0) ? (normalizedSlope * normalizedSlopeMultiplier) : 0;
-            composite += (obvHasBuySignal) ? 15 : 0;
+            composite += (obvHasBuySignal) ? 20 : 0;
             composite += (obvHasSellSignal) ? -15 : 0;
 
             return Math.Min(composite, 100); //cap OBV composite at 100, no extra weight

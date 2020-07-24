@@ -12,7 +12,7 @@ namespace PT.Models
         public decimal OBVComposite { get; set; }
         public decimal AROONComposite { get; set; }
         public decimal MACDComposite { get; set; }
-        public decimal BBANDSComposite { get; set; }
+        //public decimal BBANDSComposite { get; set; }
         public decimal RatingsComposite { get; set; }
         public decimal ShortInterestComposite { get; set; }
         public decimal FundamentalsComposite { get; set; }
