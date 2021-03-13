@@ -217,7 +217,7 @@ namespace PT.Middleware
 
             ShortInterestResult shortResult = new ShortInterestResult(); //FINRA.GetShortInterest(symbol, 7);
 
-            FundamentalsResult fundResult = GetFundamentals(symbol, quote);
+            FundamentalsResult fundResult = Indicators.GetFundamentals(symbol, quote);
 
             TipRanksResult trResult = TipRanks.GetTipRanksResult(symbol);
 
@@ -290,13 +290,13 @@ namespace PT.Middleware
                 adxXList.Add(i);
 
             List<decimal> adxYList = adxValueYList.ToList();
-            decimal adxSlope = GetSlope(adxXList, adxYList);
-            decimal adxSlopeMultiplier = GetSlopeMultiplier(adxSlope);
+            decimal adxSlope = Indicators.GetSlope(adxXList, adxYList);
+            decimal adxSlopeMultiplier = Indicators.GetSlopeMultiplier(adxSlope);
             decimal adxAvg = adxTotal / numberOfResults;
 
-            List<decimal> adxZScores = GetZScores(adxYList);
-            decimal zScoreSlope = GetSlope(adxXList, adxZScores);
-            decimal zScoreSlopeMultiplier = GetSlopeMultiplier(zScoreSlope);
+            List<decimal> adxZScores = Indicators.GetZScores(adxYList);
+            decimal zScoreSlope = Indicators.GetSlope(adxXList, adxZScores);
+            decimal zScoreSlopeMultiplier = Indicators.GetSlopeMultiplier(zScoreSlope);
 
             //Start with the average of the 2 most recent ADX values
             decimal baseValue = (adxYList[adxYList.Count - 1] + adxYList[adxYList.Count - 2]) / 2;
@@ -363,14 +363,14 @@ namespace PT.Middleware
                 aroonXList.Add(i);
 
             List<decimal> upYList = aroonUpYList.ToList();
-            decimal upSlope = GetSlope(aroonXList, upYList);
+            decimal upSlope = Indicators.GetSlope(aroonXList, upYList);
             List<decimal> downYList = aroonDownYList.ToList();
-            decimal downSlope = GetSlope(aroonXList, downYList);
+            decimal downSlope = Indicators.GetSlope(aroonXList, downYList);
             List<decimal> oscillatorYList = aroonOscillatorYList.ToList();
             //decimal oscillatorSlope = GetSlope(aroonXList, oscillatorYList);
 
-            decimal upSlopeMultiplier = GetSlopeMultiplier(upSlope);
-            decimal downSlopeMultiplier = GetSlopeMultiplier(downSlope);
+            decimal upSlopeMultiplier = Indicators.GetSlopeMultiplier(upSlope);
+            decimal downSlopeMultiplier = Indicators.GetSlopeMultiplier(downSlope);
             //decimal oscillatorSlopeMultiplier = GetSlopeMultiplier(oscillatorSlope);
 
             //look for buy and sell signals
@@ -468,11 +468,11 @@ namespace PT.Middleware
                 macdXList.Add(i);
 
             List<decimal> baseYList = macdBaseYList.ToList();
-            decimal baseSlope = GetSlope(macdXList, baseYList);
+            decimal baseSlope = Indicators.GetSlope(macdXList, baseYList);
             List<decimal> signalYList = macdSignalYList.ToList();
-            decimal signalSlope = GetSlope(macdXList, signalYList);
+            decimal signalSlope = Indicators.GetSlope(macdXList, signalYList);
             List<decimal> histYList = macdHistYList.ToList();
-            decimal histSlope = GetSlope(macdXList, histYList);
+            decimal histSlope = Indicators.GetSlope(macdXList, histYList);
 
             //look for buy and sell signals
             bool macdHasBuySignal = false;
@@ -495,9 +495,9 @@ namespace PT.Middleware
                 macdPrev = current;
                 macdPrevIsNegative = macdPrev < 0;
             }
-            decimal histSlopeMultiplier = GetSlopeMultiplier(histSlope);
-            decimal baseSlopeMultiplier = GetSlopeMultiplier(baseSlope);
-            decimal signalSlopeMultiplier = GetSlopeMultiplier(signalSlope);
+            decimal histSlopeMultiplier = Indicators.GetSlopeMultiplier(histSlope);
+            decimal baseSlopeMultiplier = Indicators.GetSlopeMultiplier(baseSlope);
+            decimal signalSlopeMultiplier = Indicators.GetSlopeMultiplier(signalSlope);
 
             decimal histBonus = Math.Min((macdTotalHist * 5) + 5, 20); //cap histBonus at 20
 
@@ -550,16 +550,16 @@ namespace PT.Middleware
                 obvXList.Add(i);
 
             List<decimal> obvYList = obvValueYList.ToList();
-            decimal obvSlope = GetSlope(obvXList, obvYList);
-            decimal obvSlopeMultiplier = GetSlopeMultiplier(obvSlope);
+            decimal obvSlope = Indicators.GetSlope(obvXList, obvYList);
+            decimal obvSlopeMultiplier = Indicators.GetSlopeMultiplier(obvSlope);
 
-            List<decimal> zScores = GetZScores(obvYList);
-            decimal zScoreSlope = GetSlope(zScores, obvXList);
-            decimal zScoreSlopeMultiplier = GetSlopeMultiplier(zScoreSlope);
+            List<decimal> zScores = Indicators.GetZScores(obvYList);
+            decimal zScoreSlope = Indicators.GetSlope(zScores, obvXList);
+            decimal zScoreSlopeMultiplier = Indicators.GetSlopeMultiplier(zScoreSlope);
 
-            List<decimal> normalizedScores = GetNormalizedData(obvYList);
-            decimal normalizedSlope = GetSlope(normalizedScores, obvXList);
-            decimal normalizedSlopeMultiplier = GetSlopeMultiplier(normalizedSlope);
+            List<decimal> normalizedScores = Indicators.GetNormalizedData(obvYList);
+            decimal normalizedSlope = Indicators.GetSlope(normalizedScores, obvXList);
+            decimal normalizedSlopeMultiplier = Indicators.GetSlopeMultiplier(normalizedSlope);
 
             decimal obvAverage = obvSum / numberOfResults;
 
@@ -624,191 +624,6 @@ namespace PT.Middleware
             return Math.Min(composite, 100); //cap OBV composite at 100, no extra weight
         }
 
-        //Fundamentals (volume, price, earnings and filings up-to-date
-        //RELIES completely on unofficial yahoo finance API for now
-        public static FundamentalsResult GetFundamentals(string symbol, Security quote)
-        {
-            string message = string.Empty;
-            try
-            {
-                List<decimal> priceYList = new List<decimal>();
-                priceYList.Add(Convert.ToDecimal(quote.TwoHundredDayAverage));
-                priceYList.Add(Convert.ToDecimal(quote.FiftyDayAverage));
-                priceYList.Add(Convert.ToDecimal(quote.RegularMarketPrice));
-
-                List<decimal> normalizedPrice = GetNormalizedData(priceYList);
-
-                List<decimal> priceXList = new List<decimal>();
-                for (int i = 1; i <= priceYList.Count; i++)
-                    priceXList.Add(i);
-
-                decimal priceSlope = GetSlope(priceXList, priceYList);
-
-                decimal normalizedPriceSlope = GetSlope(priceXList, normalizedPrice);
-                decimal normalizedPriceSlopeMultiplier = GetSlopeMultiplier(normalizedPriceSlope);
-
-                List<decimal> volumeYList = new List<decimal>();
-                volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume3Month));
-                volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume10Day));
-                volumeYList.Add(Convert.ToDecimal(quote.RegularMarketVolume));
-
-                List<decimal> normalizedVolume = GetNormalizedData(volumeYList);
-
-                List<decimal> volumeXList = new List<decimal>();
-                for (int i = 1; i <= volumeYList.Count; i++)
-                    volumeXList.Add(i);
-
-                decimal volumeSlope = GetSlope(volumeXList, volumeYList);
-
-                decimal normalizedVolumeSlope = GetSlope(volumeXList, normalizedVolume);
-                decimal normalizedVolumeSlopeMultiplier = GetSlopeMultiplier(normalizedVolumeSlope);
-
-                decimal volumeUSD = Convert.ToDecimal(quote.RegularMarketVolume) *
-                    Convert.ToDecimal(quote.RegularMarketPrice);
-
-                decimal averageVolumeUSD = Convert.ToDecimal(quote.AverageDailyVolume3Month) *
-                    Convert.ToDecimal(quote.FiftyDayAverage);
-
-                //Do stuff with PE and EPS data
-                decimal peTrailing = 0.0M;
-                try { peTrailing = decimal.Parse(quote.TrailingPE.ToString()); }
-                catch (Exception e) { /*do nothing*/ }
-
-                decimal peForward = 0.0M;
-                try { peForward = decimal.Parse(quote.ForwardPE.ToString()); }
-                catch (Exception e) { /*set to trailing*/ peForward = peTrailing; }
-
-                decimal epsTrailing = 0.0M;
-                try { epsTrailing = decimal.Parse(quote.EpsTrailingTwelveMonths.ToString()); }
-                catch (Exception e) { /*do nothing*/ }
-
-                decimal epsForward = 0.0M;
-                try { epsForward = decimal.Parse(quote.EpsForward.ToString()); }
-                catch (Exception e) { /*set to trailing*/ epsForward = epsTrailing; }
-
-                decimal averageEPS = 0.0M, growthEPS = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
-
-                averageEPS = (epsForward + epsTrailing) / 2;
-                growthEPS = epsForward - epsTrailing;
-
-                averagePE = (peForward + peTrailing) / 2;
-                growthPE = peForward - peTrailing;
-
-                //Add bonus for dividends maybe?
-
-                //Add bonus if current volume is greater than average volume
-                decimal volumeTrendingBonus = (volumeUSD > averageVolumeUSD) ? 10 : 0;
-
-                //calculate composite score based on the following values and weighted multipliers
-                //Base value should be calculated based on PE and EPS
-                //Bonuses added for positive volume and price slopes, and PE / EPS Growth
-                decimal composite = 0;
-                composite += (averagePE > 2.0M) ? averagePE * 2 + 10 : 0;
-                composite += (averageEPS > 0.75M) ? averageEPS * 3 + 10 : 0;
-                composite += (growthPE > 0) ? growthPE + 10 : 0;
-                composite += (growthEPS > 0) ? growthEPS + 10 : 0;
-                composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
-                composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier + 10 : 0;
-                composite += volumeTrendingBonus;
-
-                composite = Math.Min(composite, 100); //cap FUND composite at 100, no extra weight
-
-                decimal disqualifyingLimit = 1000000.0M; //disqualify if less than 1 million USD volume per day
-
-                //Add this later
-                //decimal annualDivRate = 0.0M;
-                //bool divs = Decimal.TryParse(quote.TrailingAnnualDividendRate.ToString(), out annualDivRate)
-
-                return new FundamentalsResult
-                {
-                    VolumeUSD = volumeUSD,
-                    AverageVolumeUSD = averageVolumeUSD,
-                    VolumeSlope = volumeSlope,
-                    PriceSlope = priceSlope,
-                    AverageEPS = averageEPS,
-                    AveragePE = averagePE,
-                    GrowthEPS = growthEPS,
-                    GrowthPE = growthPE,
-                    HasDividends = false,
-                    IsBlacklisted = (volumeUSD < disqualifyingLimit && averageVolumeUSD < disqualifyingLimit),
-                    Message = message,
-                    FundamentalsComposite = composite
-                };
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("EXCEPTION CAUGHT: TwelveData.cs GetFundamentals for symbol " + symbol + ", message: " + e.Message);
-                return new FundamentalsResult
-                {
-                    VolumeUSD = 0.0M,
-                    AverageVolumeUSD = 0.0M,
-                    VolumeSlope = 0.0M,
-                    PriceSlope = 0.0M,
-                    AverageEPS = 0.0M,
-                    AveragePE = 0.0M,
-                    GrowthEPS = 0.0M,
-                    GrowthPE = 0.0M,
-                    HasDividends = false,
-                    IsBlacklisted = false,
-                    Message = e.Message,
-                    FundamentalsComposite = 50.0M //Pity Points for exceptions getting data
-                };
-            }
-        }
-
-        public static decimal GetSlope(List<decimal> xList, List<decimal> yList)
-        {
-            //"zip" xs and ys to make the sum of products easier
-            var xys = Enumerable.Zip(xList, yList, (x, y) => new { x = x, y = y });
-            decimal xbar = xList.Average();
-            decimal ybar = yList.Average();
-            decimal slope = xys.Sum(xy => (xy.x - xbar) * (xy.y - ybar)) / xList.Sum(x => (x - xbar) * (x - xbar));
-            string s = "";
-            bool success = Int32.TryParse(s, out int n);
-            string[] stuff = new string[5];
-            List<string> list = new List<string>();
-            Dictionary<string, int> pris = new Dictionary<string, int>();
-            var ordered = pris.OrderBy(x => x.Value);
-            return slope;
-        }
-
-        public static decimal GetSlopeMultiplier(decimal slope)
-        {
-            //Positive cases
-            if (slope > 0 && slope < 0.25M)
-                return 50.0M;
-            else if (slope >= 0.25M && slope < 0.5M)
-                return 35.0M;
-            else if (slope >= 0.5M && slope < 1)
-                return 25.0M;
-            else if (slope >= 1 && slope < 5)
-                return 2.0M;
-            else if (slope >= 5 && slope < 10)
-                return 1.5M;
-            else if (slope >= 10 && slope < 20)
-                return 1.0M;
-            else if (slope >= 20)
-                return 1.0M;
-
-            //Negative cases
-            else if (slope < 0 && slope > -0.25M)
-                return -50.0M;
-            else if (slope <= -0.25M && slope > -0.5M)
-                return -35.0M;
-            else if (slope <= -0.5M && slope > -1)
-                return -25.0M;
-            else if (slope <= -1 && slope > -5)
-                return -2.0M;
-            else if (slope <= -5 && slope > -10)
-                return -1.5M;
-            else if (slope <= -10 && slope > -20)
-                return -1.0M;
-            else if (slope <= -20)
-                return -1.0M;
-            else
-                return 0;
-        }
-
         public static string result = "";
         public static string GenerateLowestNumber(string number, int n)
         {
@@ -834,128 +649,6 @@ namespace PT.Middleware
 	        result += str[minIndex];
 	        string newStr = str.Substring(minIndex + 1);
             Helper(newStr, n - minIndex);
-        }
-
-
-        public static List<decimal> GetZScores(List<decimal> input)
-        {
-            // Find standard deviation and compute Z Scores
-            decimal mean = input.Sum() / input.Count;
-
-            decimal stdDev = GetStandardDeviation(input, true);
-
-            decimal estMin = mean - (stdDev);
-            decimal estMax = mean + (stdDev);
-
-            decimal setMax = input.Max();
-            decimal setMin = input.Min();
-            decimal range = setMax - setMin;
-            decimal zScoreScalar = GetStdDevScalar(range, stdDev);
-
-            List<decimal> zScores = new List<decimal>();
-
-            // Normally z-score tells you how many stdDev away from the mean this value is
-            // In this case, we're finding how many (stdDev * zScoreScalar) away from the mean this value is
-            for (int i = 0; i < input.Count; i++)
-            {
-                //OR compare the range to the stdDev to decide on our Z Score multiplier
-                decimal curZ = (input[i] - mean) / (stdDev * zScoreScalar);
-                zScores.Add(curZ);
-            }
-
-            return zScores;
-        }
-
-        public static decimal GetStdDevScalar(decimal range, decimal stdDev)
-        {
-            //how many stdDevs do you need to cover the entire range?
-            return range / stdDev;
-        }
-
-        // Transform input data into normalized (or scaled) data
-        public static List<decimal> GetNormalizedData(List<decimal> input)
-        {
-            // Estimate min and max from the input values using standard deviation
-            decimal mean = input.Sum() / input.Count;
-
-            decimal stdDev = GetStandardDeviation(input, true);
-
-            decimal setMax = input.Max();
-            decimal setMin = input.Min();
-            decimal range = setMax - setMin;
-            decimal stdDevScalar = GetStdDevScalar(range, stdDev);
-
-            decimal estMax = mean + (stdDev * stdDevScalar);
-            decimal estMin = mean - (stdDev * stdDevScalar);
-
-            List<decimal> normalized = new List<decimal>();
-
-            //below is using a difference quotient to get results for normalization
-            for (int i = 0; i < input.Count; i++)
-            {
-                decimal curScore = (input[i] - estMin) / (estMax - estMin);
-                normalized.Add(curScore);
-            }
-
-            return normalized;
-        }
-
-        // May not be needed anymore now that I can use Standard Deviation
-        public static decimal GetEstimatedBound(List<decimal> set, decimal setMin, decimal setMax, bool isMax)
-        {
-            decimal sum = 0;
-            for (int i = 0; i < set.Count; i++)
-                sum += set[i];
-
-            decimal mean = sum / set.Count;
-
-            decimal stdDev = GetStandardDeviation(set, true);
-
-            //decimal range = setMax - setMin;
-            //decimal expandedRange = range * 1.5M; //like an estimated std deviation
-            //decimal expander = expandedRange / 2.0M;
-            return (isMax) ? mean + stdDev : mean - stdDev;
-        }
-
-        // Return the standard deviation of an array of decimals
-        // If the second argument is True, evaluate as a sample
-        // If the second argument is False, evaluate as a population
-        public static decimal GetStandardDeviation(List<decimal> values, bool isSample)
-        {
-            // Get the mean
-            decimal sum = 0;
-            for (int i = 0; i < values.Count; i++)
-                sum += values[i];
-            decimal mean = sum / values.Count;
-
-            // Get the sum of the squares of the differences between each value and the mean
-            decimal sumOfSquares = 0;
-            for (int i = 0; i < values.Count; i++)
-                sumOfSquares += (values[i] - mean) * (values[i] - mean);
-
-            if (isSample)
-                return DecimalSqrt(sumOfSquares / (values.Count() - 1));
-            else
-                return DecimalSqrt(sumOfSquares / values.Count());
-        }
-
-        // https://stackoverflow.com/questions/4124189/performing-math-operations-on-decimal-datatype-in-c
-        // x - a number, from which we need to calculate the square root
-        // epsilon - an accuracy of calculation of the root from our number.
-        // The result of the calculations will differ from an actual value
-        // of the root on less than epslion.
-        public static decimal DecimalSqrt(decimal x, decimal epsilon = 0.0M)
-        {
-            if (x < 0) throw new Exception("EXCEPTION: Cannot calculate square root from a negative number");
-            decimal current = (decimal)Math.Sqrt((double)x), previous;
-            do
-            {
-                previous = current;
-                if (previous == 0.0M) return 0;
-                current = (previous + x / previous) / 2;
-            }
-            while (Math.Abs(previous - current) > epsilon);
-            return current;
         }
     }
 }

@@ -188,6 +188,7 @@ namespace PT.Controllers
             return cachedSymbols;
         }
 
+        //Main endpoint for getting all scores for now
         [HttpGet("/GetCachedCompaniesYF")]
         public List<CompanyStatsYF> GetCachedCompaniesYF()
         {

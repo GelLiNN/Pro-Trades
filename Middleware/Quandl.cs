@@ -127,8 +127,8 @@ namespace PT.Middleware
                 shortXList.Add(i);
 
             List<decimal> shortYList = shortInterestYList.ToList();
-            decimal shortSlope = TwelveData.GetSlope(shortXList, shortYList);
-            decimal shortSlopeMultiplier = TwelveData.GetSlopeMultiplier(shortSlope);
+            decimal shortSlope = Indicators.GetSlope(shortXList, shortYList);
+            decimal shortSlopeMultiplier = Indicators.GetSlopeMultiplier(shortSlope);
             decimal shortInterestAverage = (totalVolumeShort / totalVolume) * 100;
 
             //Add these bonuses to account for normal short interest fluctuations

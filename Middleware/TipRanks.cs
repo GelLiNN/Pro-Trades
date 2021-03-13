@@ -73,7 +73,7 @@ namespace PT.Middleware
                     counter++;
                 }
 
-                decimal bsnSlope = TwelveData.GetSlope(bsnXList, bsnYList);
+                decimal bsnSlope = Indicators.GetSlope(bsnXList, bsnYList);
                 decimal bsnSlopeMultiplier = 10.0M; //TwelveData.GetSlopeMultiplier(bsnSlope);
 
                 //find the average rating
