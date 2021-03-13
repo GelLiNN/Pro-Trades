@@ -713,7 +713,7 @@ namespace PT.Middleware
 
                 composite = Math.Min(composite, 100); //cap FUND composite at 100, no extra weight
 
-                decimal disqualifyingLimit = 1000000.0M;
+                decimal disqualifyingLimit = 1000000.0M; //disqualify if less than 1 million USD volume per day
 
                 //Add this later
                 //decimal annualDivRate = 0.0M;

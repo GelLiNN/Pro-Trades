@@ -491,13 +491,11 @@ namespace PT.Middleware
                     decimal middleBandValue = result.Sma != null ? (decimal) result.Sma : 0.0M;
                     decimal upperBandValue = result.UpperBand != null ? (decimal) result.UpperBand : 0.0M;
                     decimal difference = upperBandValue - lowerBandValue;
-                    bool isDiverging = result.IsDiverging != null ? (bool) result.IsDiverging : false;
 
                     lowerBandYList.Push(lowerBandValue);
                     middleBandYList.Push(middleBandValue);
                     upperBandYList.Push(upperBandValue);
                     differenceValueYList.Push(difference);
-                    diverging.Push(isDiverging);
                     numberOfResults++;
 
                     string bbandsDate = result.Date.ToString("yyyy-MM-dd");
@@ -523,7 +521,6 @@ namespace PT.Middleware
             decimal upperSlope = TwelveData.GetSlope(bbandsXList, upperYList);
             List<decimal> differenceYList = differenceValueYList.ToList();
             decimal differenceSlope = TwelveData.GetSlope(bbandsXList, differenceYList);
-            List<bool> divergingList = diverging.ToList();
 
             decimal lowerSlopeMultiplier = TwelveData.GetSlopeMultiplier(lowerSlope);
             decimal middleSlopeMultiplier = TwelveData.GetSlopeMultiplier(middleSlope);
