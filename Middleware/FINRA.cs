@@ -17,7 +17,7 @@ namespace PT.Middleware
     public static class FINRA
     {
         public static readonly DateTime FirstDate = new DateTime(2018, 11, 5);
-        public static readonly string BaseUrl = @"http://regsho.finra.org";
+        public static readonly string BaseUrl = @"https://cdn.finra.org/equity/regsho/daily";
         private static readonly HttpClient Client = new HttpClient();
 
         private static readonly decimal SlightlyBearishLowerBound = 0.0M;
