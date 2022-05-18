@@ -8,8 +8,9 @@ using YahooFinanceApi;
 
 namespace PT.Middleware
 {
-    //Yahoo Finance API Documentation https://github.com/lppkarl/YahooFinanceApi
-    //No API key needed for this one?
+    // Yahoo Finance API Documentation https://github.com/lppkarl/YahooFinanceApi
+    // No API key needed for this one?
+    // Other Yahoo Finance API Documentation https://github.com/dshe/YahooQuotesApi
     public class YahooFinance
     {
         public static async Task<CompanyStatsYF> GetCompanyStatsAsync(string symbol)
