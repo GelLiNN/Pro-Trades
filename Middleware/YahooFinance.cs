@@ -161,7 +161,8 @@ namespace PT.Middleware
                         bool isNasdaq = data[0] == "Y";
                         if (isNasdaq)
                         {
-                            CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                            // CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                            CompanyStatsYF stats = new CompanyStatsYF();
                             CompanyYF company = new CompanyYF
                             {
                                 Symbol = symbol,
@@ -185,7 +186,8 @@ namespace PT.Middleware
                     string symbol = data[0];
                     if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
                     {
-                        CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                        // CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                        CompanyStatsYF stats = new CompanyStatsYF();
                         CompanyYF company = new CompanyYF
                         {
                             Symbol = symbol,
@@ -208,7 +210,8 @@ namespace PT.Middleware
                     string symbol = data[0];
                     if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
                     {
-                        CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                        // CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                        CompanyStatsYF stats = new CompanyStatsYF();
                         CompanyYF company = new CompanyYF
                         {
                             Symbol = symbol,
