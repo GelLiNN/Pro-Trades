@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using PT.Models;
 using YahooFinanceApi;
 
@@ -13,6 +14,7 @@ namespace PT.Middleware
     // Other Yahoo Finance API Documentation https://github.com/dshe/YahooQuotesApi
     public class YahooFinance
     {
+        // TODO: rewrite for YahooQuotesApi
         public static async Task<CompanyStatsYF> GetCompanyStatsAsync(string symbol)
         {
             CompanyStatsYF companyStat = new CompanyStatsYF();
@@ -103,6 +105,7 @@ namespace PT.Middleware
             return await Task.FromResult(companyStat);
         }
 
+        // TODO: rewrite for YahooQuotesApi
         public static async Task<Security> GetQuoteAsync(string symbol)
         {
             // You could query multiple symbols with multiple fields through the following steps:
@@ -111,7 +114,8 @@ namespace PT.Middleware
             return quote;
         }
 
-        public static async Task<IReadOnlyList<Candle>> GetHistoryAsync(string symbol, int days)
+        // TODO: rewrite for YahooQuotesApi
+        public static async Task<IReadOnlyList<YahooFinanceApi.Candle>> GetHistoryAsync(string symbol, int days)
         {
             // You should be able to query data from various markets including US, HK, TW
             // The startTime & endTime here defaults to EST timezone

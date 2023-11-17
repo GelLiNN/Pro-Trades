@@ -204,7 +204,7 @@ namespace PT.Middleware
             return compositeScore;
         }
 
-        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
+        /*public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
         {
             string adxResponse = CompleteTwelveDataRequest("ADX", symbol).Result;
             decimal adxCompositeScore = GetCompositeScore(symbol, "ADX", adxResponse, 7);
@@ -232,7 +232,7 @@ namespace PT.Middleware
                 RatingsComposite = trResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
-                CompositeScoreValue = (adxCompositeScore + /*obvCompositeScore +*/ aroonCompositeScore + macdCompositeScore +
+                CompositeScoreValue = (adxCompositeScore + aroonCompositeScore + macdCompositeScore + 
                     shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + trResult.RatingsComposite) / 6,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
@@ -253,7 +253,7 @@ namespace PT.Middleware
             scoreResult.CompositeRank = rank;
 
             return scoreResult;
-        }
+        }*/
 
 
         public static decimal GetADXComposite(JArray resultSet, int daysToCalculate)
@@ -634,20 +634,20 @@ namespace PT.Middleware
         }
         private static void Helper(string str, int n)
         {
-	        if (n == 0)
-	        {
-		        result += str;
-		        return;
-	        }
-	        if (str.Length <= n)
-		        return;
-	        // Find smallest characters
-	        int minIndex = 0;
-	        for (int i = 1; i <= n; i++)
-		        if (str[i] < str[minIndex])
-			        minIndex = i;
-	        result += str[minIndex];
-	        string newStr = str.Substring(minIndex + 1);
+            if (n == 0)
+            {
+                result += str;
+                return;
+            }
+            if (str.Length <= n)
+                return;
+            // Find smallest characters
+            int minIndex = 0;
+            for (int i = 1; i <= n; i++)
+                if (str[i] < str[minIndex])
+                    minIndex = i;
+            result += str[minIndex];
+            string newStr = str.Substring(minIndex + 1);
             Helper(newStr, n - minIndex);
         }
     }

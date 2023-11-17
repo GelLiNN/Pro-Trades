@@ -18,6 +18,7 @@ namespace PT.Middleware
         public static readonly string OtcSymbolsUri = @"ftp://ftp.nasdaqtrader.com/SymbolDirectory/otclist.txt";
         public static readonly string OtcMarketsUri = @"https://www.otcmarkets.com/research/stock-screener/api/downloadCSV";
 
+        // TODO: Replace WebRequest below with HttpClient
         public static string GetFromFtpUri(string uri)
         {
             FtpWebRequest request = (FtpWebRequest)WebRequest.Create(uri);
@@ -35,6 +36,7 @@ namespace PT.Middleware
             return responseStr;
         }
 
+        // TODO: Replace WebRequest below with HttpClient
         public static string GetFromUri(string uri)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);

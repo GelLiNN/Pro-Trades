@@ -678,7 +678,7 @@ namespace PT.Models
 
         //rankings composite score
         public decimal RatingsComposite { get; set; }
-        
+
         //price target
         public decimal PriceTarget { get; set; }
     }

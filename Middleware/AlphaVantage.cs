@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+﻿using System.Diagnostics;
 using Newtonsoft.Json.Linq;
+using PT;
 
 namespace PT.Middleware
 {
@@ -131,7 +126,7 @@ namespace PT.Middleware
                     //https://www.fmlabs.com/reference/default.htm?url=StochasticOscillator.htm
                     //https://www.investopedia.com/articles/technical/073001.asp
                     //https://www.alphavantage.co/query?function=STOCH&symbol=MSFT&interval=daily&apikey=
-                        break;
+                    break;
 
                 case "RSI":
                     //The Relative Strength Index (RSI) calculates a ratio of the recent upward price movements to the absolute price movement.

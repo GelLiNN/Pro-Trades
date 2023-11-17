@@ -1,7 +1,9 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pro-Trades", "Pro-Trades.csproj", "{92EFE2DC-2C85-4680-BE9E-79761F76E2A8}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pro-Trades", "Pro-Trades.csproj", "{DF9A4C55-25E2-4584-BCB0-106586C8E8B6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -9,9 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{92EFE2DC-2C85-4680-BE9E-79761F76E2A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{92EFE2DC-2C85-4680-BE9E-79761F76E2A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{92EFE2DC-2C85-4680-BE9E-79761F76E2A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{92EFE2DC-2C85-4680-BE9E-79761F76E2A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF9A4C55-25E2-4584-BCB0-106586C8E8B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF9A4C55-25E2-4584-BCB0-106586C8E8B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF9A4C55-25E2-4584-BCB0-106586C8E8B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF9A4C55-25E2-4584-BCB0-106586C8E8B6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F31D903C-25D9-46D9-924F-D5D908AB5A4B}
 	EndGlobalSection
 EndGlobal

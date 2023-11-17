@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PT.Middleware;
-using PT.Node;
 using PT.Models;
 using YahooFinanceApi;
 
@@ -17,17 +16,12 @@ namespace PT.Controllers
     {
         private readonly ILogger<SearchController> _logger;
 
-        // private static DataCache _cache;
+        private static DataCache _cache;
 
-        private readonly NodeInterop _node;
-
-        public SearchController(ILogger<SearchController> logger,
-        // DataCache cache,
-         NodeInterop node)
+        public SearchController(ILogger<SearchController> logger, DataCache cache)
         {
             _logger = logger;
-            // _cache = cache;
-            _node = node;
+            _cache = cache;
         }
 
         [HttpGet("/Search")]
@@ -104,7 +98,7 @@ namespace PT.Controllers
             };
         }
 
-        [HttpGet("/GetCompositeScoreTD/{symbol}")]
+        /*[HttpGet("/GetCompositeScoreTD/{symbol}")]
         public CompositeScoreResult GetCompositeScoreTD(string symbol)
         {
             Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
@@ -115,7 +109,7 @@ namespace PT.Controllers
         public static CompositeScoreResult GetCompositeScoreInternalTD(string symbol, Security quote)
         {
             return TwelveData.GetCompositeScoreResult(symbol, quote);
-        }
+        }*/
 
         /*
          * Financial Modeling Prep dependent endpoints
@@ -176,50 +170,50 @@ namespace PT.Controllers
         /*
          * Cache related endpoints
          */
-        // [HttpGet("/GetCachedSymbolsYF")]
-        // public HashSet<string> GetCachedSymbolsYF()
-        // {
-        //     HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
-        //     return cachedSymbols;
-        // }
+        [HttpGet("/GetCachedSymbolsYF")]
+        public HashSet<string> GetCachedSymbolsYF()
+        {
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            return cachedSymbols;
+        }
 
-        // [HttpGet("/GetCachedSymbolsIEX")]
-        // public HashSet<string> GetCachedSymbolsIEX()
-        // {
-        //     HashSet<string> cachedSymbols = _cache.GetCachedSymbols("iex-companies");
-        //     return cachedSymbols;
-        // }
+        [HttpGet("/GetCachedSymbolsIEX")]
+        public HashSet<string> GetCachedSymbolsIEX()
+        {
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("iex-companies");
+            return cachedSymbols;
+        }
 
         //Main endpoint for getting all scores for now
-        // [HttpGet("/GetCachedCompaniesYF")]
-        // public List<CompanyStatsYF> GetCachedCompaniesYF()
-        // {
-        //     List<CompanyStatsYF> cachedCompanies = new List<CompanyStatsYF>();
+        [HttpGet("/GetCachedCompaniesYF")]
+        public List<CompanyStatsYF> GetCachedCompaniesYF()
+        {
+            List<CompanyStatsYF> cachedCompanies = new List<CompanyStatsYF>();
 
-        //     HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
-        //     foreach (string cacheKey in cachedSymbols)
-        //     {
-        //         CompanyStatsYF company = (CompanyStatsYF)_cache.Get(cacheKey);
-        //         if (company != null)
-        //             cachedCompanies.Add(company);
-        //     }
-        //     return cachedCompanies;
-        // }
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompanyStatsYF company = (CompanyStatsYF)_cache.Get(cacheKey);
+                if (company != null)
+                    cachedCompanies.Add(company);
+            }
+            return cachedCompanies;
+        }
 
-        // [HttpGet("/GetCachedCompaniesIEX")]
-        // public List<CompanyStatsIEX> GetCachedCompaniesIEX()
-        // {
-        //     List<CompanyStatsIEX> cachedCompanies = new List<CompanyStatsIEX>();
+        [HttpGet("/GetCachedCompaniesIEX")]
+        public List<CompanyStatsIEX> GetCachedCompaniesIEX()
+        {
+            List<CompanyStatsIEX> cachedCompanies = new List<CompanyStatsIEX>();
 
-        //     HashSet<string> cachedSymbols = _cache.GetCachedSymbols("iex-companies");
-        //     foreach (string cacheKey in cachedSymbols)
-        //     {
-        //         CompanyStatsIEX company = (CompanyStatsIEX)_cache.Get(cacheKey);
-        //         if (company != null)
-        //             cachedCompanies.Add(company);
-        //     }
-        //     return cachedCompanies;
-        // }
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("iex-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompanyStatsIEX company = (CompanyStatsIEX)_cache.Get(cacheKey);
+                if (company != null)
+                    cachedCompanies.Add(company);
+            }
+            return cachedCompanies;
+        }
 
         [HttpGet("/GetZacksRank/{symbol}")]
         public string GetZacksRank(string symbol)

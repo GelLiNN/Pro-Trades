@@ -1,4 +1,6 @@
-﻿using PT.Models;
+﻿using Microsoft.AspNetCore.Mvc;
+using PT.Middleware;
+using PT.Models;
 using Skender.Stock.Indicators;
 using System;
 using System.Collections.Generic;
@@ -90,7 +92,7 @@ namespace PT.Middleware
                         int bbandsPeriod = 20;
                         int standardDeviations = 2;
                         IEnumerable<BollingerBandsResult> bbandsResults = Indicator.GetBollingerBands(history, bbandsPeriod, standardDeviations);
-                        compositeScore = GetBBANDSComposite(bbandsResults, (List<Skender.Stock.Indicators.Quote>) supplement, daysToCalculate);
+                        compositeScore = GetBBANDSComposite(bbandsResults, (List<Skender.Stock.Indicators.Quote>)supplement, daysToCalculate);
                         break;
 
                     case "STOCH":
@@ -149,7 +151,7 @@ namespace PT.Middleware
                 historyList.Add(curData);
             }
             IEnumerable<Skender.Stock.Indicators.Quote> history = historyList.AsEnumerable();
-            Cleaners.PrepareHistory(history);
+            //Cleaners.PrepareHistory(history); what happened to this?
 
             List<Skender.Stock.Indicators.Quote> supplement = historyList.TakeLast(7).ToList();
 
@@ -398,9 +400,9 @@ namespace PT.Middleware
                 MacdResult result = results[i];
                 if (daysCalulated < daysToCalculate)
                 {
-                    decimal macdBaseValue = result.Macd != null ? (decimal) result.Macd : 0.0M;
-                    decimal macdSignalValue = result.Signal != null ? (decimal) result.Signal : 0.0M;
-                    decimal macdHistogramValue = result.Histogram != null ? (decimal) result.Histogram : 0.0M;
+                    decimal macdBaseValue = result.Macd != null ? (decimal)result.Macd : 0.0M;
+                    decimal macdSignalValue = result.Signal != null ? (decimal)result.Signal : 0.0M;
+                    decimal macdHistogramValue = result.Histogram != null ? (decimal)result.Histogram : 0.0M;
 
                     macdHistYList.Push(macdHistogramValue);
                     macdBaseYList.Push(macdBaseValue);
@@ -487,9 +489,9 @@ namespace PT.Middleware
                 BollingerBandsResult result = results[i];
                 if (daysCalulated < daysToCalculate)
                 {
-                    decimal lowerBandValue = result.LowerBand != null ? (decimal) result.LowerBand : 0.0M;
-                    decimal middleBandValue = result.Sma != null ? (decimal) result.Sma : 0.0M;
-                    decimal upperBandValue = result.UpperBand != null ? (decimal) result.UpperBand : 0.0M;
+                    decimal lowerBandValue = result.LowerBand != null ? (decimal)result.LowerBand : 0.0M;
+                    decimal middleBandValue = result.Sma != null ? (decimal)result.Sma : 0.0M;
+                    decimal upperBandValue = result.UpperBand != null ? (decimal)result.UpperBand : 0.0M;
                     decimal difference = upperBandValue - lowerBandValue;
 
                     lowerBandYList.Push(lowerBandValue);
@@ -601,7 +603,7 @@ namespace PT.Middleware
                 if (daysCalulated < daysToCalculate)
                 {
                     AroonResult result = results[i];
-                    decimal aroonUpVal = result.AroonUp != null ? (decimal) result.AroonUp : 0.0M;
+                    decimal aroonUpVal = result.AroonUp != null ? (decimal)result.AroonUp : 0.0M;
                     decimal aroonDownVal = result.AroonDown != null ? (decimal)result.AroonDown : 0.0M;
                     aroonUpYList.Push(aroonUpVal);
                     aroonDownYList.Push(aroonDownVal);

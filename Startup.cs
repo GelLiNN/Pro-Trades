@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +10,6 @@ using Microsoft.OpenApi.Models;
 using System.Collections.Generic;
 using PT.Middleware;
 using PT.Data;
-using PT.Node;
 
 namespace PT
 {
@@ -21,7 +20,7 @@ namespace PT
         {
             //Use Sqlite3 with Database Context
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlite(
+                options.UseSqlServer(
                     Program.Config.GetConnectionString("DefaultConnection")));
 
             //Use Microsoft Identity for PT logins
@@ -60,10 +59,6 @@ namespace PT
             {
                 swagger.SwaggerDoc("v1", new OpenApiInfo { Title = "Pro-Trades API", Version = "v1" });
             });
-
-            //Setup NodeJS Interop
-            services.AddNodeServices();
-            services.AddSingleton<NodeInterop>();
         }
 
         //This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

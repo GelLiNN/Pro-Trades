@@ -49,13 +49,13 @@ namespace PT.Models
         public decimal FundamentalsComposite { get; set; }
     }
 
-/*
- * FINRA Models
- */
-public class FinraRecord
+    /*
+     * FINRA Models
+     */
+    public class FinraRecord
     {
-         // URL: http://regsho.finra.org/CNMSshvol20181105.txt
-         // STRUCTURE: Date|Symbol|ShortVolume|ShortExemptVolume|TotalVolume
+        // URL: http://regsho.finra.org/CNMSshvol20181105.txt
+        // STRUCTURE: Date|Symbol|ShortVolume|ShortExemptVolume|TotalVolume
 
         public DateTime Date { get; set; }
         public string Symbol { get; set; }
@@ -161,7 +161,7 @@ public class FinraRecord
      */
     public class CompanyStatsFMP
     {
-        public string Symbol{ get; set; }
+        public string Symbol { get; set; }
         public string Exchange { get; set; }
 
         public string CompanyName { get; set; }
@@ -286,7 +286,7 @@ public class FinraRecord
         public decimal VolumeAverage3m { get; set; }
         public decimal VolumeAverage3mUSD { get; set; }
 
-        //public TradeDataYF TradeData { get; set; }
+        public TradeDataYF TradeData { get; set; }
         public List<DividendTick> Dividends { get; set; }
         public List<SplitTick> Splits { get; set; }
 
