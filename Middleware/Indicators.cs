@@ -135,7 +135,7 @@ namespace PT.Middleware
             return compositeScore;
         }
 
-        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
+        public static CompositeScoreResult GetCompositeScoreResult(string symbol, YahooQuotesApi.Security quote)
         {
             IReadOnlyList<Candle> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 300).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
@@ -696,7 +696,7 @@ namespace PT.Middleware
 
         //Fundamentals (volume, price, earnings and filings up-to-date
         //RELIES completely on unofficial yahoo finance API for now
-        public static FundamentalsResult GetFundamentals(string symbol, Security quote)
+        public static FundamentalsResult GetFundamentals(string symbol, YahooQuotesApi.Security quote)
         {
             string message = string.Empty;
             try

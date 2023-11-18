@@ -287,13 +287,13 @@ namespace PT.Models
         public decimal VolumeAverage3mUSD { get; set; }
 
         public TradeDataYF TradeData { get; set; }
-        public List<DividendTick> Dividends { get; set; }
-        public List<SplitTick> Splits { get; set; }
+        //public List<DividendTick> Dividends { get; set; }
+        //public List<SplitTick> Splits { get; set; }
 
         public CompanyStatsYF()
         {
-            Dividends = new List<DividendTick>();
-            Splits = new List<SplitTick>();
+            //Dividends = new List<DividendTick>();
+            //Splits = new List<SplitTick>();
         }
     }
 

@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PT.Middleware;
 using PT.Models;
-using YahooFinanceApi;
 
 namespace PT.Controllers
 {
@@ -18,10 +17,10 @@ namespace PT.Controllers
 
         private static DataCache _cache;
 
-        public SearchController(ILogger<SearchController> logger, DataCache cache)
+        public SearchController(ILogger<SearchController> logger)//, DataCache cache)
         {
             _logger = logger;
-            _cache = cache;
+            _cache = new DataCache();
         }
 
         [HttpGet("/Search")]
@@ -37,12 +36,12 @@ namespace PT.Controllers
         public CompositeScoreResult GetCompositeScore(string symbol)
         {
             symbol = symbol.ToUpper();
-            Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
+            YahooQuotesApi.Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
             return Indicators.GetCompositeScoreResult(symbol, quote); //no indicator API needed
         }
 
         //Used internally for cache loading
-        public static CompositeScoreResult GetCompositeScoreInternal(string symbol, Security quote)
+        public static CompositeScoreResult GetCompositeScoreInternal(string symbol, YahooQuotesApi.Security quote)
         {
             return Indicators.GetCompositeScoreResult(symbol, quote); //no indicator API needed
         }
@@ -149,7 +148,7 @@ namespace PT.Controllers
         }
 
         [HttpGet("/GetQuoteYF/{symbol}")]
-        public Security GetQuoteYF(string symbol)
+        public YahooQuotesApi.Security GetQuoteYF(string symbol)
         {
             return YahooFinance.GetQuoteAsync(symbol).Result;
         }

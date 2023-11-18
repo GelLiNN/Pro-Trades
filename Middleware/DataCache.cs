@@ -36,13 +36,11 @@ namespace PT.Middleware
         public List<string> CacheIds = new List<string> { "iex-companies", "yf-companies" };
         private IMemoryCache _iexCompaniesCache;
         private IMemoryCache _yfCompaniesCache;
-        private RequestManager _requestManager;
 
-        public DataCache(RequestManager manager)
+        public DataCache()
         {
             _iexCompaniesCache = new MemoryCache(new MemoryCacheOptions());
             _yfCompaniesCache = new MemoryCache(new MemoryCacheOptions());
-            _requestManager = manager;
 
             CachedSymbols = new Dictionary<string, HashSet<string>>();
             foreach (string cacheId in this.CacheIds)

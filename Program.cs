@@ -19,6 +19,13 @@ namespace PT
 
         public static void Main(string[] args)
         {
+            Config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+                .AddJsonFile("appsettings.secrets.json", optional: false, reloadOnChange: false)
+                .AddEnvironmentVariables()
+                .Build();
+            Environment = Config.GetValue<string>("DeploymentEnvironment");
+
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
@@ -101,10 +108,7 @@ namespace PT
             app.UseAuthentication();
             app.UseIdentityServer();
             app.UseAuthorization();
-
-            app.MapControllerRoute(
-                name: "default",
-                pattern: "{controller}/{action=Index}/{id?}");
+            app.MapControllers();
             app.MapRazorPages();
 
             app.MapFallbackToFile("index.html");
@@ -115,6 +119,7 @@ namespace PT
             {
                 swagger.SwaggerEndpoint("/swagger/v1/swagger.json", "Pro-Trades API V1");
             });
+            app.UseDeveloperExceptionPage();
 
             app.Run();
         }
