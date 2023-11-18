@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using NodaTime;
 using PT.Models;
 using YahooFinanceApi;
 using YahooQuotesApi;
@@ -229,16 +230,27 @@ namespace PT.Middleware
         {
             // You should be able to query data from various markets including US, HK, TW
             // The startTime & endTime here defaults to EST timezone
-            var history = await Yahoo.GetHistoricalAsync(symbol, DateTime.Now.AddDays(-1 * (days + 1)), DateTime.Now, Period.Daily);
-            return history;
+            //var history = await Yahoo.GetHistoricalAsync(symbol, DateTime.Now.AddDays(-1 * (days + 1)), DateTime.Now, Period.Daily);
+            return null;//history;
         }
 
         // With YahooQuotesApi
-        public static async Task<IReadOnlyList<YahooFinanceApi.Candle>> GetHistoryAsync(string symbol, int days)
+        public static async Task<List<PriceTick>> GetHistoryAsync(string symbol, int days)
         {
             // You should be able to query data from various markets including US, HK, TW
-            // The startTime & endTime here defaults to EST timezone
-            var history = await Yahoo.GetHistoricalAsync(symbol, DateTime.Now.AddDays(-1 * (days + 1)), DateTime.Now, Period.Daily);
+            // The timezone here may or may not impact accuracy
+            var timeZone = DateTimeZoneProviders.Bcl.GetSystemDefault();
+            var localTime = LocalDateTime.FromDateTime(DateTime.Now.AddDays(-300));
+            var zonedTimeInstant = localTime.InZoneStrictly(timeZone).ToInstant();
+
+            YahooQuotes yahooQuotes = new YahooQuotesBuilder()
+                .WithHistoryStartDate(zonedTimeInstant)
+                .Build();
+
+            YahooQuotesApi.Security security = await yahooQuotes.GetAsync(symbol, Histories.PriceHistory)
+                ?? throw new ArgumentException("Unknown symbol.");
+
+            var history = security.PriceHistory.Value.ToList();
             return history;
         }
 

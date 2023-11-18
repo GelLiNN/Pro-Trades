@@ -8,6 +8,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using YahooFinanceApi;
+using YahooQuotesApi;
+using static NodaTime.Extensions.DateTimeExtensions;
 
 namespace PT.Middleware
 {
@@ -137,17 +139,17 @@ namespace PT.Middleware
 
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, YahooQuotesApi.Security quote)
         {
-            IReadOnlyList<Candle> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 300).Result;
+            List<PriceTick> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 300).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
-            foreach (Candle data in yahooHistory)
+            foreach (PriceTick data in yahooHistory)
             {
                 Skender.Stock.Indicators.Quote curData = new Skender.Stock.Indicators.Quote();
-                curData.Open = data.Open;
-                curData.Close = data.AdjustedClose;
-                curData.High = data.High;
-                curData.Low = data.Low;
-                curData.Volume = data.Volume;
-                curData.Date = data.DateTime;
+                curData.Open = Convert.ToDecimal(data.Open);
+                curData.Close = Convert.ToDecimal(data.AdjustedClose);
+                curData.High = Convert.ToDecimal(data.High);
+                curData.Low = Convert.ToDecimal(data.Low);
+                curData.Volume = Convert.ToDecimal(data.Volume);
+                curData.Date = data.Date.ToDateTimeUnspecified();
                 historyList.Add(curData);
             }
             IEnumerable<Skender.Stock.Indicators.Quote> history = historyList.AsEnumerable();
