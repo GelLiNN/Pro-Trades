@@ -13,7 +13,7 @@ namespace PT
 {
     public class Program
     {
-        //For deploying to different environments read from appsettings.secrets.json
+        // For deploying to different environments read from appsettings.secrets.json
         public static string Environment;
         public static IConfiguration Config { get; set; }
 
@@ -37,7 +37,7 @@ namespace PT
 
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-            //Use Microsoft Identity for PT logins
+            // Use Microsoft Identity for PT logins
             builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
@@ -71,17 +71,17 @@ namespace PT
                 options.Conventions.AddPageRoute("/Home", "");
             });*/
 
-            //Use SendGrid Email
+            // Use SendGrid Email
             builder.Services.AddTransient<IEmailSender, EmailSender>();
 
-            //Use RequestManager
+            // Use RequestManager
             builder.Services.AddSingleton<RequestManager>();
 
-            //Use DataCache
-            // services.AddSingleton<DataCache>();
-            // services.AddSingleton<IHostedService, DataCacheLoader>(); //Load caches in background thread on startup
+            // Use DataCache
+            builder.Services.AddSingleton<DataCache>();
+            builder.Services.AddSingleton<IHostedService, DataCacheLoader>(); //Load caches in background thread on startup
 
-            //Setup the generated swagger JSON for swagger documentation
+            // Setup the generated swagger JSON for swagger documentation
             builder.Services.AddSwaggerGen(swagger =>
             {
                 swagger.SwaggerDoc("v1", new OpenApiInfo { Title = "Pro-Trades API", Version = "v1" });
@@ -113,7 +113,7 @@ namespace PT
 
             app.MapFallbackToFile("index.html");
 
-            //Enable middleware to serve generated Swagger as a JSON endpoint
+            // Enable middleware to serve generated Swagger as a JSON endpoint
             app.UseSwagger();
             app.UseSwaggerUI(swagger =>
             {

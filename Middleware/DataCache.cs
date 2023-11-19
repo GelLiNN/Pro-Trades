@@ -13,6 +13,7 @@ namespace PT.Middleware
     //MemoryCache wrapper for storing cache keys and otherwise assisting with cache functionality
     public class DataCache
     {
+        protected RequestManager _rm;
 
         public enum Channels
         {
@@ -37,8 +38,9 @@ namespace PT.Middleware
         private IMemoryCache _iexCompaniesCache;
         private IMemoryCache _yfCompaniesCache;
 
-        public DataCache()
+        public DataCache(RequestManager rm)
         {
+            _rm = rm;
             _iexCompaniesCache = new MemoryCache(new MemoryCacheOptions());
             _yfCompaniesCache = new MemoryCache(new MemoryCacheOptions());
 
@@ -261,7 +263,7 @@ namespace PT.Middleware
             int count = 0;
             await Task.Run(() =>
             {
-                string nasdaqData = Companies.GetFromFtpUri(Companies.NasdaqSymbolsUri);
+                string nasdaqData = _rm.GetFromUri(Companies.NasdaqSymbolsUri);
                 string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
                 Random r1 = new Random();
                 string[] randomizedNasdaqLines = nasdaqDataLines.OrderBy(x => r1.Next()).ToArray();
@@ -285,7 +287,7 @@ namespace PT.Middleware
                     }
                 }
 
-                string otcMarketsData = Companies.GetFromUri(Companies.OtcMarketsUri);
+                string otcMarketsData = _rm.GetFromUri(Companies.OtcMarketsUri);
                 string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
                 Random r3 = new Random();
                 string[] randomizedOtcMarketsLines = otcMarketsDataLines.OrderBy(x => r3.Next()).ToArray();

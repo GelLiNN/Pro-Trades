@@ -193,9 +193,9 @@ namespace PT.Middleware
 
                 //Composite Score, this gets the YF quote twice right now
                 //TODO: Update this method to not get YF quote twice during cache loading
-                /*var score = Controllers.SearchController.GetCompositeScoreInternal(symbol, quote);
+                var score = Controllers.SearchController.GetCompositeScoreInternal(symbol, quote);
                 if (score.CompositeScoreValue > 0)
-                    companyStat.CompositeScoreResult = score;*/
+                    companyStat.CompositeScoreResult = score;
             }
             catch (Exception e)
             {
@@ -239,8 +239,9 @@ namespace PT.Middleware
         {
             // You should be able to query data from various markets including US, HK, TW
             // The timezone here may or may not impact accuracy
+            days *= -1;
             var timeZone = DateTimeZoneProviders.Bcl.GetSystemDefault();
-            var localTime = LocalDateTime.FromDateTime(DateTime.Now.AddDays(-300));
+            var localTime = LocalDateTime.FromDateTime(DateTime.Now.AddDays(days));
             var zonedTimeInstant = localTime.InZoneStrictly(timeZone).ToInstant();
 
             YahooQuotes yahooQuotes = new YahooQuotesBuilder()
@@ -273,91 +274,6 @@ namespace PT.Middleware
                 }
             }
             return await Task.FromResult(screened);
-        }
-
-        public static async Task<CompaniesListYF> GetAllCompaniesAsync()
-        {
-            CompaniesListYF companies = new CompaniesListYF()
-            {
-                SymbolsToCompanies = new Dictionary<string, CompanyYF>()
-            };
-
-            string nasdaqData = Companies.GetFromFtpUri(Companies.NasdaqSymbolsUri);
-            string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-            for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
-            {
-                string line = nasdaqDataLines[i];
-                string[] data = line.Split('|');
-                if (data.Count() > 3)
-                {
-                    string symbol = data[1];
-                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
-                    {
-                        bool isNasdaq = data[0] == "Y";
-                        if (isNasdaq)
-                        {
-                            // CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
-                            CompanyStatsYF stats = new CompanyStatsYF();
-                            CompanyYF company = new CompanyYF
-                            {
-                                Symbol = symbol,
-                                Exchange = "NASDAQ",
-                                Stats = stats
-                            };
-                            companies.SymbolsToCompanies.Add(symbol, company);
-                        }
-                    }
-                }
-            }
-
-            string otcData = Companies.GetFromFtpUri(Companies.OtcSymbolsUri);
-            string[] otcDataLines = otcData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-            for (int j = 1; j < otcDataLines.Length - 1; j++) //trim first and last row
-            {
-                string line = otcDataLines[j];
-                string[] data = line.Split('|');
-                if (data.Count() > 3)
-                {
-                    string symbol = data[0];
-                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
-                    {
-                        // CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
-                        CompanyStatsYF stats = new CompanyStatsYF();
-                        CompanyYF company = new CompanyYF
-                        {
-                            Symbol = symbol,
-                            Exchange = "OTC",
-                            Stats = stats
-                        };
-                        companies.SymbolsToCompanies.Add(symbol, company);
-                    }
-                }
-            }
-
-            string otcMarketsData = Companies.GetFromUri(Companies.OtcMarketsUri);
-            string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-            for (int k = 1; k < otcMarketsDataLines.Length; k++) //trim first row
-            {
-                string line = otcMarketsDataLines[k];
-                string[] data = line.Split(',');
-                if (data.Count() > 3)
-                {
-                    string symbol = data[0];
-                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
-                    {
-                        // CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
-                        CompanyStatsYF stats = new CompanyStatsYF();
-                        CompanyYF company = new CompanyYF
-                        {
-                            Symbol = symbol,
-                            Exchange = data[2],
-                            Stats = stats
-                        };
-                        companies.SymbolsToCompanies.Add(symbol, company);
-                    }
-                }
-            }
-            return await Task.FromResult(companies);
         }
     }
 }

@@ -5,52 +5,80 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using PT.Models;
+using FluentFTP;
+using static System.Net.WebRequestMethods;
+using System.Text;
 
 namespace PT.Middleware
 {
-    //Module for getting all or most company symbols and names from all exchanges
-    //Nasdaq FTP data dump files for loading large datasets
-    //ftp://ftp.nasdaqtrader.com and ftp://ftp.nasdaqtrader.com/SymbolDirectory and
-    //OTCMarkets raw securities download from https://www.otcmarkets.com/research/stock-screener/api/downloadCSV
+    // Module for getting all or most company symbols and names from all exchanges
+    // Used to be FTP for nasdaq but now apparently not...
     public class Companies
     {
-        public static readonly string NasdaqSymbolsUri = @"ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqtraded.txt";
-        public static readonly string OtcSymbolsUri = @"ftp://ftp.nasdaqtrader.com/SymbolDirectory/otclist.txt";
+        public static readonly string NasdaqSymbolsUri = @"https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqtraded.txt";
         public static readonly string OtcMarketsUri = @"https://www.otcmarkets.com/research/stock-screener/api/downloadCSV";
 
-        // TODO: Replace WebRequest below with HttpClient
-        public static string GetFromFtpUri(string uri)
+        public static async Task<CompaniesListYF> GetAllCompaniesAsync(RequestManager rm)
         {
-            FtpWebRequest request = (FtpWebRequest)WebRequest.Create(uri);
-            request.UseBinary = true;
-            request.Method = WebRequestMethods.Ftp.DownloadFile;
-            string responseStr = string.Empty;
-
-            //Read the file from the server & write to destination
-            using (FtpWebResponse response = (FtpWebResponse)request.GetResponse()) // Error here
-            using (Stream responseStream = response.GetResponseStream())
-            using (StreamReader reader = new StreamReader(responseStream))
+            CompaniesListYF companies = new CompaniesListYF()
             {
-                responseStr = reader.ReadToEnd();
-            }
-            return responseStr;
-        }
+                SymbolsToCompanies = new Dictionary<string, CompanyYF>()
+            };
 
-        // TODO: Replace WebRequest below with HttpClient
-        public static string GetFromUri(string uri)
-        {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
-            request.Method = "GET";
-            string responseStr = string.Empty;
-
-            //Read the file from the server & write to destination
-            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse()) // Error here
-            using (Stream responseStream = response.GetResponseStream())
-            using (StreamReader reader = new StreamReader(responseStream))
+            string nasdaqData = rm.GetFromUri(NasdaqSymbolsUri);
+            string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
             {
-                responseStr = reader.ReadToEnd();
+                string line = nasdaqDataLines[i];
+                string[] data = line.Split('|');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[1];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
+                    {
+                        bool isNasdaq = data[0] == "Y";
+                        if (isNasdaq)
+                        {
+                            // Below makes it slow
+                            // CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                            CompanyStatsYF stats = new CompanyStatsYF();
+                            CompanyYF company = new CompanyYF
+                            {
+                                Symbol = symbol,
+                                Exchange = "NASDAQ",
+                                Stats = stats
+                            };
+                            companies.SymbolsToCompanies.Add(symbol, company);
+                        }
+                    }
+                }
             }
-            return responseStr;
+
+            string otcMarketsData = rm.GetFromUri(OtcMarketsUri);
+            string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            for (int k = 1; k < otcMarketsDataLines.Length; k++) //trim first row
+            {
+                string line = otcMarketsDataLines[k];
+                string[] data = line.Split(',');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[0];
+                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
+                    {
+                        // Below makes it slow
+                        // CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                        CompanyStatsYF stats = new CompanyStatsYF();
+                        CompanyYF company = new CompanyYF
+                        {
+                            Symbol = symbol,
+                            Exchange = data[2],
+                            Stats = stats
+                        };
+                        companies.SymbolsToCompanies.Add(symbol, company);
+                    }
+                }
+            }
+            return await Task.FromResult(companies);
         }
     }
 }

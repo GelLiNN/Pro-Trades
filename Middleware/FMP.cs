@@ -152,14 +152,14 @@ namespace PT.Middleware
             return await Task.FromResult(screened);
         }
 
-        public static async Task<CompaniesListFMP> GetAllCompaniesAsync()
+        public static async Task<CompaniesListFMP> GetAllCompaniesAsync(RequestManager rm)
         {
             CompaniesListFMP companies = new CompaniesListFMP()
             {
                 SymbolsToCompanies = new Dictionary<string, CompanyFMP>()
             };
 
-            string nasdaqData = Companies.GetFromFtpUri(Companies.NasdaqSymbolsUri);
+            string nasdaqData = rm.GetFromUri(Companies.NasdaqSymbolsUri);
             string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
             {
@@ -186,30 +186,7 @@ namespace PT.Middleware
                 }
             }
 
-            string otcData = Companies.GetFromFtpUri(Companies.OtcSymbolsUri);
-            string[] otcDataLines = otcData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-            for (int j = 1; j < otcDataLines.Length - 1; j++) //trim first and last row
-            {
-                string line = otcDataLines[j];
-                string[] data = line.Split('|');
-                if (data.Count() > 3)
-                {
-                    string symbol = data[0];
-                    if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
-                    {
-                        CompanyStatsFMP stats = FMP.GetCompanyStatsAsync(symbol).Result;
-                        CompanyFMP company = new CompanyFMP
-                        {
-                            Symbol = symbol,
-                            Exchange = "OTC",
-                            Stats = stats
-                        };
-                        companies.SymbolsToCompanies.Add(symbol, company);
-                    }
-                }
-            }
-
-            string otcMarketsData = Companies.GetFromUri(Companies.OtcMarketsUri);
+            string otcMarketsData = rm.GetFromUri(Companies.OtcMarketsUri);
             string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             for (int k = 1; k < otcMarketsDataLines.Length; k++) //trim first row
             {

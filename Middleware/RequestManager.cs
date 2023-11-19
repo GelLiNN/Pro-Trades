@@ -19,10 +19,21 @@ namespace PT.Middleware
 
         //Globals
         public HashSet<Guid> _concurrentRequests;
+        public HttpClient _client { get; private set; }
 
         public RequestManager()
         {
             _concurrentRequests = new HashSet<Guid>();
+            _client = new HttpClient();
+        }
+
+        // Helpter to get response string via normal http "GET" request
+        public string GetFromUri(string uri)
+        {
+            using HttpResponseMessage response = _client.GetAsync(uri).GetAwaiter().GetResult();
+            response.EnsureSuccessStatusCode();
+            string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return responseBody;
         }
 
         //Helper to complete web request and return response as string with appropriate throttling
