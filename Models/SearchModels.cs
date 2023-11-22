@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using YahooFinanceApi;
-
-namespace PT.Models
+﻿namespace PT.Models
 {
     public class CompositeScoreResult
     {
@@ -256,17 +252,17 @@ namespace PT.Models
         public string Exchange { get; set; }
         public bool CompanyTrading { get; set; }
 
-        //public string CompanyQuoteType { get; set; }
-        //public string CompanyMarket { get; set; }
-        //public decimal MarketCap { get; set; }
-        //public decimal SharesOutstanding { get; set; }
+        public string CompanyQuoteType { get; set; }
+        public string CompanyMarket { get; set; }
+        public decimal? MarketCap { get; set; }
+        public decimal? SharesOutstanding { get; set; }
 
         public decimal PeRatioForward { get; set; }
         public decimal PeRatioTrailing { get; set; }
         public decimal EpsForward { get; set; }
         public decimal EpsTrailing { get; set; }
 
-        //public decimal BookValue { get; set; }
+        public decimal? BookValue { get; set; }
 
         public decimal Price { get; set; }
 
@@ -277,8 +273,6 @@ namespace PT.Models
         public decimal PriceLow52w { get; set; }
         public decimal PriceAverageEstimate52w { get; set; }
 
-        //public decimal PriceToBook { get; set; }
-
         public decimal VolumeToday { get; set; }
         public decimal VolumeTodayUSD { get; set; }
         public decimal VolumeAverage10d { get; set; }
@@ -287,6 +281,8 @@ namespace PT.Models
         public decimal VolumeAverage3mUSD { get; set; }
 
         public TradeDataYF TradeData { get; set; }
+
+        //public decimal PriceToBook { get; set; }
         //public List<DividendTick> Dividends { get; set; }
         //public List<SplitTick> Splits { get; set; }
 

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using PT.Models;
-using YahooFinanceApi;
 
 namespace PT.Middleware
 {

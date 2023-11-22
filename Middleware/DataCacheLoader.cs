@@ -7,8 +7,8 @@ namespace PT.Middleware
 {
     public abstract class BackgroundTaskRunner : IHostedService
     {
-        private Task _executingTask;
-        private CancellationTokenSource _cts;
+        private Task? _executingTask;
+        private CancellationTokenSource? _cts;
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -25,7 +25,7 @@ namespace PT.Middleware
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             //Stop called without start
-            if (_executingTask == null) { return; }
+            if (_executingTask == null || _cts == null) { return; }
 
             //Signal cancellation to the executing method
             _cts.Cancel();
@@ -55,6 +55,7 @@ namespace PT.Middleware
                 //var cacheLoadTask2 = _cache.LoadCacheAsync("iex-companies"); //Investors Exchange IEX.cs
                 //await Task.WhenAll(cacheLoadTask1, cacheLoadTask2);
 
+                // Comment and uncomment below to enable or disable cache loading on application startup
                 await _cache.LoadCacheAsync("yf-companies");
 
                 //Set this Task to cancel now that it is complete

@@ -15,7 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentFTP" Version="48.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.ApiAuthorization.IdentityServer" Version="7.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="7.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.11" />
@@ -29,7 +28,6 @@
     <PackageReference Include="Skender.Stock.Indicators" Version="2.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="TinyCsvParser" Version="2.7.0" />
-    <PackageReference Include="YahooFinanceApi" Version="2.3.0" />
     <PackageReference Include="YahooQuotesApi" Version="5.5.1" />
   </ItemGroup>
 

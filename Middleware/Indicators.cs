@@ -1,15 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using PT.Middleware;
+﻿using PT.Middleware;
 using PT.Models;
 using Skender.Stock.Indicators;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
-using YahooFinanceApi;
 using YahooQuotesApi;
-using static NodaTime.Extensions.DateTimeExtensions;
 
 namespace PT.Middleware
 {
@@ -137,7 +130,7 @@ namespace PT.Middleware
             return compositeScore;
         }
 
-        public static CompositeScoreResult GetCompositeScoreResult(string symbol, YahooQuotesApi.Security quote)
+        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
         {
             List<PriceTick> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 300).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
@@ -698,7 +691,7 @@ namespace PT.Middleware
 
         //Fundamentals (volume, price, earnings and filings up-to-date
         //RELIES completely on unofficial yahoo finance API for now
-        public static FundamentalsResult GetFundamentals(string symbol, YahooQuotesApi.Security quote)
+        public static FundamentalsResult GetFundamentals(string symbol, Security quote)
         {
             string message = string.Empty;
             try
