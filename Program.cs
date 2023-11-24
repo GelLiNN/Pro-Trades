@@ -61,6 +61,9 @@ namespace PT
                 })
                 .AddEntityFrameworkStores<ApplicationDbContext>();*/
 
+            // Use RequestManager
+            builder.Services.AddSingleton<RequestManager>();
+
             // Use other .NET MVC modules
             builder.Services.AddControllersWithViews();
             builder.Services.AddRazorPages();
@@ -73,9 +76,6 @@ namespace PT
 
             // Use SendGrid Email
             builder.Services.AddTransient<IEmailSender, EmailSender>();
-
-            // Use RequestManager
-            builder.Services.AddSingleton<RequestManager>();
 
             // Use DataCache
             builder.Services.AddSingleton<DataCache>();

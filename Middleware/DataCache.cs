@@ -166,7 +166,7 @@ namespace PT.Middleware
                 //Remove before updating and re-adding
                 RemoveCachedSymbol(cacheKey);
 
-                CompanyStatsYF companyStats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                CompanyStatsYF companyStats = YahooFinance.GetCompanyStatsAsync(symbol, _rm).Result;
 
                 //Save YF Company to cache
                 this.Add(companyStats, cacheKey);

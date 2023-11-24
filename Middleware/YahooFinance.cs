@@ -11,7 +11,7 @@ namespace PT.Middleware
     {
 
         // With YahooQuotesApi
-        public static async Task<CompanyStatsYF> GetCompanyStatsAsync(string symbol)
+        public static async Task<CompanyStatsYF> GetCompanyStatsAsync(string symbol, RequestManager rm)
         {
             CompanyStatsYF companyStat = new CompanyStatsYF();
             try
@@ -97,7 +97,7 @@ namespace PT.Middleware
 
                 //Composite Score, this gets the YF quote twice right now
                 //TODO: Update this method to not get YF quote twice during cache loading
-                var score = Controllers.SearchController.GetCompositeScoreInternal(symbol, quote);
+                var score = GetCompositeScoreInternal(symbol, quote, rm);
                 if (score.CompositeScoreValue > 0)
                     companyStat.CompositeScoreResult = score;
             }
@@ -160,6 +160,12 @@ namespace PT.Middleware
                 }
             }
             return await Task.FromResult(screened);
+        }
+
+        // Used internally for cache loading
+        public static CompositeScoreResult GetCompositeScoreInternal(string symbol, Security quote, RequestManager rm)
+        {
+            return Indicators.GetCompositeScoreResult(symbol, quote, rm); //no indicator API needed
         }
     }
 }

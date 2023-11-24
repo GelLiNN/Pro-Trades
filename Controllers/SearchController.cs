@@ -41,19 +41,13 @@ namespace PT.Controllers
             return Indicators.GetCompositeScoreResult(symbol, quote, _rm); //no indicator API needed
         }
 
-        // Used internally for cache loading
-        public static CompositeScoreResult GetCompositeScoreInternal(string symbol, YahooQuotesApi.Security quote)
-        {
-            return Indicators.GetCompositeScoreResult(symbol, quote, _rm); //no indicator API needed
-        }
-
         /*
          * Yahoo Finance related endpoints
          */
         [HttpGet("/GetCompanyStatsYF/{symbol}")]
         public CompanyStatsYF GetCompanyStatsYF(string symbol)
         {
-            return YahooFinance.GetCompanyStatsAsync(symbol).Result;
+            return YahooFinance.GetCompanyStatsAsync(symbol, _rm).Result;
         }
 
         // TODO: Fix this endpoint

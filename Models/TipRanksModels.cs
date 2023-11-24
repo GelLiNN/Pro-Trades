@@ -19,7 +19,7 @@ namespace PT.Models
         public string companyName { get; set; }
         public string companyFullName { get; set; }
         public string stockUid { get; set; }
-        public int? sectorID { get; set; }
+        public long? sectorID { get; set; }
         public string market { get; set; }
         public string description { get; set; }
         public bool hasEarnings { get; set; }
@@ -30,12 +30,12 @@ namespace PT.Models
         public PtConsensus[] ptConsensus { get; set; }
         public SimilarStock[] similarStocks { get; set; }
         public object insiderTrading { get; set; }
-        public int? numOfAnalysts { get; set; }
-        public int? numOfBloggers { get; set; }
-        public int? numOfExperts { get; set; }
+        public long? numOfAnalysts { get; set; }
+        public long? numOfBloggers { get; set; }
+        public long? numOfExperts { get; set; }
         public long? marketCap { get; set; }
         public TipRanksStockScore tipranksStockScore { get; set; }
-        public int? expertRatingsFilteredCount { get; set; }
+        public long? expertRatingsFilteredCount { get; set; }
         public ConsensusOverTime[] consensusOverTime { get; set; }
         public BestConsensusOverTime[] bestConsensusOverTime { get; set; }
         public BpBloggers bpBloggers { get; set; }
@@ -48,25 +48,25 @@ namespace PT.Models
         public object[] notRankedExperts { get; set; }
         public object notRankedConsensuses { get; set; }
         public TopStocksBySector topStocksBySector { get; set; }
-        public int? indexStockId { get; set; }
-        public int? numOfInsiders { get; set; }
+        public long? indexStockId { get; set; }
+        public long? numOfInsiders { get; set; }
         public float? yearlyDividendYield { get; set; }
         public float? yearlyDividend { get; set; }
         public float? insiderslast3MonthsSum { get; set; }
         public HedgeFundData hedgeFundData { get; set; }
-        public int? stockId { get; set; }
-        public int? followerCount { get; set; }
+        public long? stockId { get; set; }
+        public long? followerCount { get; set; }
         public Momentum momentum { get; set; }
         public PortfolioHoldingData portfolioHoldingData { get; set; }
 
         public class TipRanksStockScore
         {
-            public int? score { get; set; }
+            public long? score { get; set; }
             public float? returnOnAssets { get; set; }
             public float? returnOnEquity { get; set; }
             public float? sixMonthsMomentum { get; set; }
             public float? volatilityLevel { get; set; }
-            public int? volatilityLevelRating { get; set; }
+            public long? volatilityLevelRating { get; set; }
             public float? twelveMonthsMomentum { get; set; }
             public float? simpleMovingAverage { get; set; }
             public float? assetGrowth { get; set; }
@@ -82,34 +82,34 @@ namespace PT.Models
         {
             public string bearish { get; set; }
             public string bullish { get; set; }
-            public int? bullishCount { get; set; }
-            public int? bearishCount { get; set; }
-            public int? score { get; set; }
+            public long? bullishCount { get; set; }
+            public long? bearishCount { get; set; }
+            public long? score { get; set; }
             public float? avg { get; set; }
             public string neutral { get; set; }
-            public int? neutralCount { get; set; }
+            public long? neutralCount { get; set; }
         }
 
         public class CorporateInsiderActivity
         {
-            public int? informativeSum { get; set; }
-            public int? nonInformativeSum { get; set; }
-            public int? totalSum { get; set; }
+            public long? informativeSum { get; set; }
+            public long? nonInformativeSum { get; set; }
+            public long? totalSum { get; set; }
             public Informative[] informative { get; set; }
             public NonInformative[] nonInformative { get; set; }
         }
 
         public class Informative
         {
-            public int? transactionTypeID { get; set; }
-            public int? count { get; set; }
+            public long? transactionTypeID { get; set; }
+            public long? count { get; set; }
             public float? amount { get; set; }
         }
 
         public class NonInformative
         {
-            public int? transactionTypeID { get; set; }
-            public int? count { get; set; }
+            public long? transactionTypeID { get; set; }
+            public long? count { get; set; }
             public float? amount { get; set; }
         }
 
@@ -117,7 +117,7 @@ namespace PT.Models
         {
             public float? stockScore { get; set; }
             public float? sectorScore { get; set; }
-            public int? score { get; set; }
+            public long? score { get; set; }
         }
 
         public class TopStocksBySector
@@ -136,15 +136,15 @@ namespace PT.Models
 
         public class AnalystConsensusData
         {
-            public int? rating { get; set; }
-            public int? nB { get; set; }
-            public int? nH { get; set; }
-            public int? nS { get; set; }
-            public int? period { get; set; }
-            public int? bench { get; set; }
-            public int? mStars { get; set; }
+            public long? rating { get; set; }
+            public long? nB { get; set; }
+            public long? nH { get; set; }
+            public long? nS { get; set; }
+            public long? period { get; set; }
+            public long? bench { get; set; }
+            public long? mStars { get; set; }
             public object d { get; set; }
-            public int? isLatest { get; set; }
+            public long? isLatest { get; set; }
             public object priceTarget { get; set; }
         }
 
@@ -159,12 +159,12 @@ namespace PT.Models
         {
             public string bearish { get; set; }
             public string bullish { get; set; }
-            public int? bullishCount { get; set; }
-            public int? bearishCount { get; set; }
-            public int? score { get; set; }
+            public long? bullishCount { get; set; }
+            public long? bearishCount { get; set; }
+            public long? score { get; set; }
             public float? avg { get; set; }
             public string neutral { get; set; }
-            public int? neutralCount { get; set; }
+            public long? neutralCount { get; set; }
         }
 
         public class SectorInsider
@@ -178,7 +178,7 @@ namespace PT.Models
         {
             public float? stockScore { get; set; }
             public float? sectorScore { get; set; }
-            public int? score { get; set; }
+            public long? score { get; set; }
         }
 
         public class Momentum
@@ -207,7 +207,7 @@ namespace PT.Models
             public float? dividend { get; set; }
             public float? dividendYield { get; set; }
             public float? peRatio { get; set; }
-            public int? stockId { get; set; }
+            public long? stockId { get; set; }
             public object high52Weeks { get; set; }
             public object low52Weeks { get; set; }
             public HedgeFundSentimentData hedgeFundSentimentData { get; set; }
@@ -216,22 +216,22 @@ namespace PT.Models
             public bool shouldAddLinkToStockPage { get; set; }
             public object expenseRatio { get; set; }
             public long? marketCap { get; set; }
-            public int? newsSentiment { get; set; }
+            public long? newsSentiment { get; set; }
             public Landmarkprices landmarkPrices { get; set; }
-            public int? priceTargetCurrencyId { get; set; }
+            public long? priceTargetCurrencyId { get; set; }
         }
 
         public class AnalystConsensus
         {
             public string consensus { get; set; }
-            public int? rawConsensus { get; set; }
+            public long? rawConsensus { get; set; }
             public Distribution distribution { get; set; }
         }
 
         public class BestAnalystConsensus
         {
             public string consensus { get; set; }
-            public int? rawConsensus { get; set; }
+            public long? rawConsensus { get; set; }
             public Distribution distribution { get; set; }
         }
 
@@ -256,11 +256,11 @@ namespace PT.Models
             public RatingsAndPt ratingsAndPT { get; set; }
             public BpRatingsAndPt bpRatingsAndPT { get; set; }
             public long? marketCap { get; set; }
-            public int? sector { get; set; }
-            public int? stockId { get; set; }
-            public int? stockTypeId { get; set; }
+            public long? sector { get; set; }
+            public long? stockId { get; set; }
+            public long? stockTypeId { get; set; }
             public float? surprise { get; set; }
-            public int? timeOfDay { get; set; }
+            public long? timeOfDay { get; set; }
             public bool isConfirmed { get; set; }
         }
 
@@ -294,32 +294,32 @@ namespace PT.Models
             public RatingsAndPt ratingsAndPT { get; set; }
             public BpRatingsAndPt bpRatingsAndPT { get; set; }
             public long? marketCap { get; set; }
-            public int? sector { get; set; }
-            public int? stockId { get; set; }
-            public int? stockTypeId { get; set; }
+            public long? sector { get; set; }
+            public long? stockId { get; set; }
+            public long? stockTypeId { get; set; }
             public object surprise { get; set; }
-            public int? timeOfDay { get; set; }
+            public long? timeOfDay { get; set; }
             public bool isConfirmed { get; set; }
         }
 
         public class HedgeFundSentimentData
         {
-            public int? rating { get; set; }
+            public long? rating { get; set; }
             public float? score { get; set; }
         }
 
         public class InsiderSentimentData
         {
-            public int? rating { get; set; }
+            public long? rating { get; set; }
             public float? stockScore { get; set; }
         }
 
         public class BloggerSentimentData
         {
-            public int? ratingIfExists { get; set; }
-            public int? rating { get; set; }
-            public int? bearishCount { get; set; }
-            public int? bullishCount { get; set; }
+            public long? ratingIfExists { get; set; }
+            public long? rating { get; set; }
+            public long? bearishCount { get; set; }
+            public long? bullishCount { get; set; }
         }
 
         public class Landmarkprices
@@ -359,24 +359,24 @@ namespace PT.Models
 
         public class Consensus
         {
-            public int? rating { get; set; }
-            public int? nB { get; set; }
-            public int? nH { get; set; }
-            public int? nS { get; set; }
-            public int? period { get; set; }
-            public int? bench { get; set; }
-            public int? mStars { get; set; }
+            public long? rating { get; set; }
+            public long? nB { get; set; }
+            public long? nH { get; set; }
+            public long? nS { get; set; }
+            public long? period { get; set; }
+            public long? bench { get; set; }
+            public long? mStars { get; set; }
             public string d { get; set; }
-            public int? isLatest { get; set; }
+            public long? isLatest { get; set; }
             public object priceTarget { get; set; }
         }
 
         public class PtConsensus
         {
-            public int? period { get; set; }
-            public int? bench { get; set; }
+            public long? period { get; set; }
+            public long? bench { get; set; }
             public float? priceTarget { get; set; }
-            public int? priceTargetCurrency { get; set; }
+            public long? priceTargetCurrency { get; set; }
             public string priceTargetCurrencyCode { get; set; }
             public float? high { get; set; }
             public float? low { get; set; }
@@ -388,31 +388,31 @@ namespace PT.Models
             public string name { get; set; }
             public string ticker { get; set; }
             public string mktCap { get; set; }
-            public int? sectorId { get; set; }
-            public int? stockTypeId { get; set; }
+            public long? sectorId { get; set; }
+            public long? stockTypeId { get; set; }
             public ConsensusData[] consensusData { get; set; }
         }
 
         public class ConsensusData
         {
-            public int? nTotal { get; set; }
-            public int? nB { get; set; }
-            public int? nH { get; set; }
-            public int? nS { get; set; }
-            public int? period { get; set; }
-            public int? benchmark { get; set; }
-            public int? wCon { get; set; }
+            public long? nTotal { get; set; }
+            public long? nB { get; set; }
+            public long? nH { get; set; }
+            public long? nS { get; set; }
+            public long? period { get; set; }
+            public long? benchmark { get; set; }
+            public long? wCon { get; set; }
             public float? priceTarget { get; set; }
             public object priceTargetCurrency { get; set; }
         }
 
         public class BestConsensusOverTime
         {
-            public int? buy { get; set; }
-            public int? hold { get; set; }
-            public int? sell { get; set; }
+            public long? buy { get; set; }
+            public long? hold { get; set; }
+            public long? sell { get; set; }
             public DateTime date { get; set; }
-            public int? consensus { get; set; }
+            public long? consensus { get; set; }
             public float? priceTarget { get; set; }
         }
 
@@ -426,17 +426,17 @@ namespace PT.Models
         public class CorporateInsiderTransaction
         {
             public object sharesBought { get; set; }
-            public int? insidersBuyCount { get; set; }
+            public long? insidersBuyCount { get; set; }
             public object sharesSold { get; set; }
-            public int? insidersSellCount { get; set; }
-            public int? month { get; set; }
-            public int? year { get; set; }
-            public int? transBuyCount { get; set; }
-            public int? transSellCount { get; set; }
+            public long? insidersSellCount { get; set; }
+            public long? month { get; set; }
+            public long? year { get; set; }
+            public long? transBuyCount { get; set; }
+            public long? transSellCount { get; set; }
             public float? transBuyAmount { get; set; }
             public float? transSellAmount { get; set; }
-            public int? informativeBuyCount { get; set; }
-            public int? informativeSellCount { get; set; }
+            public long? informativeBuyCount { get; set; }
+            public long? informativeSellCount { get; set; }
             public float? informativeBuyAmount { get; set; }
             public float? informativeSellAmount { get; set; }
         }
@@ -454,25 +454,25 @@ namespace PT.Models
         public bool isOther { get; set; }
         public string officerTitle { get; set; }
         public string otherText { get; set; }
-        public int? transTypeId { get; set; }
-        public int? action { get; set; }
+        public long? transTypeId { get; set; }
+        public long? action { get; set; }
         public string date { get; set; }
         public float? amount { get; set; }
-        public int? rank { get; set; }
+        public long? rank { get; set; }
         public float? stars { get; set; }
         public string expertImg { get; set; }
         public DateTime rDate { get; set; }
         public string newPictureUrl { get; set; }
         public string link { get; set; }
-        public int? numberOfShares { get; set; }
+        public long? numberOfShares { get; set; }
     }
 
     public class HedgeFundData
     {
-        public int? stockID { get; set; }
+        public long? stockID { get; set; }
         public HoldingsByTime[] holdingsByTime { get; set; }
         public float? sentiment { get; set; }
-        public int? trendAction { get; set; }
+        public long? trendAction { get; set; }
         public float? trendValue { get; set; }
         public InstitutionalHolding[] institutionalHoldings { get; set; }
     }
@@ -480,23 +480,23 @@ namespace PT.Models
     public class HoldingsByTime
     {
         public DateTime date { get; set; }
-        public int? holdingAmount { get; set; }
+        public long? holdingAmount { get; set; }
         public float? institutionHoldingPercentage { get; set; }
         public bool isComplete { get; set; }
     }
 
     public class InstitutionalHolding
     {
-        public int? institutionID { get; set; }
+        public long? institutionID { get; set; }
         public string managerName { get; set; }
         public string institutionName { get; set; }
-        public int? action { get; set; }
-        public int? value { get; set; }
+        public long? action { get; set; }
+        public long? value { get; set; }
         public string expertUID { get; set; }
         public float? change { get; set; }
         public float? percentageOfPortfolio { get; set; }
-        public int? rank { get; set; }
-        public int? totalRankedInstitutions { get; set; }
+        public long? rank { get; set; }
+        public long? totalRankedInstitutions { get; set; }
         public string imageURL { get; set; }
         public bool isActive { get; set; }
         public float? stars { get; set; }
@@ -504,11 +504,11 @@ namespace PT.Models
 
     public class ConsensusOverTime
     {
-        public int? buy { get; set; }
-        public int? hold { get; set; }
-        public int? sell { get; set; }
+        public long? buy { get; set; }
+        public long? hold { get; set; }
+        public long? sell { get; set; }
         public DateTime date { get; set; }
-        public int? consensus { get; set; }
+        public long? consensus { get; set; }
         public float? priceTarget { get; set; }
     }
 
@@ -517,34 +517,34 @@ namespace PT.Models
         public string name { get; set; }
         public string firm { get; set; }
         public string eUid { get; set; }
-        public int? eTypeId { get; set; }
+        public long? eTypeId { get; set; }
         public string expertImg { get; set; }
         public Rating[] ratings { get; set; }
         public float? stockSuccessRate { get; set; }
         public float? stockAverageReturn { get; set; }
-        public int? stockTotalRecommendations { get; set; }
-        public int? stockGoodRecommendations { get; set; }
+        public long? stockTotalRecommendations { get; set; }
+        public long? stockGoodRecommendations { get; set; }
         public Ranking[] rankings { get; set; }
-        public int? stockid { get; set; }
+        public long? stockid { get; set; }
         public string newPictureUrl { get; set; }
         public bool includedInConsensus { get; set; }
     }
 
     public class Rating
     {
-        public int? ratingId { get; set; }
-        public int? actionId { get; set; }
+        public long? ratingId { get; set; }
+        public long? actionId { get; set; }
         public DateTime date { get; set; }
         public string d { get; set; }
         public string url { get; set; }
-        public int? pos { get; set; }
+        public long? pos { get; set; }
         public DateTime time { get; set; }
         public object priceTarget { get; set; }
         public object convertedPriceTarget { get; set; }
         public Quote quote { get; set; }
         public string siteName { get; set; }
         public string site { get; set; }
-        public int? id { get; set; }
+        public long? id { get; set; }
         public DateTime rD { get; set; }
         public DateTime timestamp { get; set; }
         public object priceTargetCurrency { get; set; }
@@ -565,12 +565,12 @@ namespace PT.Models
 
     public class Ranking
     {
-        public int? period { get; set; }
-        public int? bench { get; set; }
-        public int? lRank { get; set; }
-        public int? gRank { get; set; }
-        public int? gRecs { get; set; }
-        public int? tRecs { get; set; }
+        public long? period { get; set; }
+        public long? bench { get; set; }
+        public long? lRank { get; set; }
+        public long? gRank { get; set; }
+        public long? gRecs { get; set; }
+        public long? tRecs { get; set; }
         public float? avgReturn { get; set; }
         public float? stars { get; set; }
         public float? originalStars { get; set; }
@@ -588,13 +588,13 @@ namespace PT.Models
         public float? score { get; set; }
         public Wordcloud[] wordCloud { get; set; }
         public Count[] counts { get; set; }
-        public int? sectorId { get; set; }
+        public long? sectorId { get; set; }
         public DateTime creationDate { get; set; }
         public float? sectorAverageNewsScore { get; set; }
 
         public class Buzz
         {
-            public int? articlesInLastWeek { get; set; }
+            public long? articlesInLastWeek { get; set; }
             public float? weeklyAverage { get; set; }
             public float? buzz { get; set; }
         }
@@ -607,7 +607,7 @@ namespace PT.Models
 
         public class Sector
         {
-            public int? stockID { get; set; }
+            public long? stockID { get; set; }
             public string ticker { get; set; }
             public string companyName { get; set; }
             public float? bullishPercent { get; set; }
@@ -617,41 +617,41 @@ namespace PT.Models
         public class Wordcloud
         {
             public string ticker { get; set; }
-            public int? stockID { get; set; }
+            public long? stockID { get; set; }
             public string text { get; set; }
             public DateTime effectiveDate { get; set; }
-            public int? grade { get; set; }
-            public int? wordCloudEventID { get; set; }
+            public long? grade { get; set; }
+            public long? wordCloudEventID { get; set; }
             public DateTime addedOn { get; set; }
         }
 
         public class Count
         {
-            public int? buy { get; set; }
-            public int? sell { get; set; }
-            public int? all { get; set; }
+            public long? buy { get; set; }
+            public long? sell { get; set; }
+            public long? all { get; set; }
             public DateTime weekStart { get; set; }
-            public int? neutral { get; set; }
+            public long? neutral { get; set; }
         }
     }
 
     public class TipRanksTrendingCompany
     {
         public string ticker { get; set; }
-        public int? popularity { get; set; }
-        public int? sentiment { get; set; }
+        public long? popularity { get; set; }
+        public long? sentiment { get; set; }
         public float? consensusScore { get; set; }
         public object operations { get; set; }
         public string sector { get; set; }
-        public int? sectorID { get; set; }
+        public long? sectorID { get; set; }
         public long? marketCap { get; set; }
-        public int? buy { get; set; }
-        public int? sell { get; set; }
-        public int? hold { get; set; }
+        public long? buy { get; set; }
+        public long? sell { get; set; }
+        public long? hold { get; set; }
         public float? priceTarget { get; set; }
-        public int? rating { get; set; }
+        public long? rating { get; set; }
         public string companyName { get; set; }
-        public int? quarterlyTrend { get; set; }
+        public long? quarterlyTrend { get; set; }
         public DateTime lastRatingDate { get; set; }
     }
 
