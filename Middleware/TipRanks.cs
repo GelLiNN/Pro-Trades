@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using YahooQuotesApi;
 
 namespace PT.Middleware
 {
@@ -24,7 +25,7 @@ namespace PT.Middleware
         private static readonly int InsiderNonInformativeBuyTypeId = 4;
         private static readonly int InsiderNonInformativeSellTypeId = 51;
 
-        public static TipRanksResult GetTipRanksResult(string symbol)
+        public static TipRanksResult GetTipRanksResult(string symbol, RequestManager rm)
         {
             //Return a data object that contains:
             //Aggregated ratings data and ratings providers
@@ -32,18 +33,10 @@ namespace PT.Middleware
             //Aggregated insitutional transactions data, hedge fund ratings, hedge fund names
             //Composite score of the above 3 items
 
-            string responseString = String.Empty;
-            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(TipRanksBaseUrl + "getData/" + symbol);
-            request.Method = "GET";
-
             try
             {
-                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-                {
-                    StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
-                    responseString = reader.ReadToEnd();
-                    response.Close();
-                }
+                string responseString = rm.GetFromUri(TipRanksBaseUrl + "getData/" + symbol);
+
                 TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseString);
 
                 //filter results to the last 3 months
@@ -120,23 +113,13 @@ namespace PT.Middleware
             }
         }
 
-        public static string GetSentiment(string symbol)
+        public static string GetSentiment(string symbol, RequestManager rm)
         {
             //Return a data object that contains:
             //total bullish sentiment
             //total bearish sentiment
             //Composite score of sentiment
-
-            string responseString = String.Empty;
-            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(TipRanksBaseUrl + "getNewsSentiments/?ticker=" + symbol);
-            request.Method = "GET";
-
-            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-            {
-                StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
-                responseString = reader.ReadToEnd();
-                response.Close();
-            }
+            string responseString = rm.GetFromUri(TipRanksBaseUrl + "getNewsSentiments/?ticker=" + symbol);
             TipRanksSentimentResponse trResponse = JsonConvert.DeserializeObject<TipRanksSentimentResponse>(responseString);
 
             int totalBuySentiments = 0;
@@ -178,22 +161,13 @@ namespace PT.Middleware
                 bsn, bullish, bearish, sectorBullish, sectorAverageNews, score);
         }
 
-        public static TipRanksTrendingCompany[] GetTrendingCompanies()
+        public static TipRanksTrendingCompany[] GetTrendingCompanies(RequestManager rm)
         {
             //Return a data object that contains:
             //all recent top stocks from TipRanks
             //other stuff maybe?
 
-            string responseString = String.Empty;
-            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(TipRanksBaseUrl + "gettrendingstocks/?daysago=30&which=most");
-            request.Method = "GET";
-
-            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-            {
-                StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
-                responseString = reader.ReadToEnd();
-                response.Close();
-            }
+            string responseString = rm.GetFromUri(TipRanksBaseUrl + "gettrendingstocks/?daysago=30&which=most");
             TipRanksTrendingCompany[] trResponse = JsonConvert.DeserializeObject<TipRanksTrendingCompany[]>(responseString);
             return trResponse;
         }

@@ -130,7 +130,7 @@ namespace PT.Middleware
             return compositeScore;
         }
 
-        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote)
+        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote, RequestManager rm)
         {
             List<PriceTick> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 300).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
@@ -156,11 +156,11 @@ namespace PT.Middleware
             //decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
             decimal aroonCompositeScore = GetIndicatorComposite(symbol, "AROON", history, 7);
 
-            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7);
+            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7, rm);
 
             FundamentalsResult fundResult = GetFundamentals(symbol, quote);
 
-            TipRanksResult trResult = TipRanks.GetTipRanksResult(symbol);
+            TipRanksResult trResult = TipRanks.GetTipRanksResult(symbol, rm);
 
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {

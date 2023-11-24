@@ -15,7 +15,7 @@ namespace PT.Controllers
     {
         private readonly ILogger<SearchController> _logger;
         private static DataCache _cache;
-        protected RequestManager _rm;
+        protected static RequestManager _rm;
 
         public SearchController(ILogger<SearchController> logger, DataCache cache, RequestManager rm)
         {
@@ -38,13 +38,13 @@ namespace PT.Controllers
         {
             symbol = symbol.ToUpper();
             YahooQuotesApi.Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
-            return Indicators.GetCompositeScoreResult(symbol, quote); //no indicator API needed
+            return Indicators.GetCompositeScoreResult(symbol, quote, _rm); //no indicator API needed
         }
 
         // Used internally for cache loading
         public static CompositeScoreResult GetCompositeScoreInternal(string symbol, YahooQuotesApi.Security quote)
         {
-            return Indicators.GetCompositeScoreResult(symbol, quote); //no indicator API needed
+            return Indicators.GetCompositeScoreResult(symbol, quote, _rm); //no indicator API needed
         }
 
         /*
@@ -240,20 +240,20 @@ namespace PT.Controllers
         public TipRanksResult GetTipRanksData(string symbol)
         {
             //TipRanks takes lower case symbols
-            return TipRanks.GetTipRanksResult(symbol.ToLower());
+            return TipRanks.GetTipRanksResult(symbol.ToLower(), _rm);
         }
 
         [HttpGet("/GetTipRanksSentiment/{symbol}")]
         public string GetTipRanksSentiment(string symbol)
         {
             //TipRanks takes lower case symbols
-            return TipRanks.GetSentiment(symbol.ToLower());
+            return TipRanks.GetSentiment(symbol.ToLower(), _rm);
         }
 
         [HttpGet("/GetTipRanksTrending")]
         public TipRanksTrendingCompany[] GetTipRanksTrending()
         {
-            return TipRanks.GetTrendingCompanies();
+            return TipRanks.GetTrendingCompanies(_rm);
         }
 
         /*

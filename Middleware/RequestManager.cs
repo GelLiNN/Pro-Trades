@@ -27,7 +27,7 @@ namespace PT.Middleware
             _client = new HttpClient();
         }
 
-        // Helpter to get response string via normal http "GET" request
+        // Helper to get response string via normal http "GET" request
         public string GetFromUri(string uri)
         {
             using HttpResponseMessage response = _client.GetAsync(uri).GetAwaiter().GetResult();

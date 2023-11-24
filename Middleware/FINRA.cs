@@ -27,11 +27,11 @@ namespace PT.Middleware
         private static readonly decimal ModeratelyBearishLowerBound = 0.25M;
         private static readonly decimal ModeratelyBearishUpperBound = 0.5M;
 
-        public static ShortInterestResult GetShortInterest(string symbol, IEnumerable<Skender.Stock.Indicators.Quote> history, int daysToCalculate)
+        public static ShortInterestResult GetShortInterest(string symbol, IEnumerable<Skender.Stock.Indicators.Quote> history, int daysToCalculate, RequestManager rm)
         {
             decimal compositeScore = 0;
 
-            List<FinraRecord> shortRecords = GetShortVolume(symbol, history, daysToCalculate);
+            List<FinraRecord> shortRecords = GetShortVolume(symbol, history, daysToCalculate, rm);
 
             int daysCalulated = 0;
             int numberOfResults = 0;
@@ -103,7 +103,7 @@ namespace PT.Middleware
             };
         }
 
-        public static List<FinraRecord> GetShortVolume(string symbol, IEnumerable<Skender.Stock.Indicators.Quote> history, int days)
+        public static List<FinraRecord> GetShortVolume(string symbol, IEnumerable<Skender.Stock.Indicators.Quote> history, int days, RequestManager rm)
         {
             List<FinraRecord> shortRecords = new List<FinraRecord>();
 
@@ -125,7 +125,7 @@ namespace PT.Middleware
 
                     if (DateTime.Compare(date, FirstDate) >= 0)
                     {
-                        List<FinraRecord> allRecords = GetAllShortVolume(date).Result;
+                        List<FinraRecord> allRecords = GetAllShortVolume(date, rm).Result;
                         FinraRecord curDayRecord = allRecords.Where(x => x.Symbol == symbol).FirstOrDefault();
 
                         if (curDayRecord != null)
@@ -154,14 +154,14 @@ namespace PT.Middleware
             return shortRecords;
         }
 
-        public static async Task<List<FinraRecord>> GetAllShortVolume(DateTime date)
+        public static async Task<List<FinraRecord>> GetAllShortVolume(DateTime date, RequestManager rm)
         {
             string dateString = date.ToString("yyyyMMdd");
             string fileName = $"CNMSshvol{dateString}.txt";
             string requestUrl = $"{BaseUrl}/{fileName}";
 
-            var response = await Client.GetStringAsync(requestUrl);
-            var finraResponse = FinraResponseParser.ParseResponse(response);
+            string responseStr = rm.GetFromUri(requestUrl);
+            var finraResponse = FinraResponseParser.ParseResponse(responseStr);
 
             return await Task.FromResult(finraResponse);
         }
