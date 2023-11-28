@@ -662,7 +662,7 @@ namespace PT.Models
 
         //list of hedge funds with holdings with amounts, ranks, names
         //list of institutional holdings by date going back 2 years
-        public HedgeFundData Institutions { get; set; }
+        public List<HoldingsByTime> Holdings { get; set; }
 
         //list of Expert Ratings with names, stars, original stars
         public List<Expert> ThirdPartyRatings { get; set; }
@@ -670,16 +670,31 @@ namespace PT.Models
         //list of TipRanks consensus ratings and price targets by date going back 3 months
         public List<ConsensusOverTime> ConsensusOverTime { get; set; }
 
-        //insider composite score
-        public decimal InsiderComposite { get; set; }
-
-        //institutional composite score
-        public decimal InstitutionalComposite { get; set; }
-
-        //rankings composite score
+        //ratings composite score
         public decimal RatingsComposite { get; set; }
 
         //price target
         public decimal PriceTarget { get; set; }
+
+        //insiders from past 3 months
+        public decimal InsiderBonus { get; set; }
+
+        //holdings from past 3 months
+        public decimal HoldingBonus { get; set; }
+
+        //hedge bonus
+        public decimal HedgeBonus { get; set; }
+
+        //hedge sentiment value with .5 as the median
+        public decimal HedgeSentiment { get; set; }
+
+        //hedge trend actions mean something
+        public decimal HedgeTrendAction { get; set; }
+
+        //hedge trend values mean something WRT the trend value above
+        public decimal HedgeTrendValue { get; set; }
+
+        //keep track of failures
+        public bool FailedWith404 { get; set; }
     }
 }

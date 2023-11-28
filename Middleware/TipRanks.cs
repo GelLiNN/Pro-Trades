@@ -3,6 +3,7 @@ using PT.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -50,11 +51,14 @@ namespace PT.Middleware
                 List<Expert> ratings = trResponse.experts
                     .Where(x => DateTime.Compare(x.ratings.FirstOrDefault().date, startDate) > 0 && x.rankings.FirstOrDefault().stars > 0)
                     .ToList();
+                List<HoldingsByTime> holdings = trResponse.hedgeFundData.holdingsByTime
+                    .Where(x => DateTime.Compare(x.date, startDate) > 0)
+                    .ToList();
 
 
-                //find the slope of the buy and sell consensuses (net)
+                //find the slope of the buy and sell consensuses (net) from bsns
                 List<decimal> bsnYList = bsns
-                    .Select(x => Convert.ToDecimal(x.consensus - 3 + x.buy - x.sell))
+                    .Select(x => Convert.ToDecimal(x.consensus + x.buy - x.sell))
                     .ToList();
 
                 List<decimal> bsnXList = new List<decimal>();
@@ -65,35 +69,73 @@ namespace PT.Middleware
                     counter++;
                 }
 
-                decimal bsnSlope = Indicators.GetSlope(bsnXList, bsnYList);
-                decimal bsnSlopeMultiplier = 10.0M; //TwelveData.GetSlopeMultiplier(bsnSlope);
+                bool hasBsns = bsnXList.Count > 0;
+                decimal bsnSlope = hasBsns ? Indicators.GetSlope(bsnXList, bsnYList) : 0;
+                decimal bsnSlopeMultiplier = Indicators.GetSlopeMultiplier(bsnSlope);
+                decimal bsnBonus = 0;
+                if (hasBsns)
+                {
+                    bsnBonus += bsnSlope >= 0 ? (bsnSlope * bsnSlopeMultiplier) + 5 : -(bsnSlope * bsnSlopeMultiplier) - 5;
+                }
 
-                //find the average rating
-                List<decimal> ratingNums = ratings
-                    .Select(x => Convert.ToDecimal(x.rankings.FirstOrDefault().stars))
-                    .ToList();
+                decimal averageRating = GetAverageRating(ratings, trResponse);
 
-                decimal averageRating = ratingNums.Sum() / ratingNums.Count;
-
-                decimal priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.priceTarget);
+                //Add price target bonus 5 if the target is more than 5% greater than last price
+                //Add price target bonus 10 if the target is more than 10% greater than last price
+                //Add price target bonus -10 if the target is less than last price
+                decimal priceTargetBonus = 0;
+                decimal priceTarget = 0;
                 decimal lastPrice = Convert.ToDecimal(trResponse.prices[trResponse.prices.Length - 1].p);
+                if (trResponse.portfolioHoldingData.priceTarget != null)
+                {
+                    priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.priceTarget);
+                }
+                else if (bsns.Count > 0)
+                {
+                    priceTarget = Convert.ToDecimal(bsns[bsns.Count - 1].priceTarget);
+                }
+                else
+                {
+                    var chicken = "nuggets"; //Find some other way to get price target
+                }
+                
+                //Protect against failure to get price target
+                if (priceTarget != 0)
+                {
+                    decimal percentChange = ((priceTarget - lastPrice) / Math.Abs(lastPrice)) * 100;
+                    priceTargetBonus += percentChange >= 5 ? 5 : 0;
+                    priceTargetBonus += percentChange >= 10 ? 5 : 0;
+                    priceTargetBonus += percentChange < 0 ? -10 : 0;
+                }
+
+                //Other bonuses for recent insider buy-ins, institutional holdings, and hedge funds
+                decimal insiderBonus = GetInsiderBonus(insiders);
+                decimal holdingBonus = GetHoldingBonus(holdings);
+                decimal hedgeBonus = GetHedgeBonus(trResponse.hedgeFundData);
 
                 decimal ratingsComposite = 0;
-                ratingsComposite += (averageRating / 6.0M) * 100; //Get score using the average rating as a percentage of (max rating + 1)
-                ratingsComposite += bsnSlope > 0 ? (bsnSlope * bsnSlopeMultiplier) + 5 : -(bsnSlope * bsnSlopeMultiplier) - 5;
-                ratingsComposite += priceTarget > lastPrice ? 10 : -10; //Adjust with price target
+                ratingsComposite += (averageRating / 6.5M) * 100; //Get score using the average rating as a percentage of (max rating + 1.5)
+                ratingsComposite += bsnBonus; //Add bsn bonus from above
+                ratingsComposite += priceTargetBonus; //Add price target bonus from above
+                ratingsComposite += insiderBonus; //Add insider bonus from above
+                ratingsComposite += hedgeBonus; //Add hedge bonus from above
                 ratingsComposite = Math.Min(ratingsComposite, 100);
 
                 return new TipRanksResult
                 {
+                    RatingsComposite = ratingsComposite,
                     Insiders = insiders,
-                    Institutions = trResponse.hedgeFundData,
+                    Holdings = holdings,
                     ThirdPartyRatings = ratings,
                     ConsensusOverTime = bsns,
-                    InsiderComposite = 0.0M,
-                    InstitutionalComposite = 0.0M,
-                    RatingsComposite = ratingsComposite,
-                    PriceTarget = priceTarget
+                    InsiderBonus = insiderBonus,
+                    HoldingBonus = holdingBonus,
+                    HedgeBonus = hedgeBonus,
+                    PriceTarget = priceTarget,
+                    HedgeSentiment = Convert.ToDecimal(trResponse.hedgeFundData.sentiment),
+                    HedgeTrendAction = Convert.ToDecimal(trResponse.hedgeFundData.trendAction),
+                    HedgeTrendValue = Convert.ToDecimal(trResponse.hedgeFundData.trendValue),
+                    FailedWith404 = false
                 };
             }
             catch (Exception e)
@@ -101,14 +143,19 @@ namespace PT.Middleware
                 Debug.WriteLine("EXCEPTION CAUGHT: TipRanks.cs GetTipRanksResult for symbol " + symbol + ", message: " + e.Message);
                 return new TipRanksResult
                 {
+                    RatingsComposite = 33.0M,
                     Insiders = null,
-                    Institutions = null,
+                    Holdings = null,
                     ThirdPartyRatings = null,
                     ConsensusOverTime = null,
-                    InsiderComposite = 0.0M,
-                    InstitutionalComposite = 0.0M,
-                    RatingsComposite = 50.0M,
-                    PriceTarget = 0.0M
+                    InsiderBonus = 0,
+                    HoldingBonus = 0,
+                    HedgeBonus = 0,
+                    PriceTarget = 0,
+                    HedgeSentiment = 0,
+                    HedgeTrendAction = 0,
+                    HedgeTrendValue = 0,
+                    FailedWith404 = e.Message.Contains("404")
                 };
             }
         }
@@ -170,6 +217,176 @@ namespace PT.Middleware
             string responseString = rm.GetFromUri(TipRanksBaseUrl + "gettrendingstocks/?daysago=30&which=most");
             TipRanksTrendingCompany[] trResponse = JsonConvert.DeserializeObject<TipRanksTrendingCompany[]>(responseString);
             return trResponse;
+        }
+
+        // Super hacky date string converter because C# hates dd/MM/yy and it is super inconsistent with 1/11/23 for example
+        private static string ConvertDateStr(string dateStr)
+        {
+            string[] tokens = dateStr.Split("/");
+            tokens[2] = "20" + tokens[2];
+            if (tokens[0].Length == 1)
+            {
+                tokens[0] = "0" + tokens[0];
+            }
+            if (tokens[1].Length == 1)
+            {
+                tokens[1] = "0" + tokens[1];
+            }
+            string convertedDateStr = string.Join("/", tokens);
+            return convertedDateStr;
+        }
+
+        private static decimal GetAverageRating(List<Expert> ratings, TipRanksDataResponse trResponse)
+        {
+            //find the average rating normally
+            if (ratings.Count > 0)
+            {
+                List<decimal> ratingNums = ratings
+                    .Select(x => Convert.ToDecimal(x.rankings.FirstOrDefault().stars))
+                    .ToList();
+
+                return ratingNums.Sum() / ratingNums.Count;
+            }
+            else
+            {
+                // Use consensuses to get average rating if it cannot be parsed from trResponse.experts
+                DateTime startDate = DateTime.Now.AddMonths(-3);
+                List<TipRanksDataResponse.Consensus> consensuses = trResponse.consensuses
+                    .Where(x => DateTime.Compare(DateTime.ParseExact(ConvertDateStr(x.d), "dd/MM/yyyy", CultureInfo.InvariantCulture), startDate) > 0)
+                    .ToList();
+
+                List<decimal> mStars = consensuses
+                    .Select(x => Convert.ToDecimal(x.mStars))
+                    .ToList();
+
+                decimal averageMStars = mStars.Sum() / mStars.Count;
+                decimal latestRating = Convert.ToDecimal(consensuses[0].rating);
+                return latestRating;
+            }
+        }
+
+        private static decimal GetInsiderBonus(List<Insider> insiders)
+        {
+            //Found the meanings of these actions by visiting Insider.link URL
+            //i.e. https://www.sec.gov/Archives/edgar/data/1486056/000112760223026226/xslF345X03/form4.xml
+            HashSet<int> insiderBuyActions = new HashSet<int> { 2, 3 };
+            HashSet<int> insiderSellActions = new HashSet<int> { 1, 4 };
+
+
+            //Add insider bonuses, 3 points per insider if more than 1mil holding
+            //Add insider bonuses, 2 points per insider if more than 500k holding
+            //Add insider bonuses, 1 points per insider if less than 500k holding
+            //Add insider bonuses, negative inverse for above on sells
+            decimal insiderBonus = 0;
+            foreach (var insider in insiders)
+            {
+                decimal amount = Convert.ToDecimal(insider.amount);
+
+                int curAction = Convert.ToInt32(insider.action);
+                bool isBuy = insiderBuyActions.Contains(curAction);
+                bool isSell = insiderSellActions.Contains(curAction);
+
+                if (isSell && amount < 500000)
+                {
+                    insiderBonus += -1;
+                }
+                else if (isSell && amount >= 500000 && amount < 1000000)
+                {
+                    insiderBonus += -2;
+                }
+                else if (isSell && amount >= 1000000)
+                {
+                    insiderBonus += -3;
+                }
+                else if (isBuy && amount < 500000)
+                {
+                    insiderBonus += 1;
+                }
+                else if (isBuy && amount >= 500000 && amount < 1000000)
+                {
+                    insiderBonus += 2;
+                }
+                else if (isBuy && amount >= 1000000)
+                {
+                    insiderBonus += 3;
+                }
+            }
+            return insiderBonus;
+        }
+
+        private static decimal GetHoldingBonus(List<HoldingsByTime> holdings)
+        {
+            //Add holding bonuses, -2 points if no holdings
+            if (holdings.Count == 0)
+            {
+                return -2;
+            }
+            //Add holding bonuses, 2 points if 1mil or more holding
+            //Add holding bonuses, 1 point if more than 0 holding
+            //Add holding bonuses, 2 points if institutional holding percent > 0
+            decimal holdingBonus = 0;
+            foreach (var hold in holdings)
+            {
+                decimal amountHolding = Convert.ToDecimal(hold.holdingAmount);
+                var iPercentage = hold.institutionHoldingPercentage;
+
+                if (iPercentage != null && iPercentage > 0)
+                {
+                    holdingBonus += 2;
+                }
+                if (amountHolding >= 1000000)
+                {
+                    holdingBonus += 2;
+                }
+                else if (amountHolding > 0)
+                {
+                    holdingBonus += 1;
+                }
+            }
+            return holdingBonus;
+        }
+
+        private static decimal GetHedgeBonus(HedgeFundData hedgeData)
+        {
+            decimal hedgeBonus = 0;
+            decimal sentiment = Convert.ToDecimal(hedgeData.sentiment);
+            //int trendAction = Convert.ToInt32(hedgeData.trendAction);
+            decimal trendValue = Convert.ToDecimal(hedgeData.trendValue);
+
+            //Add hedge bonuses, -2 points if sentiment is between .4 and .5
+            if (0.4M <= sentiment && sentiment < 0.5M)
+            {
+                hedgeBonus += -2;
+            }
+            //Add hedge bonuses, -5 points if sentiment is between 0 and .4
+            else if (0.0M <= sentiment && sentiment < 0.4M)
+            {
+                hedgeBonus += -5;
+            }
+            //Add hedge bonuses, +1 points if sentiment is .5
+            else if (sentiment == 0.5M)
+            {
+                hedgeBonus += 1;
+            }
+            //Add hedge bonuses, +2 points if sentiment is between .5 and .6
+            else if (0.5M < sentiment && sentiment < 0.6M)
+            {
+                hedgeBonus += 2;
+            }
+            //Add hedge bonuses, +5 points if sentiment is between .6 and .7
+            else if (0.6M <= sentiment && sentiment < 0.7M)
+            {
+                hedgeBonus += 5;
+            }
+            //Add hedge bonuses, +7 points if sentiment is .7 or higher
+            else if (sentiment >= 0.7M)
+            {
+                hedgeBonus += 7;
+            }
+
+            //Add little trend value bonus although Idk
+            decimal trendValueBonus = trendValue > 0 ? 1.5M : -1.5M;
+            return hedgeBonus + trendValueBonus;
         }
     }
 }
