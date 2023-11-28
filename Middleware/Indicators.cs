@@ -125,7 +125,7 @@ namespace PT.Middleware
             }
             catch (Exception e)
             {
-                Debug.WriteLine("EXCEPTION CAUGHT: TwelveData.cs GetCompositeScore for symbol " + symbol + ", function " + function + ", message: " + e.Message);
+                Debug.WriteLine("EXCEPTION CAUGHT: Indicators.cs GetCompositeScore for symbol " + symbol + ", function " + function + ", message: " + e.Message);
             }
             return compositeScore;
         }
@@ -146,8 +146,8 @@ namespace PT.Middleware
                 historyList.Add(curData);
             }
             IEnumerable<Skender.Stock.Indicators.Quote> history = historyList.AsEnumerable();
-            //Cleaners.PrepareHistory(history); what happened to this?
 
+            //This was only used for the bbands composite I think
             List<Skender.Stock.Indicators.Quote> supplement = historyList.TakeLast(7).ToList();
 
             decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
@@ -252,14 +252,14 @@ namespace PT.Middleware
                 baseValue += 10; //pity points
 
             //Add bonus for ADX average above 25 per investopedia recommendation
-            decimal averageBonus = adxAvg > 25 ? 25 : 0;
+            decimal averageBonus = adxAvg > 25 ? 25 : -7;
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
             composite += baseValue;
             composite += averageBonus;
-            composite += (adxSlope > 0.1M) ? (adxSlope * adxSlopeMultiplier) + 10 : -10; //penalty
-            composite += (zScoreSlope > 0.1M) ? (zScoreSlope * zScoreSlopeMultiplier) + 10 : 0;
+            composite += (adxSlope > 0.1M) ? (adxSlope * adxSlopeMultiplier) + 7 : -7; //penalty
+            composite += (zScoreSlope > 0.1M) ? (zScoreSlope * zScoreSlopeMultiplier) + 7 : -7; //penalty
 
             return Math.Min(composite, 100); //cap ADX composite at 100, no extra weight
         }
@@ -302,7 +302,6 @@ namespace PT.Middleware
 
             List<decimal> obvYList = obvValueYList.ToList();
             decimal obvSlope = GetSlope(obvXList, obvYList);
-            decimal obvSlopeMultiplier = GetSlopeMultiplier(obvSlope);
 
             List<decimal> zScores = GetZScores(obvYList);
             decimal zScoreSlope = GetSlope(zScores, obvXList);
@@ -356,8 +355,8 @@ namespace PT.Middleware
                 baseValue = zScoreBonus;
             }
 
-            //Cap base value at 60
-            baseValue = Math.Min(baseValue, 45.0M);
+            //Cap base value at 42 obviously
+            baseValue = Math.Min(baseValue, 42.0M);
 
             //Add bonus if average OBV is greater than 0
             decimal obvAverageBonus = obvAverage > 0 ? 10 : 0;
@@ -693,7 +692,6 @@ namespace PT.Middleware
         //RELIES completely on unofficial yahoo finance API for now
         public static FundamentalsResult GetFundamentals(string symbol, Security quote)
         {
-            string message = string.Empty;
             try
             {
                 List<decimal> priceYList = new List<decimal>();
@@ -759,30 +757,34 @@ namespace PT.Middleware
                 averagePE = (peForward + peTrailing) / 2;
                 growthPE = peForward - peTrailing;
 
-                //Add bonus for dividends maybe?
+                //Make base score based on EPS activity
+                decimal epsBase = GetEPSBase(averageEPS, growthEPS);
 
-                //Add bonus if current volume is greater than average volume
-                decimal volumeTrendingBonus = (volumeUSD > averageVolumeUSD) ? 10 : 0;
+                //Add PE ratio activity bonus
+                decimal peBonus = GetPEBonus(averagePE, growthPE);
+
+                //Add dividend bonus
+                decimal divBonus = GetDividendBonus(quote);
+
+                //Add positive bonus if current volume is greater than average volume, negative otherwise
+                decimal volumeTrendingBonus = (volumeUSD > averageVolumeUSD) ? 10 : -10;
 
                 //calculate composite score based on the following values and weighted multipliers
-                //Base value should be calculated based on PE and EPS
-                //Bonuses added for positive volume and price slopes, and PE / EPS Growth
+                //Base value should be calculated based on EPS and PE data
+                //Bonuses added for positive volume and price slopes, PE Growth, and dividends
                 decimal composite = 0;
-                composite += (averagePE > 2.0M) ? averagePE * 2 + 10 : 0;
-                composite += (averageEPS > 0.75M) ? averageEPS * 3 + 10 : 0;
-                composite += (growthPE > 0) ? growthPE + 10 : 0;
-                composite += (growthEPS > 0) ? growthEPS + 10 : 0;
-                composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
-                composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier + 10 : 0;
+                composite += epsBase;
+                composite += peBonus;
+                composite += divBonus;
+                composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : -3; //penalty
+                composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : -3; //penalty
                 composite += volumeTrendingBonus;
 
                 composite = Math.Min(composite, 100); //cap FUND composite at 100, no extra weight
 
                 decimal disqualifyingLimit = 1000000.0M; //disqualify if less than 1 million USD volume per day
 
-                //Add this later
-                //decimal annualDivRate = 0.0M;
-                //bool divs = Decimal.TryParse(quote.TrailingAnnualDividendRate.ToString(), out annualDivRate)
+                bool hasDivs = quote.DividendRate != null && quote.DividendYield != null;
 
                 return new FundamentalsResult
                 {
@@ -794,15 +796,15 @@ namespace PT.Middleware
                     AveragePE = averagePE,
                     GrowthEPS = growthEPS,
                     GrowthPE = growthPE,
-                    HasDividends = false,
+                    HasDividends = hasDivs,
                     IsBlacklisted = (volumeUSD < disqualifyingLimit && averageVolumeUSD < disqualifyingLimit),
-                    Message = message,
+                    Message = string.Empty,
                     FundamentalsComposite = composite
                 };
             }
             catch (Exception e)
             {
-                Debug.WriteLine("EXCEPTION CAUGHT: TwelveData.cs GetFundamentals for symbol " + symbol + ", message: " + e.Message);
+                Debug.WriteLine("EXCEPTION CAUGHT: Indicators.cs GetFundamentals for symbol " + symbol + ", message: " + e.Message);
                 return new FundamentalsResult
                 {
                     VolumeUSD = 0.0M,
@@ -841,11 +843,11 @@ namespace PT.Middleware
         {
             //Positive cases
             if (slope > 0 && slope < 0.25M)
-                return 50.0M;
+                return 40.0M;
             else if (slope >= 0.25M && slope < 0.5M)
-                return 35.0M;
+                return 30.0M;
             else if (slope >= 0.5M && slope < 1)
-                return 25.0M;
+                return 20.0M;
             else if (slope >= 1 && slope < 5)
                 return 2.0M;
             else if (slope >= 5 && slope < 10)
@@ -857,11 +859,11 @@ namespace PT.Middleware
 
             //Negative cases
             else if (slope < 0 && slope > -0.25M)
-                return -50.0M;
+                return -40.0M;
             else if (slope <= -0.25M && slope > -0.5M)
-                return -35.0M;
+                return -30.0M;
             else if (slope <= -0.5M && slope > -1)
-                return -25.0M;
+                return -20.0M;
             else if (slope <= -1 && slope > -5)
                 return -2.0M;
             else if (slope <= -5 && slope > -10)
@@ -993,6 +995,137 @@ namespace PT.Middleware
             }
             while (Math.Abs(previous - current) > epsilon);
             return current;
+        }
+
+        public static decimal GetEPSBase(decimal averageEPS, decimal growthEPS)
+        {
+            decimal epsBase = 0;
+
+            //if average EPS between 0.5 and 1, do averageEPS * 3 + 10
+            if (0.5M < averageEPS && averageEPS <= 1)
+            {
+                epsBase += averageEPS * 3 + 10;
+            }
+            //if average EPS between 1 and 2, do averageEPS * 3 + 15
+            else if (1 < averageEPS && averageEPS <= 2)
+            {
+                epsBase += averageEPS * 3 + 15;
+            }
+            //if average EPS above 2, do averageEPS * 3 + 20
+            else if (2 < averageEPS)
+            {
+                epsBase += averageEPS * 3 + 20;
+            }
+            //if growth EPS between 0 and 1, add growthEPS * 2 + 7 bonus
+            if (0 < growthEPS && growthEPS <= 1)
+            {
+                epsBase += growthEPS * 2 + 7;
+            }
+            //if growth EPS above 1, add growthEPS * 3 + 7 bonus
+            else if (growthEPS > 1)
+            {
+                epsBase += growthEPS * 3 + 7;
+            }
+            //if growth EPS between 0 and -1, add growthEPS * 2 - 7 bonus
+            else if (-1 <= growthEPS && growthEPS <0)
+            {
+                epsBase += growthEPS * 2 - 7;
+            }
+            //if growth EPS below -1, add growthEPS * 3 - 14 bonus
+            else if (-1 <= growthEPS && growthEPS < 0)
+            {
+                epsBase += growthEPS * 3 - 14;
+            }
+            return epsBase;
+        }
+
+        public static decimal GetPEBonus(decimal averagePE, decimal growthPE)
+        {
+            decimal peBonus = 0;
+
+            //if average PE is between 0 and 25, add 14 bonus
+            if (0 < averagePE && averagePE <=25)
+            {
+                peBonus += 14;
+            }
+            //if average PE is between 25 and 50, add 7 bonus
+            else if (25 < averagePE && averagePE <= 50)
+            {
+                peBonus += 7;
+            }
+            //if average PE is between 50 and 100, add 2 bonus
+            else if (50 < averagePE && averagePE <= 100)
+            {
+                peBonus += 2;
+            }
+            //if average PE is above 100, add -7 bonus
+            else if (averagePE > 100)
+            {
+                peBonus += -7;
+            }
+
+            //if growth PE is between 0 and -50, add 7 bonus
+            if (-50 <= growthPE && growthPE < 0)
+            {
+                peBonus += 7;
+            }
+            //if growth PE is below -50, add 14 bonus
+            else if (growthPE < -50)
+            {
+                peBonus += 14;
+            }
+            //if growth PE is between 0 and 100, add -7 bonus
+            else if (0 < growthPE && growthPE <= 100)
+            {
+                peBonus += -7;
+            }
+            //if growth PE is above 100, add -14 bonus
+            else if (0 < growthPE && growthPE <= 100)
+            {
+                peBonus += -14;
+            }
+            return peBonus;
+        }
+
+        private static decimal GetDividendBonus(Security quote)
+        {
+            decimal divBonus = 0;
+            bool hasDivs = quote.DividendRate != null;
+            bool hasYield = quote.DividendYield != null;
+            if (hasDivs)
+            {
+                decimal divRate = (decimal)quote.DividendRate;
+                //if div rate between 0 and 0.5, add divRate * 2 + 1 bonus
+                if (0 < divRate && divRate <= 0.5M)
+                {
+                    divBonus += divRate * 2 + 1;
+                }
+                //if div rate above 0.5, add divRate * 3 + 2 bonus
+                else if (divRate > 0.5M)
+                {
+                    divBonus += divRate * 3 + 2;
+                }
+            }
+            if (hasYield)
+            {
+                decimal divYield = (decimal)quote.DividendYield;
+                //if div yield is between 0 and 1, add 2 * divYield bonus
+                if (0 < divYield && divYield <= 1)
+                {
+                    divBonus += divYield * 2;
+                }
+                //if div yield is between 1 and 3, add divYield + 2 bonus
+                else if (1 < divYield && divYield <= 3)
+                {
+                    divBonus += divYield + 2;
+                }
+                //if div yield is above 3, add divYield + 5 bonus
+                if (divYield >= 3)
+                {
+                    divBonus += divYield + 5;
+                }
+            }
+            return divBonus;
         }
     }
 }

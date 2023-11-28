@@ -102,9 +102,11 @@ namespace PT.Middleware
                 //Protect against failure to get price target
                 if (priceTarget != 0)
                 {
-                    decimal percentChange = ((priceTarget - lastPrice) / Math.Abs(lastPrice)) * 100;
+                    //Formulate price target bonus
+                    decimal diff = priceTarget - lastPrice;
+                    decimal percentChange = (diff / Math.Abs(lastPrice)) * 100;
                     priceTargetBonus += percentChange >= 5 ? 5 : 0;
-                    priceTargetBonus += percentChange >= 10 ? 5 : 0;
+                    priceTargetBonus += percentChange >= 10 ? 5 + diff : 0;
                     priceTargetBonus += percentChange < 0 ? -10 : 0;
                 }
 
