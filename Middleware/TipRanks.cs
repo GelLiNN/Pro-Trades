@@ -121,7 +121,9 @@ namespace PT.Middleware
                 ratingsComposite += priceTargetBonus; //Add price target bonus from above
                 ratingsComposite += insiderBonus; //Add insider bonus from above
                 ratingsComposite += hedgeBonus; //Add hedge bonus from above
-                ratingsComposite = Math.Min(ratingsComposite, 100);
+
+                ratingsComposite = Math.Min(ratingsComposite, 100); // cap composite at 100, no extra weight
+                ratingsComposite = Math.Max(ratingsComposite, 0); // limit composite at 0, no negatives
 
                 return new TipRanksResult
                 {
@@ -288,6 +290,7 @@ namespace PT.Middleware
                 bool isBuy = insiderBuyActions.Contains(curAction);
                 bool isSell = insiderSellActions.Contains(curAction);
 
+                // Penalty cases
                 if (isSell && amount < 500000)
                 {
                     insiderBonus += -1;
@@ -300,6 +303,8 @@ namespace PT.Middleware
                 {
                     insiderBonus += -3;
                 }
+
+                // Reward cases
                 else if (isBuy && amount < 500000)
                 {
                     insiderBonus += 1;
@@ -313,38 +318,39 @@ namespace PT.Middleware
                     insiderBonus += 3;
                 }
             }
-            return insiderBonus;
+            // Limit insider bonus to -10 and 20
+            insiderBonus = Math.Max(-10, insiderBonus);
+            insiderBonus = Math.Min(20, insiderBonus);
+            return Math.Max(-10, insiderBonus);
         }
 
         private static decimal GetHoldingBonus(List<HoldingsByTime> holdings)
         {
-            //Add holding bonuses, -2 points if no holdings
-            if (holdings.Count == 0)
-            {
-                return -2;
-            }
-            //Add holding bonuses, 2 points if 1mil or more holding
-            //Add holding bonuses, 1 point if more than 0 holding
-            //Add holding bonuses, 2 points if institutional holding percent > 0
+            // All reward cases, experiment with pi
             decimal holdingBonus = 0;
             foreach (var hold in holdings)
             {
                 decimal amountHolding = Convert.ToDecimal(hold.holdingAmount);
                 var iPercentage = hold.institutionHoldingPercentage;
 
+                // Add holding bonuses if institutional holding percent > 0
                 if (iPercentage != null && iPercentage > 0)
                 {
-                    holdingBonus += 2;
+                    holdingBonus += (decimal) Math.PI * 2;
                 }
+                //Add holding bonuses if 1mil or more holding
                 if (amountHolding >= 1000000)
                 {
-                    holdingBonus += 2;
+                    holdingBonus += (decimal) Math.PI * 2;
                 }
+                //Add smaller holding bonuses if more than 0 holding
                 else if (amountHolding > 0)
                 {
-                    holdingBonus += 1;
+                    holdingBonus += (decimal) Math.PI;
                 }
             }
+            // Limit holding bonus to 20
+            holdingBonus = Math.Min(20, holdingBonus);
             return holdingBonus;
         }
 
@@ -355,39 +361,35 @@ namespace PT.Middleware
             //int trendAction = Convert.ToInt32(hedgeData.trendAction);
             decimal trendValue = Convert.ToDecimal(hedgeData.trendValue);
 
-            //Add hedge bonuses, -2 points if sentiment is between .4 and .5
-            if (0.4M <= sentiment && sentiment < 0.5M)
+            // Penalty cases
+            if (0.35M <= sentiment && sentiment < 0.5M)
             {
-                hedgeBonus += -2;
+                hedgeBonus += (sentiment * -1) - 3;
             }
-            //Add hedge bonuses, -5 points if sentiment is between 0 and .4
-            else if (0.0M <= sentiment && sentiment < 0.4M)
+            else if (0.0M <= sentiment && sentiment < 0.35M)
             {
-                hedgeBonus += -5;
+                hedgeBonus += (sentiment * -7) - 7;
             }
-            //Add hedge bonuses, +1 points if sentiment is .5
+            // Reward cases
             else if (sentiment == 0.5M)
             {
-                hedgeBonus += 1;
+                hedgeBonus += sentiment + 1;
             }
-            //Add hedge bonuses, +2 points if sentiment is between .5 and .6
             else if (0.5M < sentiment && sentiment < 0.6M)
             {
-                hedgeBonus += 2;
+                hedgeBonus += (sentiment * 2) + 3;
             }
-            //Add hedge bonuses, +5 points if sentiment is between .6 and .7
             else if (0.6M <= sentiment && sentiment < 0.7M)
             {
-                hedgeBonus += 5;
+                hedgeBonus += (sentiment * 4) + 6;
             }
-            //Add hedge bonuses, +7 points if sentiment is .7 or higher
             else if (sentiment >= 0.7M)
             {
-                hedgeBonus += 7;
+                hedgeBonus += (sentiment * 7) + 7;
             }
 
-            //Add little trend value bonus although Idk
-            decimal trendValueBonus = trendValue > 0 ? 1.5M : -1.5M;
+            // Add little trend value bonus although Idk
+            decimal trendValueBonus = trendValue > 0 ? 7 : -7;
             return hedgeBonus + trendValueBonus;
         }
     }

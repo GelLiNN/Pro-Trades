@@ -766,8 +766,29 @@ namespace PT.Middleware
                 //Add dividend bonus
                 decimal divBonus = GetDividendBonus(quote);
 
-                //Add positive bonus if current volume is greater than average volume, negative otherwise
-                decimal volumeTrendingBonus = (volumeUSD > averageVolumeUSD) ? 10 : -10;
+                //Add positive fractional bonus if current volume is greater than average volume, negative otherwise
+                decimal diff = volumeUSD - averageVolumeUSD;
+                decimal percentChange = (diff / Math.Abs(averageVolumeUSD)) * 100;
+                decimal volumeTrendingBonus = 0;
+
+                // Reward cases
+                if (0 < percentChange && percentChange <= 100)
+                {
+                    volumeTrendingBonus += (percentChange / 20) + (decimal) Math.PI;
+                }
+                else if (100 < percentChange)
+                {
+                    volumeTrendingBonus += 10 + (decimal) Math.PI;
+                }
+                // Penalty cases
+                else if (0 > percentChange && percentChange >= -100)
+                {
+                    volumeTrendingBonus += (percentChange / 20) - (decimal) Math.PI;
+                }
+                else if (-100 > percentChange)
+                {
+                    volumeTrendingBonus += -10 - (decimal) Math.PI;
+                }
 
                 //calculate composite score based on the following values and weighted multipliers
                 //Base value should be calculated based on EPS and PE data
@@ -780,7 +801,8 @@ namespace PT.Middleware
                 composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : -3; //penalty
                 composite += volumeTrendingBonus;
 
-                composite = Math.Min(composite, 100); //cap FUND composite at 100, no extra weight
+                composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
+                composite = Math.Max(composite, 0); // limit composite at 0, no negatives
 
                 decimal disqualifyingLimit = 1000000.0M; //disqualify if less than 1 million USD volume per day
 
@@ -999,42 +1021,56 @@ namespace PT.Middleware
 
         public static decimal GetEPSBase(decimal averageEPS, decimal growthEPS)
         {
-            decimal epsBase = 0;
+            // EPS base has default of 7 since it starts the composite
+            decimal epsBase = 7;
 
-            //if average EPS between 0.5 and 1, do averageEPS * 3 + 10
-            if (0.5M < averageEPS && averageEPS <= 1)
+            //If everything is negative return 0
+            if (averageEPS <= 0 && growthEPS <= 0)
             {
-                epsBase += averageEPS * 3 + 10;
+                return epsBase;
             }
-            //if average EPS between 1 and 2, do averageEPS * 3 + 15
+
+            // averageEPS score formulation
+            // Reward cases
+            if (0 < averageEPS && averageEPS <= 0.5M)
+            {
+                epsBase += averageEPS * 3 + 4;
+            }
+            else if (0.5M < averageEPS && averageEPS <= 1)
+            {
+                epsBase += averageEPS * 3 + 8;
+            }
             else if (1 < averageEPS && averageEPS <= 2)
             {
-                epsBase += averageEPS * 3 + 15;
+                epsBase += averageEPS * 3 + 12;
             }
-            //if average EPS above 2, do averageEPS * 3 + 20
-            else if (2 < averageEPS)
+            else if (2 < averageEPS && averageEPS <= 3)
+            {
+                epsBase += averageEPS * 3 + 16;
+            }
+            else if (3 < averageEPS)
             {
                 epsBase += averageEPS * 3 + 20;
             }
-            //if growth EPS between 0 and 1, add growthEPS * 2 + 7 bonus
+
+            // growthEPS score formulation
+            // Reward cases
             if (0 < growthEPS && growthEPS <= 1)
             {
-                epsBase += growthEPS * 2 + 7;
+                epsBase += growthEPS * 3 + 3;
             }
-            //if growth EPS above 1, add growthEPS * 3 + 7 bonus
             else if (growthEPS > 1)
             {
-                epsBase += growthEPS * 3 + 7;
+                epsBase += growthEPS * 3 + 6;
             }
-            //if growth EPS between 0 and -1, add growthEPS * 2 - 7 bonus
+            // Penalty cases
             else if (-1 <= growthEPS && growthEPS <0)
             {
-                epsBase += growthEPS * 2 - 7;
+                epsBase += growthEPS * 3 - 3;
             }
-            //if growth EPS below -1, add growthEPS * 3 - 14 bonus
-            else if (-1 <= growthEPS && growthEPS < 0)
+            else if (-1 >= growthEPS)
             {
-                epsBase += growthEPS * 3 - 14;
+                epsBase += growthEPS * 3 - 6;
             }
             return epsBase;
         }
@@ -1043,46 +1079,58 @@ namespace PT.Middleware
         {
             decimal peBonus = 0;
 
-            //if average PE is between 0 and 25, add 14 bonus
-            if (0 < averagePE && averagePE <=25)
+            //If everything is negative return 0
+            if (averagePE <= 0 && growthPE <= 0)
             {
-                peBonus += 14;
-            }
-            //if average PE is between 25 and 50, add 7 bonus
-            else if (25 < averagePE && averagePE <= 50)
-            {
-                peBonus += 7;
-            }
-            //if average PE is between 50 and 100, add 2 bonus
-            else if (50 < averagePE && averagePE <= 100)
-            {
-                peBonus += 2;
-            }
-            //if average PE is above 100, add -7 bonus
-            else if (averagePE > 100)
-            {
-                peBonus += -7;
+                return peBonus;
             }
 
-            //if growth PE is between 0 and -50, add 7 bonus
+            // averagePE score fomulation
+            // Reward cases
+            if (0 < averagePE && averagePE <=25)
+            {
+                peBonus += (averagePE / 5) + 7;
+            }
+            else if (25 < averagePE && averagePE <= 50)
+            {
+                peBonus += (averagePE / 10);
+            }
+            else if (50 < averagePE && averagePE <= 100)
+            {
+                peBonus += (averagePE / 15);
+            }
+            // Penalty cases
+            else if (averagePE > 100)
+            {
+                peBonus += (-1 * (averagePE / 15));
+            }
+
+            // growthPE score fomulation
+            // Reward cases
             if (-50 <= growthPE && growthPE < 0)
             {
-                peBonus += 7;
+                peBonus += (-1 * (growthPE / 10));
             }
-            //if growth PE is below -50, add 14 bonus
-            else if (growthPE < -50)
+            else if (-100 <= growthPE && growthPE < -50)
             {
-                peBonus += 14;
+                peBonus += (-1 * (growthPE / 10)) + 3;
             }
-            //if growth PE is between 0 and 100, add -7 bonus
-            else if (0 < growthPE && growthPE <= 100)
+            else if (-100 > growthPE)
             {
-                peBonus += -7;
+                peBonus += (-1 * (growthPE / 100)) + 10;
             }
-            //if growth PE is above 100, add -14 bonus
-            else if (0 < growthPE && growthPE <= 100)
+            else if (0 < growthPE && growthPE <= 50)
             {
-                peBonus += -14;
+                peBonus += (-1 * (growthPE / 10));
+            }
+            // Penalty cases
+            else if (50 < growthPE && growthPE <= 100)
+            {
+                peBonus += (-1 * (growthPE / 10)) - 3;
+            }
+            else if (100 < growthPE)
+            {
+                peBonus += (-1 * (growthPE / 100)) - 10;
             }
             return peBonus;
         }
