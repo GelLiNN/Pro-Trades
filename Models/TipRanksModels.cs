@@ -695,6 +695,6 @@ namespace PT.Models
         public decimal HedgeTrendValue { get; set; }
 
         //keep track of failures
-        public bool FailedWith404 { get; set; }
+        public string ErrorMessage { get; set; }
     }
 }

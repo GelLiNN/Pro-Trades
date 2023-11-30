@@ -47,7 +47,7 @@ namespace PT
             builder.Services.AddAuthentication()
                 .AddIdentityServerJwt();
 
-            // OLD
+            // Could be useful for password constraints
             /*builder.Services
                 .AddDefaultIdentity<IdentityUser>(options =>
                 {
@@ -67,12 +67,6 @@ namespace PT
             // Use other .NET MVC modules
             builder.Services.AddControllersWithViews();
             builder.Services.AddRazorPages();
-
-            // Stuff from old Startup.cs
-            /*builder.Services.AddRazorPages().AddRazorPagesOptions(options =>
-            {
-                options.Conventions.AddPageRoute("/Home", "");
-            });*/
 
             // Use SendGrid Email
             builder.Services.AddTransient<IEmailSender, EmailSender>();

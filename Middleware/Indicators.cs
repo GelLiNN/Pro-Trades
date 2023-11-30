@@ -134,6 +134,8 @@ namespace PT.Middleware
         {
             List<PriceTick> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 300).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
+            int priceHistoryDays = 0;
+
             foreach (PriceTick data in yahooHistory)
             {
                 Skender.Stock.Indicators.Quote curData = new Skender.Stock.Indicators.Quote();
@@ -144,10 +146,11 @@ namespace PT.Middleware
                 curData.Volume = Convert.ToDecimal(data.Volume);
                 curData.Date = data.Date.ToDateTimeUnspecified();
                 historyList.Add(curData);
+                priceHistoryDays++;
             }
             IEnumerable<Skender.Stock.Indicators.Quote> history = historyList.AsEnumerable();
 
-            //This was only used for the bbands composite I think
+            // This was only used for the bbands composite I think
             List<Skender.Stock.Indicators.Quote> supplement = historyList.TakeLast(7).ToList();
 
             decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
@@ -166,6 +169,7 @@ namespace PT.Middleware
             {
                 Symbol = symbol,
                 DataProviders = "YahooFinance, FINRA, TipRanks",
+                Price = decimal.Parse(quote.RegularMarketPrice.ToString()),
                 ADXComposite = adxCompositeScore,
                 OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
@@ -181,6 +185,7 @@ namespace PT.Middleware
                 TipRanks = trResult
             };
 
+            // This is where blacklisting happens, right now only from bad volume
             string rank = string.Empty;
             if (scoreResult.Fundamentals.IsBlacklisted)
                 rank = "DISQUALIFIED";

@@ -139,7 +139,7 @@ namespace PT.Middleware
                     HedgeSentiment = Convert.ToDecimal(trResponse.hedgeFundData.sentiment),
                     HedgeTrendAction = Convert.ToDecimal(trResponse.hedgeFundData.trendAction),
                     HedgeTrendValue = Convert.ToDecimal(trResponse.hedgeFundData.trendValue),
-                    FailedWith404 = false
+                    ErrorMessage = string.Empty
                 };
             }
             catch (Exception e)
@@ -147,7 +147,7 @@ namespace PT.Middleware
                 Debug.WriteLine("EXCEPTION CAUGHT: TipRanks.cs GetTipRanksResult for symbol " + symbol + ", message: " + e.Message);
                 return new TipRanksResult
                 {
-                    RatingsComposite = 33.0M,
+                    RatingsComposite = 33.0M, // Have pity on the peseants
                     Insiders = null,
                     Holdings = null,
                     ThirdPartyRatings = null,
@@ -159,7 +159,7 @@ namespace PT.Middleware
                     HedgeSentiment = 0,
                     HedgeTrendAction = 0,
                     HedgeTrendValue = 0,
-                    FailedWith404 = e.Message.Contains("404")
+                    ErrorMessage = e.Message
                 };
             }
         }

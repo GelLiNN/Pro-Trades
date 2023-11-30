@@ -75,10 +75,15 @@ namespace PT.Controllers
          * Cache related endpoints
          */
         [HttpGet("/GetCachedSymbolsYF")]
-        public HashSet<string> GetCachedSymbolsYF()
+        public CacheViewResult GetCachedSymbolsYF()
         {
             HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
-            return cachedSymbols;
+            return new CacheViewResult
+            {
+                CacheCount = cachedSymbols.Count,
+                ScrapeCount = _cache.ScrapedSymbols.Count,
+                CacheKeys = cachedSymbols
+            };
         }
 
         // Main endpoint for getting all scores for now
@@ -92,9 +97,29 @@ namespace PT.Controllers
             {
                 CompanyStatsYF company = (CompanyStatsYF)_cache.Get(cacheKey);
                 if (company != null)
+                {
                     cachedCompanies.Add(company);
+                }
             }
             return cachedCompanies;
+        }
+
+        // Endpoint for getting primes
+        [HttpGet("/GetCachedPrimesYF")]
+        public List<CompanyStatsYF> GetCachedPrimesYF()
+        {
+            List<CompanyStatsYF> cachedPrimes = new List<CompanyStatsYF>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompanyStatsYF company = (CompanyStatsYF)_cache.Get(cacheKey);
+                if (company != null && company.CompositeScoreResult != null && company.CompositeScoreResult.CompositeRank == "PRIME")
+                {
+                    cachedPrimes.Add(company);
+                }
+            }
+            return cachedPrimes;
         }
 
         [HttpGet("/GetCachedSymbolsIEX")]

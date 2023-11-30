@@ -4,6 +4,8 @@
     {
         public string Symbol { get; set; }
         public string DataProviders { get; set; }
+        public decimal Price { get; set; }
+        public int PriceHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
         public decimal OBVComposite { get; set; }
         public decimal AROONComposite { get; set; }
@@ -17,6 +19,13 @@
         public ShortInterestResult ShortInterest { get; set; }
         public FundamentalsResult Fundamentals { get; set; }
         public TipRanksResult TipRanks { get; set; }
+    }
+
+    public class CacheViewResult
+    {
+        public int CacheCount { get; set; }
+        public int ScrapeCount { get; set; }
+        public HashSet<string> CacheKeys { get; set; }
     }
 
     public class ShortInterestResult
@@ -43,6 +52,80 @@
         public bool IsBlacklisted { get; set; }
         public string Message { get; set; }
         public decimal FundamentalsComposite { get; set; }
+    }
+
+    /*
+     * Yahoo Models
+     */
+    public class CompanyStatsYF
+    {
+        public string Symbol { get; set; }
+        public string CompanyName { get; set; }
+        public CompositeScoreResult CompositeScoreResult { get; set; }
+
+        public string Exchange { get; set; }
+        public bool CompanyTrading { get; set; }
+
+        public string CompanyQuoteType { get; set; }
+        public string CompanyMarket { get; set; }
+        public decimal? MarketCap { get; set; }
+        public decimal? SharesOutstanding { get; set; }
+
+        public decimal PeRatioForward { get; set; }
+        public decimal PeRatioTrailing { get; set; }
+        public decimal EpsForward { get; set; }
+        public decimal EpsTrailing { get; set; }
+
+        public decimal? BookValue { get; set; }
+
+        public decimal Price { get; set; }
+
+        public decimal PriceAverage50DayUSD { get; set; }
+        public decimal PriceAverage200DayUSD { get; set; }
+
+        public decimal PriceHigh52w { get; set; }
+        public decimal PriceLow52w { get; set; }
+        public decimal PriceAverageEstimate52w { get; set; }
+
+        public decimal VolumeToday { get; set; }
+        public decimal VolumeTodayUSD { get; set; }
+        public decimal VolumeAverage10d { get; set; }
+        public decimal VolumeAverage10dUSD { get; set; }
+        public decimal VolumeAverage3m { get; set; }
+        public decimal VolumeAverage3mUSD { get; set; }
+
+        public TradeDataYF TradeData { get; set; }
+
+        //public decimal PriceToBook { get; set; }
+        //public List<DividendTick> Dividends { get; set; }
+        //public List<SplitTick> Splits { get; set; }
+
+        public CompanyStatsYF()
+        {
+            //Dividends = new List<DividendTick>();
+            //Splits = new List<SplitTick>();
+        }
+    }
+
+    public class TradeDataYF
+    {
+        public decimal BidPrice { get; set; }
+        public decimal BidSize { get; set; }
+        public decimal AskPrice { get; set; }
+        public decimal AskSize { get; set; }
+    }
+
+    public class CompaniesListYF
+    {
+        public Dictionary<string, CompanyYF> SymbolsToCompanies { get; set; }
+    }
+
+    //Can add more fields for searching, screening, sorting
+    public class CompanyYF
+    {
+        public string Symbol { get; set; }
+        public string Exchange { get; set; }
+        public CompanyStatsYF Stats { get; set; }
     }
 
     /*
@@ -238,79 +321,5 @@
         public string Symbol { get; set; }
         public string Exchange { get; set; }
         public CompanyStatsFMP Stats { get; set; }
-    }
-
-    /*
-     * Yahoo Models
-     */
-    public class CompanyStatsYF
-    {
-        public string Symbol { get; set; }
-        public string CompanyName { get; set; }
-        public CompositeScoreResult CompositeScoreResult { get; set; }
-
-        public string Exchange { get; set; }
-        public bool CompanyTrading { get; set; }
-
-        public string CompanyQuoteType { get; set; }
-        public string CompanyMarket { get; set; }
-        public decimal? MarketCap { get; set; }
-        public decimal? SharesOutstanding { get; set; }
-
-        public decimal PeRatioForward { get; set; }
-        public decimal PeRatioTrailing { get; set; }
-        public decimal EpsForward { get; set; }
-        public decimal EpsTrailing { get; set; }
-
-        public decimal? BookValue { get; set; }
-
-        public decimal Price { get; set; }
-
-        public decimal PriceAverage50DayUSD { get; set; }
-        public decimal PriceAverage200DayUSD { get; set; }
-
-        public decimal PriceHigh52w { get; set; }
-        public decimal PriceLow52w { get; set; }
-        public decimal PriceAverageEstimate52w { get; set; }
-
-        public decimal VolumeToday { get; set; }
-        public decimal VolumeTodayUSD { get; set; }
-        public decimal VolumeAverage10d { get; set; }
-        public decimal VolumeAverage10dUSD { get; set; }
-        public decimal VolumeAverage3m { get; set; }
-        public decimal VolumeAverage3mUSD { get; set; }
-
-        public TradeDataYF TradeData { get; set; }
-
-        //public decimal PriceToBook { get; set; }
-        //public List<DividendTick> Dividends { get; set; }
-        //public List<SplitTick> Splits { get; set; }
-
-        public CompanyStatsYF()
-        {
-            //Dividends = new List<DividendTick>();
-            //Splits = new List<SplitTick>();
-        }
-    }
-
-    public class TradeDataYF
-    {
-        public decimal BidPrice { get; set; }
-        public decimal BidSize { get; set; }
-        public decimal AskPrice { get; set; }
-        public decimal AskSize { get; set; }
-    }
-
-    public class CompaniesListYF
-    {
-        public Dictionary<string, CompanyYF> SymbolsToCompanies { get; set; }
-    }
-
-    //Can add more fields for searching, screening, sorting
-    public class CompanyYF
-    {
-        public string Symbol { get; set; }
-        public string Exchange { get; set; }
-        public CompanyStatsYF Stats { get; set; }
     }
 }
