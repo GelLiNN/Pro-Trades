@@ -3,6 +3,7 @@
 
 # Custom ignores
 appsettings.secrets.json
+.env
 
 # User-specific files
 *.suo
