@@ -456,16 +456,18 @@ namespace PT.Middleware
             decimal baseSlopeMultiplier = GetSlopeMultiplier(baseSlope);
             decimal signalSlopeMultiplier = GetSlopeMultiplier(signalSlope);
 
-            decimal histBonus = Math.Min((macdTotalHist * 5) + 5, 20); //cap histBonus at 20
+            // Add histBase multiplicative if macdTotalHist is not negative,
+            // 7 pity points otherwise, and cap histBase at 30
+            decimal histBase = (macdTotalHist > 0) ? Math.Min((macdTotalHist * 3) + (decimal) Math.PI, 30) : 7;
 
-            //calculate composite score based on the following values and weighted multipliers
+            // Calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
-            composite += (histSlope > -0.05M) ? (histSlope * histSlopeMultiplier) + 25 : 0;
+            composite += histBase; 
+            composite += (histSlope > -0.05M) ? (histSlope * histSlopeMultiplier) + 20 : 0;
             composite += (baseSlope > -0.05M) ? (baseSlope * baseSlopeMultiplier) + 10 : 0;
             composite += (signalSlope > -0.05M) ? (signalSlope * signalSlopeMultiplier) + 10 : 0;
-            composite += (histBonus > 0) ? histBonus : 0; //Add histBonus if macdTotalHist is not negative
             composite += (macdHasBuySignal) ? 40 : 0;
-            composite += (macdHasSellSignal) ? -40 : 0;
+            composite += (macdHasSellSignal) ? -30 : 0; //Reduced from 40
 
             return Math.Max(0, composite);
         }
