@@ -134,7 +134,6 @@ namespace PT.Middleware
         {
             List<PriceTick> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 300).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
-            int priceHistoryDays = 0;
 
             foreach (PriceTick data in yahooHistory)
             {
@@ -146,7 +145,6 @@ namespace PT.Middleware
                 curData.Volume = Convert.ToDecimal(data.Volume);
                 curData.Date = data.Date.ToDateTimeUnspecified();
                 historyList.Add(curData);
-                priceHistoryDays++;
             }
             IEnumerable<Skender.Stock.Indicators.Quote> history = historyList.AsEnumerable();
 
@@ -170,6 +168,7 @@ namespace PT.Middleware
                 Symbol = symbol,
                 DataProviders = "YahooFinance, FINRA, TipRanks",
                 Price = decimal.Parse(quote.RegularMarketPrice.ToString()),
+                PriceHistoryDays = history.Count(),
                 ADXComposite = adxCompositeScore,
                 OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
