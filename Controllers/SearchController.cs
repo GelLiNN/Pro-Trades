@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PT.Middleware;
-using PT.Models;
+using PT.Models.RequestModels;
 
 namespace PT.Controllers
 {
@@ -303,6 +303,8 @@ namespace PT.Controllers
         [HttpGet("/Test")]
         public string Test()
         {
+
+
             //Stuff from my codillity assessment for Sameksha
             //Job links
 

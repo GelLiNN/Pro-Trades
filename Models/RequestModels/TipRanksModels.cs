@@ -4,7 +4,7 @@ using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace PT.Models
+namespace PT.Models.RequestModels
 {
     /*
      * TipRanks Models

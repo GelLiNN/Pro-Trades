@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using PT.Middleware;
-using PT.Models;
+using PT.Models.RequestModels;
 using TinyCsvParser;
 using TinyCsvParser.Mapping;
 using TinyCsvParser.Model;

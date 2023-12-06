@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
-using PT.Models;
+using PT.Models.RequestModels;
 
 namespace PT.Middleware
 {

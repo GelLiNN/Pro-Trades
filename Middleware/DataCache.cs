@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using PT.Middleware;
-using PT.Models;
+using PT.Models.RequestModels;
 
 namespace PT.Middleware
 {
