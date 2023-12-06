@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using PT.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace PT.Data
+namespace PT
 {
     public class PTContext : DbContext
     {
@@ -13,12 +13,12 @@ namespace PT.Data
         // Required for migrations to work
         public PTContext(DbContextOptions<PTContext> contextOptions) : base(contextOptions)
         {
-            this.Database.EnsureCreated();
+            Database.EnsureCreated();
         }
     }
 
     [Table("users")]
-    public class User : DbContext
+    public class User
     {
         [System.ComponentModel.DataAnnotations.Key]
         [Column("UserId")]
@@ -35,7 +35,7 @@ namespace PT.Data
     }
 
     [Table("userTypes")]
-    public class UserType : DbContext
+    public class UserType
     {
         [System.ComponentModel.DataAnnotations.Key]
         [Column("UserTypeId")]

@@ -38,7 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Db\Migrations\" />
+    <Folder Include="Migrations\" />
     <Folder Include="Models\DbModels\" />
   </ItemGroup>
 

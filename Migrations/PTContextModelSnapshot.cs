@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using PT.Data;
+using PT;
 
 #nullable disable
 
@@ -21,7 +21,7 @@ namespace PT.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("PT.Data.User", b =>
+            modelBuilder.Entity("PT.User", b =>
                 {
                     b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
@@ -49,7 +49,7 @@ namespace PT.Migrations
                     b.ToTable("users");
                 });
 
-            modelBuilder.Entity("PT.Data.UserType", b =>
+            modelBuilder.Entity("PT.UserType", b =>
                 {
                     b.Property<int>("UserTypeId")
                         .ValueGeneratedOnAdd()
