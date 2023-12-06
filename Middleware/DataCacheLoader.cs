@@ -56,7 +56,7 @@ namespace PT.Middleware
                 //await Task.WhenAll(cacheLoadTask1, cacheLoadTask2);
 
                 // Comment and uncomment below to enable or disable cache loading on application startup
-                await _cache.LoadCacheAsync("yf-companies");
+                //await _cache.LoadCacheAsync("yf-companies");
 
                 //Set this Task to cancel now that it is complete
                 await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);

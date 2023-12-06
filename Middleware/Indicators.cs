@@ -1,5 +1,5 @@
 ﻿using PT.Middleware;
-using PT.Models;
+using PT.Models.RequestModels;
 using Skender.Stock.Indicators;
 using System.Diagnostics;
 using YahooQuotesApi;

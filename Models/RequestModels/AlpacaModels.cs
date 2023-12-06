@@ -1,4 +1,4 @@
-﻿namespace PT.Models
+﻿namespace PT.Models.RequestModels
 {
     /*
      * Alpaca Models

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using PT.Models;
+using PT.Models.RequestModels;
 
 namespace PT.Middleware
 {

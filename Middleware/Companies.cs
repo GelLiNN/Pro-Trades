@@ -1,4 +1,4 @@
-﻿using PT.Models;
+﻿using PT.Models.RequestModels;
 
 namespace PT.Middleware
 {

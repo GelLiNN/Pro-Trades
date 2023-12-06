@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using NodaTime;
-using PT.Models;
+using PT.Models.RequestModels;
 using YahooQuotesApi;
 
 namespace PT.Middleware

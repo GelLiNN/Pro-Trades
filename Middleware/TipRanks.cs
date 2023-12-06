@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using PT.Models;
+using PT.Models.RequestModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
