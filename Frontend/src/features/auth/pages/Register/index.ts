@@ -1,1 +1,1 @@
-export * from './Register'
+export {Register} from './Register'

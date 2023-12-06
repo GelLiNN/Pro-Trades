@@ -8,7 +8,7 @@ export const Notifications = () => {
   const notifications: NotificationType[] = []
 
   const handleDismiss = useCallback((id: string) => {
-    console.log(IDBObjectStore)
+    console.log(id)
   }, [])
 
   return (
