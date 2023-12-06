@@ -7,7 +7,7 @@ interface Props {
 
 export const Head = ({description = '', title = ''}: Props) => {
   return (
-    <Helmet defaultTitle='Pro Trades' title={title ? `Pro Trades | ${title}` : undefined}>
+    <Helmet defaultTitle='Pro-Trades' title={title ? `Pro-Trades | ${title}` : undefined}>
       <meta content={description} name='description' />
     </Helmet>
   )
