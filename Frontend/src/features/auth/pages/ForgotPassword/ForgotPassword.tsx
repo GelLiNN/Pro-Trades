@@ -1,18 +1,17 @@
-import {Box, Button, Checkbox, FormControlLabel, Grid, Link, TextField} from '@mui/material'
+import {Box, Button, Grid, Link, TextField} from '@mui/material'
 import {AuthLayout} from '@/features/auth/components/AuthLayout'
 
-export const Login = () => {
+export const ForgotPassword = () => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
     console.log({
       email: data.get('email'),
-      password: data.get('password'),
     })
   }
 
   return (
-    <AuthLayout title='Log In'>
+    <AuthLayout title='Forgot Password'>
       <Box component='form' noValidate onSubmit={handleSubmit} sx={{mt: 1}}>
         <TextField
           autoComplete='email'
@@ -25,30 +24,14 @@ export const Login = () => {
           required
         />
 
-        <TextField
-          autoComplete='current-password'
-          fullWidth
-          id='password'
-          label='Password'
-          margin='normal'
-          name='password'
-          required
-          type='password'
-        />
-
-        <FormControlLabel
-          control={<Checkbox color='primary' value='remember' />}
-          label='Remember me'
-        />
-
         <Button fullWidth sx={{mt: 3, mb: 2}} type='submit' variant='contained'>
-          Log In
+          Recover Password
         </Button>
 
         <Grid container>
           <Grid item xs>
-            <Link href='/auth/forgot-password' variant='body2'>
-              Forgot password?
+            <Link href='/auth/login' variant='body2'>
+              Already have an account?
             </Link>
           </Grid>
 
