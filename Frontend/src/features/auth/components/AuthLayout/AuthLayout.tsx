@@ -11,7 +11,7 @@ interface Props {
 
 export const AuthLayout = ({children, title}: Props) => {
   return (
-    <Layout>
+    <Layout title={title}>
       <Container component='main' maxWidth='xs'>
         <Box
           sx={{

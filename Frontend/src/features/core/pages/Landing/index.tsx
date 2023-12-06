@@ -1,1 +1,1 @@
-export * from './Landing'
+export {Landing} from './Landing'
