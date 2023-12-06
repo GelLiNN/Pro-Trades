@@ -1,23 +1,32 @@
+/** @type {import("eslint").Linter.Config} */
 module.exports = {
-  root: true,
   env: {
     browser: true,
     es2020: true,
+    node: true,
   },
+  ignorePatterns: ['dist', '!*.cjs'],
+  root: true,
+  settings: {
+    react: {
+      version: 'detect',
+    },
+  },
+
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
+    'plugin:react/recommended',
+    'plugin:react/jsx-runtime',
     'plugin:react-hooks/recommended',
+    'plugin:prettier/recommended',
   ],
-  ignorePatterns: ['dist', '.eslintrc.cjs'],
-  parser: '@typescript-eslint/parser',
   plugins: ['react-refresh'],
   rules: {
-    'react-refresh/only-export-components': [
-      'warn',
-      {
-        allowConstantExport: true,
-      },
-    ],
+    'prettier/prettier': ['error'],
+
+    'react/jsx-sort-props': ['error'],
+
+    'react-refresh/only-export-components': ['warn'],
   },
 }
