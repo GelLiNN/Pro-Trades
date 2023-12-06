@@ -1,10 +1,11 @@
 ﻿using PT.Models.RequestModels;
+using PT.Services;
 
 namespace PT.Middleware
 {
     // Module for getting all or most company symbols and names from all exchanges
     // Used to be FTP for nasdaq but now apparently not...
-    public class Companies
+    public static class Companies
     {
         public static readonly string NasdaqSymbolsUri = @"https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqtraded.txt";
         public static readonly string OtcMarketsUri = @"https://www.otcmarkets.com/research/stock-screener/api/downloadCSV";

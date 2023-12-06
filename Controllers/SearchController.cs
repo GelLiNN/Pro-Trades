@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PT.Middleware;
 using PT.Models.RequestModels;
+using PT.Services;
 
 namespace PT.Controllers
 {

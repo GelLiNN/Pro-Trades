@@ -8,24 +8,36 @@ using Microsoft.OpenApi.Models;
 using PT.Data;
 using PT.Middleware;
 using PT.Models;
-
+using PT.Services;
+using System.Diagnostics;
+using LogLevel = NLog.LogLevel;
 
 namespace PT
 {
     public class Program
     {
         // For deploying to different environments read from appsettings.secrets.json
-        public static string Environment;
+        public static string Env;
+
+        // Application config can be read from anywhere in the app
         public static IConfiguration Config { get; set; }
+
+        public static string ExecutingPath { get; set; } = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName)
+            ?? Environment.CurrentDirectory;
 
         public static void Main(string[] args)
         {
+            // Read app config into object from both json files
             Config = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
                 .AddJsonFile("appsettings.secrets.json", optional: false, reloadOnChange: false)
                 .AddEnvironmentVariables()
                 .Build();
-            Environment = Config.GetValue<string>("DeploymentEnvironment");
+            Env = Config.GetValue<string>("DeploymentEnvironment");
+
+            // Initialize logger and test
+            LogHelper.InitializeLogger(Config);
+            LogHelper.Log(LogLevel.Warn, "You have just begun to initialize Pro-Trades...");
 
             var builder = WebApplication.CreateBuilder(args);
 

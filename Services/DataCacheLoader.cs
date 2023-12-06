@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 
-namespace PT.Middleware
+namespace PT.Services
 {
     public abstract class BackgroundTaskRunner : IHostedService
     {
