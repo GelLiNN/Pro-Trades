@@ -42,6 +42,28 @@ namespace PT.Controllers
         }
 
         /*
+         * Alpaca related endpoints
+         
+        [HttpGet("/GetCompanyStatsA/{symbol}")]
+        public CompanyStatsA GetCompanyStatsA(string symbol)
+        {
+            return Alpaca.GetCompanyStatsAsync(symbol, _rm).Result;
+        }
+
+        [HttpGet("/GetQuoteA/{symbol}")]
+        public YahooQuotesApi.Security GetQuoteYF(string symbol)
+        {
+            return YahooFinance.GetQuoteAsync(symbol).Result;
+        }
+
+        // This is primamrily to test the cache functionality outside of a background task
+        [HttpGet("/GetAllCompaniesA")]
+        public CompaniesListYF GetAllCompaniesYF()
+        {
+            return Companies.GetAllCompaniesAsync(_rm).Result;
+        }*/
+
+        /*
          * Yahoo Finance related endpoints
          */
         [HttpGet("/GetCompanyStatsYF/{symbol}")]

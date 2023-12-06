@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
@@ -25,6 +26,9 @@ namespace PT.Middleware
         {
             _concurrentRequests = new HashSet<Guid>();
             _client = new HttpClient();
+
+            int timeoutMins = Program.Config.GetValue<int>("Custom:WebRequestTimeoutMinutes");
+            _client.Timeout = TimeSpan.FromMinutes(timeoutMins);
         }
 
         // Helper to get response string via normal http "GET" request
