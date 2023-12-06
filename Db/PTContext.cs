@@ -10,6 +10,11 @@ namespace PT.Data
         public DbSet<User> User { get; set; }
         public DbSet<UserType> UserType { get; set; }
 
+        // Required for migrations to work
+        public PTContext(DbContextOptions<PTContext> contextOptions) : base(contextOptions)
+        {
+            this.Database.EnsureCreated();
+        }
     }
 
     [Table("users")]
