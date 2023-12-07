@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 
-namespace PT.Middleware
+namespace PT.Services
 {
     public class EmailSender : IEmailSender
     {

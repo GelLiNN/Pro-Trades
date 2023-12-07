@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using PT.Models.RequestModels;
+using PT.Services;
 
 namespace PT.Middleware
 {

@@ -8,7 +8,7 @@ using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
-namespace PT.Middleware
+namespace PT.Services
 {
     //Request Manager class
     public class RequestManager
@@ -56,7 +56,7 @@ namespace PT.Middleware
                 lock (_concurrentRequests) { _concurrentRequests.Add(requestId); }
 
                 string key = Program.Config.GetValue<string>("InRiverApiKey");
-                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(InRiverUrl + path);
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(InRiverUrl + path);
                 request.Accept = "application/json";
                 request.ContentType = "application/json";
                 method = method.ToUpper();
