@@ -2,6 +2,7 @@ import {useCallback, useState} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {useRegisterMutation} from '@/features/auth/api'
 import {setCredentials} from '@/features/auth/state'
+import {addNotification} from '@/features/notifications/state'
 import {useDispatch} from '@/store'
 
 import {Box, Button, Grid, Link, TextField} from '@mui/material'
@@ -39,8 +40,12 @@ export const Register = () => {
         dispatch(setCredentials(registerResponse))
         navigate('/')
       } catch (error) {
-        // TODO: add a notification
-        console.log('Error registering', error)
+        dispatch(
+          addNotification({
+            message: 'Failed to register',
+            severity: 'error',
+          })
+        )
       }
     },
     [dispatch, formState, navigate, register]

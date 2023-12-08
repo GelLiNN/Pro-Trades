@@ -5,19 +5,12 @@ import {ErrorBoundary} from 'react-error-boundary'
 import {HelmetProvider} from 'react-helmet-async'
 import {BrowserRouter as Router} from 'react-router-dom'
 import {Provider as ReduxProvider} from 'react-redux'
-import {Notifications} from '@/components/Notifications'
+import {AppLoading} from '@/components/AppLoading'
 import {Routes} from '@/components/Routes'
+import {Snackbar} from '@/features/notifications/components/Snackbar'
 
 import {store} from '@/store'
 import {theme} from '@/theme'
-
-const Loading = () => {
-  return <span>Loading ...</span>
-}
-
-const ErrorFallback = () => {
-  return <span>Something went wrong :(</span>
-}
 
 export const App = () => {
   return (
@@ -25,11 +18,11 @@ export const App = () => {
       <ThemeProvider theme={theme}>
         <CssBaseline />
 
-        <Suspense fallback={<Loading />}>
-          <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <Suspense fallback={<AppLoading />}>
+          <ErrorBoundary FallbackComponent={AppErrorFallback}>
             <HelmetProvider>
               <ReduxProvider store={store}>
-                <Notifications />
+                <Snackbar />
 
                 <Router>
                   <Routes />
@@ -41,4 +34,8 @@ export const App = () => {
       </ThemeProvider>
     </StrictMode>
   )
+}
+
+const AppErrorFallback = () => {
+  return <span>Something went wrong :(</span>
 }

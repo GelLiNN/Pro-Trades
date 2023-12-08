@@ -1,5 +1,7 @@
 import {useCallback, useState} from 'react'
 import {useRecoverPasswordMutation} from '@/features/auth/api'
+import {addNotification} from '@/features/notifications/state'
+import {useDispatch} from '@/store'
 
 import {Box, Button, Grid, Link, TextField} from '@mui/material'
 import {AuthLayout} from '@/features/auth/components/AuthLayout'
@@ -8,6 +10,8 @@ import type {ChangeEvent, FormEvent} from 'react'
 import type {RecoverPasswordRequest} from '@/features/auth/api'
 
 export const RecoverPassword = () => {
+  const dispatch = useDispatch()
+
   const [formState, setFormState] = useState<RecoverPasswordRequest>({
     email: '',
   })
@@ -29,11 +33,15 @@ export const RecoverPassword = () => {
         await recoverPassword(formState).unwrap()
         // TODO: Switch to "check your email" screen
       } catch (error) {
-        // TODO: add a notification
-        console.log('Error', error)
+        dispatch(
+          addNotification({
+            message: 'Failed to recover password',
+            severity: 'error',
+          })
+        )
       }
     },
-    [formState, recoverPassword]
+    [dispatch, formState, recoverPassword]
   )
 
   return (

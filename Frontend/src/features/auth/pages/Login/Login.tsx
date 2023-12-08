@@ -2,6 +2,7 @@ import {useCallback, useState} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {useLoginMutation} from '@/features/auth/api'
 import {setCredentials} from '@/features/auth/state'
+import {addNotification} from '@/features/notifications/state'
 import {useDispatch} from '@/store'
 
 import {Box, Button, Grid, Link, TextField} from '@mui/material'
@@ -37,8 +38,12 @@ export const Login = () => {
         dispatch(setCredentials(loginResponse))
         navigate('/')
       } catch (error) {
-        // TODO: add a notification
-        console.log('Error logging in', error)
+        dispatch(
+          addNotification({
+            message: 'Failed to login',
+            severity: 'error',
+          })
+        )
       }
     },
     [dispatch, formState, login, navigate]
