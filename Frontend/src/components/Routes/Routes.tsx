@@ -1,14 +1,14 @@
-import {Route, Routes as RoutesBase} from 'react-router-dom'
-import {Landing} from '@/features/core/pages/Landing'
-import {NotFound} from '@/features/core/pages/NotFound'
+import {Navigate, Route, Routes as RoutesBase} from 'react-router-dom'
+import {PrivateOutlet} from './PrivateOutlet'
+import {PublicOutlet} from './PublicOutlet'
 
 import {lazyImport} from '@/utils'
 
-const {ForgotPassword} = lazyImport(
-  () => import('@/features/auth/pages/ForgotPassword'),
-  'ForgotPassword'
-)
 const {Login} = lazyImport(() => import('@/features/auth/pages/Login'), 'Login')
+const {RecoverPassword} = lazyImport(
+  () => import('@/features/auth/pages/RecoverPassword'),
+  'RecoverPassword'
+)
 const {Register} = lazyImport(() => import('@/features/auth/pages/Register'), 'Register')
 
 const {Predictions} = lazyImport(
@@ -16,31 +16,19 @@ const {Predictions} = lazyImport(
   'Predictions'
 )
 
-const {CounterHome} = lazyImport(
-  () => import('@/features/counter/pages/CounterHome'),
-  'CounterHome'
-)
-
 export const Routes = () => {
   return (
     <RoutesBase>
-      <Route element={<Landing />} index />
-
-      <Route path='auth'>
-        <Route element={<ForgotPassword />} path='forgot-password' />
+      <Route element={<PublicOutlet />} path='auth'>
         <Route element={<Login />} path='login' />
+        <Route element={<RecoverPassword />} path='recover-password' />
         <Route element={<Register />} path='register' />
       </Route>
 
-      <Route path='predictions'>
-        <Route element={<Predictions />} index />
+      <Route element={<PrivateOutlet />}>
+        <Route element={<Predictions />} path='predictions' />
+        <Route element={<Navigate to='/predictions' />} path='*' />
       </Route>
-
-      <Route path='counter'>
-        <Route element={<CounterHome />} index />
-      </Route>
-
-      <Route element={<NotFound />} path='*' />
     </RoutesBase>
   )
 }

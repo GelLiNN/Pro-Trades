@@ -1,25 +1,18 @@
 import {useCallback, useState} from 'react'
-import {useNavigate} from 'react-router-dom'
-import {useLoginMutation} from '@/features/auth/api'
-import {setCredentials} from '@/features/auth/state'
-import {useDispatch} from '@/store'
+import {useRecoverPasswordMutation} from '@/features/auth/api'
 
 import {Box, Button, Grid, Link, TextField} from '@mui/material'
 import {AuthLayout} from '@/features/auth/components/AuthLayout'
 
 import type {ChangeEvent, FormEvent} from 'react'
-import type {LoginRequest} from '@/features/auth/api'
+import type {RecoverPasswordRequest} from '@/features/auth/api'
 
-export const Login = () => {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
-
-  const [formState, setFormState] = useState<LoginRequest>({
+export const RecoverPassword = () => {
+  const [formState, setFormState] = useState<RecoverPasswordRequest>({
     email: '',
-    password: '',
   })
 
-  const [login, {isLoading}] = useLoginMutation()
+  const [recoverPassword, {isLoading}] = useRecoverPasswordMutation()
 
   const handleChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setFormState(formState => ({
@@ -33,19 +26,18 @@ export const Login = () => {
       event.preventDefault()
 
       try {
-        const loginResponse = await login(formState).unwrap()
-        dispatch(setCredentials(loginResponse))
-        navigate('/')
+        await recoverPassword(formState).unwrap()
+        // TODO: Switch to "check your email" screen
       } catch (error) {
         // TODO: add a notification
-        console.log('Error logging in', error)
+        console.log('Error', error)
       }
     },
-    [dispatch, formState, login, navigate]
+    [formState, recoverPassword]
   )
 
   return (
-    <AuthLayout title='Log In'>
+    <AuthLayout title='Recover Password'>
       <Box component='form' noValidate onSubmit={handleSubmit}>
         <TextField
           autoComplete='email'
@@ -60,26 +52,14 @@ export const Login = () => {
           type='text'
         />
 
-        <TextField
-          autoComplete='current-password'
-          fullWidth
-          id='password'
-          label='Password'
-          margin='normal'
-          name='password'
-          onChange={handleChange}
-          required
-          type='password'
-        />
-
         <Button disabled={isLoading} fullWidth sx={{my: 2}} type='submit' variant='contained'>
-          Log In
+          Recover Password
         </Button>
 
         <Grid container>
           <Grid item xs>
-            <Link href='/auth/recover-password' variant='body2'>
-              Forgot your password?
+            <Link href='/auth/login' variant='body2'>
+              Already have an account?
             </Link>
           </Grid>
 

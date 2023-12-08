@@ -15,7 +15,8 @@ export const AuthLayout = ({children, title}: Props) => {
       <Container component='main' maxWidth='xs'>
         <Box
           sx={{
-            marginTop: 8,
+            mt: 8,
+            mb: 1,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -29,12 +30,7 @@ export const AuthLayout = ({children, title}: Props) => {
               gridColumnGap: 8,
             }}
           >
-            <Avatar
-              sx={{
-                m: 1,
-                bgcolor: 'secondary.main',
-              }}
-            >
+            <Avatar sx={{m: 1, bgcolor: 'secondary.main'}}>
               <LockOutlined />
             </Avatar>
 
