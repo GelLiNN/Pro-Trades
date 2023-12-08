@@ -25,7 +25,7 @@ module.exports = {
   rules: {
     'prettier/prettier': ['error'],
 
-    'react/jsx-sort-props': ['error'],
+    'react/jsx-sort-props': ['error', {ignoreCase: true}],
 
     'react-refresh/only-export-components': ['warn'],
   },
