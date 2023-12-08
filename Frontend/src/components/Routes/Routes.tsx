@@ -1,6 +1,5 @@
 import {Navigate, Route, Routes as RoutesBase} from 'react-router-dom'
-import {PrivateOutlet} from './PrivateOutlet'
-import {PublicOutlet} from './PublicOutlet'
+import {AuthOutlet} from './AuthOutlet'
 
 import {lazyImport} from '@/utils'
 
@@ -19,13 +18,17 @@ const {Predictions} = lazyImport(
 export const Routes = () => {
   return (
     <RoutesBase>
-      <Route element={<PublicOutlet />} path='auth'>
+      {/* Common routes */}
+
+      {/* Routes that require being not authed */}
+      <Route element={<AuthOutlet redirectTo='/' requiresAuth={false} />} path='auth'>
         <Route element={<Login />} path='login' />
         <Route element={<RecoverPassword />} path='recover-password' />
         <Route element={<Register />} path='register' />
       </Route>
 
-      <Route element={<PrivateOutlet />}>
+      {/* Routes that require being authed */}
+      <Route element={<AuthOutlet redirectTo='/auth/login' requiresAuth={true} />}>
         <Route element={<Predictions />} path='predictions' />
         <Route element={<Navigate to='/predictions' />} path='*' />
       </Route>
