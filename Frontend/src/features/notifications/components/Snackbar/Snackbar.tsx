@@ -58,11 +58,9 @@ export const Snackbar = () => {
     >
       <Alert
         action={
-          <>
-            <IconButton aria-label='close' color='inherit' onClick={handleClose} sx={{p: 0.25}}>
-              <Close />
-            </IconButton>
-          </>
+          <IconButton aria-label='close' color='inherit' onClick={handleClose} sx={{p: 0.25}}>
+            <Close />
+          </IconButton>
         }
         onClose={handleClose}
         severity={currentNotification ? currentNotification.severity : undefined}
