@@ -1,64 +1,103 @@
-import {Box, Button, Checkbox, FormControlLabel, Grid, Link, TextField} from '@mui/material'
+import {useCallback, useState} from 'react'
+import {useNavigate} from 'react-router-dom'
+import {useRegisterMutation} from '@/features/auth/api'
+import {setCredentials} from '@/features/auth/state'
+import {useDispatch} from '@/store'
+
+import {Box, Button, Grid, Link, TextField} from '@mui/material'
 import {AuthLayout} from '@/features/auth/components/AuthLayout'
 
+import type {ChangeEvent, FormEvent} from 'react'
+import type {RegisterRequest} from '@/features/auth/api'
+
 export const Register = () => {
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const data = new FormData(event.currentTarget)
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    })
-  }
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+
+  const [formState, setFormState] = useState<RegisterRequest>({
+    accessCode: '',
+    email: '',
+    password: '',
+    username: '',
+  })
+
+  const [register, {isLoading}] = useRegisterMutation()
+
+  const handleChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setFormState(formState => ({
+      ...formState,
+      [event.target.name]: event.target.value,
+    }))
+  }, [])
+
+  const handleSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+
+      try {
+        const registerResponse = await register(formState).unwrap()
+        dispatch(setCredentials(registerResponse))
+        navigate('/')
+      } catch (error) {
+        // TODO: add a notification
+        console.log('Error registering', error)
+      }
+    },
+    [dispatch, formState, navigate, register]
+  )
 
   return (
     <AuthLayout title='Register'>
-      <Box component='form' noValidate onSubmit={handleSubmit} sx={{mt: 3}}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <TextField
-              autoComplete='username'
-              autoFocus
-              fullWidth
-              id='username'
-              label='Username'
-              name='username'
-              required
-            />
-          </Grid>
+      <Box component='form' noValidate onSubmit={handleSubmit}>
+        <TextField
+          autoComplete='username'
+          autoFocus
+          fullWidth
+          id='username'
+          label='Username'
+          margin='normal'
+          name='username'
+          onChange={handleChange}
+          required
+          type='text'
+        />
 
-          <Grid item xs={12}>
-            <TextField
-              autoComplete='email'
-              fullWidth
-              id='email'
-              label='Email Address'
-              name='email'
-              required
-            />
-          </Grid>
+        <TextField
+          autoComplete='email'
+          fullWidth
+          id='email'
+          label='Email Address'
+          margin='normal'
+          name='email'
+          onChange={handleChange}
+          required
+          type='text'
+        />
 
-          <Grid item xs={12}>
-            <TextField
-              autoComplete='new-password'
-              fullWidth
-              id='password'
-              label='Password'
-              name='password'
-              required
-              type='password'
-            />
-          </Grid>
+        <TextField
+          autoComplete='new-password'
+          fullWidth
+          id='password'
+          label='Password'
+          margin='normal'
+          name='password'
+          onChange={handleChange}
+          required
+          type='password'
+        />
 
-          <Grid item xs={12}>
-            <FormControlLabel
-              control={<Checkbox color='primary' value='allowExtraEmails' />}
-              label='I want to receive updates via email.'
-            />
-          </Grid>
-        </Grid>
+        <TextField
+          fullWidth
+          id='accessCode'
+          label='Access Code'
+          margin='normal'
+          name='accessCode'
+          onChange={handleChange}
+          required
+          type='text'
+        />
 
-        <Button fullWidth sx={{mt: 3, mb: 2}} type='submit' variant='contained'>
+        <Button disabled={isLoading} fullWidth sx={{my: 2}} type='submit' variant='contained'>
           Register
         </Button>
 
