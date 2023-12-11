@@ -2,14 +2,15 @@ import {LockOutlined} from '@mui/icons-material'
 import {Avatar, Box, Container, Typography} from '@mui/material'
 import {Layout} from '@/components/Layout'
 
-import type {ReactNode} from 'react'
+import type {FunctionComponent, ReactNode} from 'react'
 
 interface Props {
   children: ReactNode
+  IconComponent?: FunctionComponent
   title: string
 }
 
-export const AuthLayout = ({children, title}: Props) => {
+export const AuthLayout = ({children, IconComponent = LockOutlined, title}: Props) => {
   return (
     <Layout title={title}>
       <Container component='main' maxWidth='xs'>
@@ -31,7 +32,7 @@ export const AuthLayout = ({children, title}: Props) => {
             }}
           >
             <Avatar sx={{m: 1, bgcolor: 'secondary.main'}}>
-              <LockOutlined />
+              <IconComponent />
             </Avatar>
 
             <Typography component='h1' variant='h5'>
