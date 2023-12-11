@@ -1,16 +1,15 @@
 import {configureStore} from '@reduxjs/toolkit'
 
-import {authApi} from '@/features/auth/api'
 import {authSlice} from '@/features/auth/state'
-
 import {notificationsSlice} from '@/features/notifications/state'
+import {api} from './api'
 
 export const store = configureStore({
-  middleware: getDefaultMiddleware => getDefaultMiddleware().concat(authApi.middleware),
+  middleware: getDefaultMiddleware => getDefaultMiddleware().concat(api.middleware),
   reducer: {
-    [authApi.reducerPath]: authApi.reducer,
-    [authSlice.name]: authSlice.reducer,
+    [api.reducerPath]: api.reducer,
 
+    [authSlice.name]: authSlice.reducer,
     [notificationsSlice.name]: notificationsSlice.reducer,
   },
 })
