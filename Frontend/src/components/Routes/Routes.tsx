@@ -9,6 +9,10 @@ const {RecoverPassword} = lazyImport(
   'RecoverPassword'
 )
 const {Register} = lazyImport(() => import('@/features/auth/pages/Register'), 'Register')
+const {ResetPassword} = lazyImport(
+  () => import('@/features/auth/pages/ResetPassword'),
+  'ResetPassword'
+)
 
 const {Predictions} = lazyImport(
   () => import('@/features/predictions/pages/Predictions'),
@@ -25,6 +29,7 @@ export const Routes = () => {
         <Route element={<Login />} path='login' />
         <Route element={<RecoverPassword />} path='recover-password' />
         <Route element={<Register />} path='register' />
+        <Route element={<ResetPassword />} path='reset-password' />
       </Route>
 
       {/* Routes that require being authed */}

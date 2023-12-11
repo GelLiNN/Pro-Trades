@@ -1,10 +1,11 @@
-import {useCallback} from 'react'
+import {useCallback, useState} from 'react'
 import * as zod from 'zod'
 import {useRecoverPasswordMutation} from '@/features/auth/api'
 import {addNotification} from '@/features/notifications/state'
 import {useDispatch} from '@/store'
 
-import {Button, Grid, Link, TextField} from '@mui/material'
+import {Button, Grid, Link, TextField, Typography} from '@mui/material'
+import {Check} from '@mui/icons-material'
 import {Form} from '@/components/Form'
 import {AuthLayout} from '@/features/auth/components/AuthLayout'
 
@@ -19,13 +20,14 @@ const recoverPasswordSchema = zod.object({
 export const RecoverPassword = () => {
   const dispatch = useDispatch()
 
-  const [recoverPassword, {isLoading}] = useRecoverPasswordMutation()
+  const [recoverPassword, {isLoading, isSuccess}] = useRecoverPasswordMutation()
+  const [email, setEmail] = useState('')
 
   const handleSubmit = useCallback(
     async (recoverPasswordData: RecoverPasswordData) => {
       try {
         await recoverPassword(recoverPasswordData).unwrap()
-        // TODO: Switch to "check your email" screen
+        setEmail(recoverPasswordData.email)
       } catch (error) {
         dispatch(
           addNotification({
@@ -39,45 +41,62 @@ export const RecoverPassword = () => {
   )
 
   return (
-    <AuthLayout title='Recover Password'>
+    <AuthLayout
+      IconComponent={isSuccess ? Check : undefined}
+      title={isSuccess ? 'Email Sent' : 'Recover Password'}
+    >
       <Form<RecoverPasswordData, typeof recoverPasswordSchema>
         onSubmit={handleSubmit}
         schema={recoverPasswordSchema}
       >
-        {({formState, register}) => (
-          <>
-            <TextField
-              autoComplete='email'
-              autoFocus
-              error={!!formState.errors.email}
-              fullWidth
-              helperText={formState.errors.email?.message}
-              label='Email'
-              margin='normal'
-              required
-              type='text'
-              {...register('email')}
-            />
+        {({formState, register}) =>
+          isSuccess ? (
+            <Typography sx={{my: 2}} variant='subtitle1'>
+              {'Check your email at '}
+              <Typography color='secondary' component='span'>
+                {email}
+              </Typography>
+              {` and open the link we sent to reset your password.`}
+            </Typography>
+          ) : (
+            <>
+              <Typography sx={{my: 2}} variant='subtitle1'>
+                {"Enter your email and we'll send you a link to reset your password."}
+              </Typography>
 
-            <Button disabled={isLoading} fullWidth sx={{my: 2}} type='submit' variant='contained'>
-              Recover Password
-            </Button>
+              <TextField
+                autoComplete='email'
+                autoFocus
+                error={!!formState.errors.email}
+                fullWidth
+                helperText={formState.errors.email?.message}
+                label='Email'
+                margin='normal'
+                required
+                type='text'
+                {...register('email')}
+              />
 
-            <Grid container>
-              <Grid item xs>
-                <Link href='/auth/login' variant='body2'>
-                  Already have an account?
-                </Link>
+              <Button disabled={isLoading} fullWidth sx={{my: 2}} type='submit' variant='contained'>
+                Recover Password
+              </Button>
+
+              <Grid container>
+                <Grid item xs>
+                  <Link href='/auth/login' variant='body2'>
+                    Already have an account?
+                  </Link>
+                </Grid>
+
+                <Grid item>
+                  <Link href='/auth/register' variant='body2'>
+                    {"Don't have an account?"}
+                  </Link>
+                </Grid>
               </Grid>
-
-              <Grid item>
-                <Link href='/auth/register' variant='body2'>
-                  {"Don't have an account?"}
-                </Link>
-              </Grid>
-            </Grid>
-          </>
-        )}
+            </>
+          )
+        }
       </Form>
     </AuthLayout>
   )
