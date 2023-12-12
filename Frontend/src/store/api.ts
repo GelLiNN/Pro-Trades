@@ -4,7 +4,7 @@ import type {RootState} from './types'
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
+    baseUrl: 'http://localhost:7777/api',
     prepareHeaders: (headers, {getState}) => {
       const token = (getState() as RootState).auth.token
 
