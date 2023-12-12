@@ -16,13 +16,7 @@ export const Layout = ({children, description, title}: Props) => {
     <>
       <Head description={description} title={title} />
 
-      <Box
-        sx={{
-          display: 'flex',
-          minHeight: '100vh',
-          flexDirection: 'column',
-        }}
-      >
+      <Box sx={{display: 'flex', minHeight: '100vh', flexDirection: 'column'}}>
         <Header />
 
         {children}

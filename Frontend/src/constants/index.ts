@@ -1,1 +1,1 @@
-export const SITE_NAME = 'Pro-Trades'
+export * from './branding'

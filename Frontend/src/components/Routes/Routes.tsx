@@ -1,46 +1,42 @@
-import {Route, Routes as RoutesBase} from 'react-router-dom'
-import {Landing} from '@/features/core/pages/Landing'
-import {NotFound} from '@/features/core/pages/NotFound'
+import {Navigate, Route, Routes as RoutesBase} from 'react-router-dom'
+import {AuthOutlet} from './AuthOutlet'
 
 import {lazyImport} from '@/utils'
 
-const {ForgotPassword} = lazyImport(
-  () => import('@/features/auth/pages/ForgotPassword'),
-  'ForgotPassword'
-)
 const {Login} = lazyImport(() => import('@/features/auth/pages/Login'), 'Login')
+const {RecoverPassword} = lazyImport(
+  () => import('@/features/auth/pages/RecoverPassword'),
+  'RecoverPassword'
+)
 const {Register} = lazyImport(() => import('@/features/auth/pages/Register'), 'Register')
+const {ResetPassword} = lazyImport(
+  () => import('@/features/auth/pages/ResetPassword'),
+  'ResetPassword'
+)
 
 const {Predictions} = lazyImport(
   () => import('@/features/predictions/pages/Predictions'),
   'Predictions'
 )
 
-const {CounterHome} = lazyImport(
-  () => import('@/features/counter/pages/CounterHome'),
-  'CounterHome'
-)
-
 export const Routes = () => {
   return (
     <RoutesBase>
-      <Route element={<Landing />} index />
+      {/* Common routes */}
 
-      <Route path='auth'>
-        <Route element={<ForgotPassword />} path='forgot-password' />
+      {/* Routes that require being not authed */}
+      <Route element={<AuthOutlet redirectTo='/' requiresAuth={false} />} path='auth'>
         <Route element={<Login />} path='login' />
+        <Route element={<RecoverPassword />} path='recover-password' />
         <Route element={<Register />} path='register' />
+        <Route element={<ResetPassword />} path='reset-password' />
       </Route>
 
-      <Route path='predictions'>
-        <Route element={<Predictions />} index />
+      {/* Routes that require being authed */}
+      <Route element={<AuthOutlet redirectTo='/auth/login' requiresAuth={true} />}>
+        <Route element={<Predictions />} path='predictions' />
+        <Route element={<Navigate to='/predictions' />} path='*' />
       </Route>
-
-      <Route path='counter'>
-        <Route element={<CounterHome />} index />
-      </Route>
-
-      <Route element={<NotFound />} path='*' />
     </RoutesBase>
   )
 }
