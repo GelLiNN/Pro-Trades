@@ -1,14 +1,25 @@
-import {SITE_NAME} from '@/constants'
+import {HEADER_HEIGHT, SITE_NAME} from '@/constants'
 
+import {useCallback} from 'react'
+import {useNavigate} from 'react-router-dom'
 import {useAuth} from '@/features/auth/hooks'
+import {clearCredentials} from '@/features/auth/state'
+import {useDispatch} from '@/store'
 
 import {Button, Link, Toolbar} from '@mui/material'
 
 export const Header = () => {
   const auth = useAuth()
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+
+  const handleLogout = useCallback(() => {
+    dispatch(clearCredentials())
+    navigate('/')
+  }, [dispatch, navigate])
 
   return (
-    <Toolbar sx={{flexWrap: 'wrap'}}>
+    <Toolbar component='header' sx={{height: HEADER_HEIGHT, flexWrap: 'wrap'}}>
       <Link color='inherit' href='/' noWrap sx={{flexGrow: 1}} underline='none' variant='h6'>
         {SITE_NAME}
       </Link>
@@ -22,7 +33,7 @@ export const Header = () => {
       </nav>
 
       {auth.user ? (
-        <Button sx={{my: 1, ml: 1.5}} variant='contained'>
+        <Button onClick={handleLogout} sx={{my: 1, ml: 1.5}} variant='contained'>
           Logout
         </Button>
       ) : (

@@ -30,12 +30,15 @@ export const Routes = () => {
         <Route element={<RecoverPassword />} path='recover-password' />
         <Route element={<Register />} path='register' />
         <Route element={<ResetPassword />} path='reset-password' />
+
+        <Route element={<Navigate to='/login' />} index path='*' />
       </Route>
 
       {/* Routes that require being authed */}
       <Route element={<AuthOutlet redirectTo='/auth/login' requiresAuth={true} />}>
         <Route element={<Predictions />} path='predictions' />
-        <Route element={<Navigate to='/predictions' />} path='*' />
+
+        <Route element={<Navigate to='/predictions' />} index path='*' />
       </Route>
     </RoutesBase>
   )
