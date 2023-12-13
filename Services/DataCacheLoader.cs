@@ -9,6 +9,7 @@ namespace PT.Services
     {
         private Task? _executingTask;
         private CancellationTokenSource? _cts;
+        
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -45,21 +46,29 @@ namespace PT.Services
     {
         private readonly DataCache _cache;
 
-        public DataCacheLoader(DataCache cache) { _cache = cache; }
+        public DataCacheLoader(DataCache cache)
+        {
+            _cache = cache;
+        }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
+                // Set this Task to cancel when complete
+                int limit = Program.Config.GetValue<int>("Custom:DefaultCacheLimit");
+                if (_cache.CachedSymbols["yf-companies"].Count >= Program.Config.GetValue<int>("Custom:DefaultCacheLimit"))
+                {
+                    return;
+                }
+
+                // Example loading multiple caches
                 //var cacheLoadTask1 = _cache.LoadCacheAsync("yf-companies"); //Yahoo Finance YF.cs
                 //var cacheLoadTask2 = _cache.LoadCacheAsync("iex-companies"); //Investors Exchange IEX.cs
                 //await Task.WhenAll(cacheLoadTask1, cacheLoadTask2);
 
                 // Comment and uncomment below to enable or disable cache loading on application startup
                 await _cache.LoadCacheAsync("yf-companies");
-
-                //Set this Task to cancel now that it is complete
-                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
             }
         }
     }

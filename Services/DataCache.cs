@@ -7,7 +7,7 @@ using PT.Models.RequestModels;
 
 namespace PT.Services
 {
-    // MemoryCache wrapper for storing cache keys and otherwise assisting with cache functionality
+    // MemoryCache wrapper for storing unique cache keys and data objects in-memory
     public class DataCache
     {
         protected RequestManager _rm;
@@ -65,7 +65,7 @@ namespace PT.Services
                     CompanyStatsIEX iexCompanyEntry;
                     if (!_iexCompaniesCache.TryGetValue(cacheKey, out iexCompanyEntry))
                     {
-                        //Not in cache, so we can update the cache with private helper
+                        // Not in cache, so we can update the cache with private helper
                         UpdateIEXCompanyCacheEntry(cacheKey, null, EvictionReason.None, this); //DEPRECATED
                         _iexCompaniesCache.TryGetValue(cacheKey, out iexCompanyEntry);
                     }
@@ -74,7 +74,7 @@ namespace PT.Services
                     CompositeScoreResult scoreCacheEntry;
                     if (!_yfCompaniesCache.TryGetValue(cacheKey, out scoreCacheEntry))
                     {
-                        //Not in cache, so we can update the cache with private helper
+                        // Not in cache, so we can update the cache with private helper
                         UpdateYFCompanyCacheEntry(cacheKey, null, EvictionReason.None, this);
                         _yfCompaniesCache.TryGetValue(cacheKey, out scoreCacheEntry);
                     }
@@ -82,6 +82,32 @@ namespace PT.Services
                 default:
                     throw new Exception("Cache ID " + cacheId + " is not supported by Pro-Trades Cache.");
             }
+        }
+
+        // Yahoo Finance Company Cache Entry Update Routine
+        public void UpdateYFCompanyCacheEntry(object key, object value, EvictionReason reason, object state = null)
+        {
+            try
+            {
+                //Stopwatch sw = new Stopwatch(); sw.Start();
+                string cacheKey = (string)key;
+                string channel = cacheKey.Split('-')[0];
+                string symbol = cacheKey.Split('-')[2];
+
+                // Remove before updating and re-adding
+                RemoveCachedSymbol(cacheKey);
+                YahooQuotesApi.Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
+                CompositeScoreResult result = Indicators.GetCompositeScoreResult(symbol, quote, _rm);
+
+                // Save score to cache
+                Add(result, cacheKey);
+                //string perf = sw.ElapsedMilliseconds.ToString();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("ERROR UpdateYFCompanyCacheEntry: " + e.Message);
+            }
+            ScrapedSymbolsAttempted++;
         }
 
         // Add passed object to correct cache based on cacheKey <channel>-<cacheType>-<symbol>
@@ -153,32 +179,6 @@ namespace PT.Services
             catch (Exception e)
             {
                 Debug.WriteLine("ERROR UpdateIEXCompanyCacheEntry: " + e.Message);
-            }
-            ScrapedSymbolsAttempted++;
-        }
-
-        // Yahoo Finance Company Cache Entry Update Routine
-        public void UpdateYFCompanyCacheEntry(object key, object value, EvictionReason reason, object state = null)
-        {
-            try
-            {
-                //Stopwatch sw = new Stopwatch(); sw.Start();
-                string cacheKey = (string)key;
-                string channel = cacheKey.Split('-')[0];
-                string symbol = cacheKey.Split('-')[2];
-
-                // Remove before updating and re-adding
-                RemoveCachedSymbol(cacheKey);
-                YahooQuotesApi.Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
-                CompositeScoreResult result =  Indicators.GetCompositeScoreResult(symbol, quote, _rm);
-
-                // Save score to cache
-                Add(result, cacheKey);
-                //string perf = sw.ElapsedMilliseconds.ToString();
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("ERROR UpdateYFCompanyCacheEntry: " + e.Message);
             }
             ScrapedSymbolsAttempted++;
         }
@@ -277,13 +277,17 @@ namespace PT.Services
                 string[] randomizedSymbols = ScrapedSymbols.OrderBy(x => r.Next()).ToArray();
                 for (int k = 0; k < randomizedSymbols.Length; k++) // do not trim
                 {
-                    if (CachedSymbols["yf-companies"].Count > limit)
+                    if (CachedSymbols["yf-companies"].Count < limit)
+                    {
+                        string symbol = randomizedSymbols[k];
+                        string cacheKey = string.Format("{0}-{1}", cacheId, symbol);
+                        Get(cacheKey);
+                    }
+                    else
                     {
                         break; // Quick stop cache loading
                     }
-                    string symbol = randomizedSymbols[k];
-                    string cacheKey = string.Format("{0}-{1}", cacheId, symbol);
-                    Get(cacheKey);
+
                 }
 
                 /*Parallel Edition

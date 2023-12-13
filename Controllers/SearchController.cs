@@ -28,6 +28,7 @@ namespace PT.Controllers
             return YahooFinance.GetCompanyStatsAsync(symbol, _rm).Result;
         }
 
+        // TODO: update to add to cache if not present
         [HttpGet("api/search/GetCompositeScore/{symbol}")]
         public CompositeScoreResult GetCompositeScore(string symbol)
         {
