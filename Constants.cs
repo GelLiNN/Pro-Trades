@@ -13,8 +13,9 @@
         public const string LOGGER_SETUP_VALUES = "Logging initialized with FileLoggingEnabled: {0}, FileLogLevel: {1}, LogFilePath: {2}";
         public const string LOG_TIMESTAMP = "{0} | {1}";
 
-        // Encryption
+        // Encryption & Security
         public const string KEY_GENERATION_FAILED = "Encryption failed to generate key.";
+        public const string AUTH_HEADER = "x-auth-token";
 
         // API identifiers and other constant values
         public const string ALPACA_KEY_ID = "APCA-API-KEY-ID";

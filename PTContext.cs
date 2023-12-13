@@ -20,13 +20,16 @@ namespace PT
     {
         [System.ComponentModel.DataAnnotations.Key]
         [Column("UserId")]
-        public int UserId { get; internal set; }
+        public string UserId { get; internal set; }
 
-        [Column("UserName")]
-        public string UserName { get; internal set; }
+        [Column("Username")]
+        public string Username { get; internal set; }
 
-        [Column("UserEmail")]
-        public string UserEmail { get; internal set; }
+        [Column("Email")]
+        public string Email { get; internal set; }
+
+        [Column("Password")]
+        public string Password { get; internal set; }
 
         [Column("UserTypeId")]
         public int UserTypeId { get; internal set; }

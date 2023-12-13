@@ -52,7 +52,7 @@
             {
                 // Set this Task to cancel when complete
                 int limit = Program.Config.GetValue<int>("Custom:DefaultCacheLimit");
-                if (_cache.CachedSymbols["yf-companies"].Count >= Program.Config.GetValue<int>("Custom:DefaultCacheLimit"))
+                if (_cache.CachedSymbols["yf-companies"].Count >= limit)
                 {
                     return;
                 }

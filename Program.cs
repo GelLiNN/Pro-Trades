@@ -42,8 +42,10 @@ namespace PT
             // Add Db
             builder.Services.AddDbContext<PTContext>(options =>
                 options.UseNpgsql(connectionString));
-
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+            // Add UserService to DI
+            //builder.Services.AddScoped<IUserService, UserService>();
 
             // Use RequestManager
             builder.Services.AddSingleton<RequestManager>();
@@ -85,6 +87,10 @@ namespace PT
 
             app.UseAuthentication();
             app.UseAuthorization();
+
+            // custom jwt auth middleware
+            //app.UseMiddleware<JwtMiddleware>();
+
             app.MapControllers();
             app.MapRazorPages();
 
