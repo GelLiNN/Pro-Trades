@@ -3,6 +3,7 @@ import {AUTH_API_BASE_URL} from './constants'
 import {api} from '@/store'
 
 export interface RecoverPasswordRequest {
+  accessCode: string
   email: string
 }
 
