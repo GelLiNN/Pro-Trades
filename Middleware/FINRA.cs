@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Formats.Asn1;
+﻿using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using PT.Models.RequestModels;
 using PT.Services;
 using TinyCsvParser;
@@ -20,7 +13,6 @@ namespace PT.Middleware
     {
         public static readonly DateTime FirstDate = new DateTime(2018, 11, 5);
         public static readonly string BaseUrl = @"https://cdn.finra.org/equity/regsho/daily";
-        private static readonly HttpClient Client = new HttpClient();
 
         private static readonly decimal SlightlyBearishLowerBound = 0.0M;
         private static readonly decimal SlightlyBearishUpperBound = 0.25M;

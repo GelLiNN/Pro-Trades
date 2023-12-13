@@ -1,9 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
-
-namespace PT.Services
+﻿namespace PT.Services
 {
     public abstract class BackgroundTaskRunner : IHostedService
     {

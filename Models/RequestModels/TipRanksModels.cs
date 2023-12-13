@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using static PT.Models.RequestModels.TipRanksDataResponse;
+﻿using static PT.Models.RequestModels.TipRanksDataResponse;
 
 namespace PT.Models.RequestModels
 {

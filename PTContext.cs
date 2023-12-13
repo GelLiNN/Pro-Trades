@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using PT.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PT

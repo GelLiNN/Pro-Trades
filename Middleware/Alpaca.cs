@@ -2,7 +2,6 @@
 using PT.Services;
 using Skender.Stock.Indicators;
 using System.Xml;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace PT.Middleware
 {
@@ -10,8 +9,6 @@ namespace PT.Middleware
     {
         // TODO: get price history from alpaca API https://docs.alpaca.markets/reference/stockbars
         // It has volume weighted prices for each day which is useful
-        
-
         public static async Task<Models.RequestModels.AlpacaHistory> GetHistoryAsync(RequestManager rm, string symbol, int days)
         {
             // You should be able to query data from various markets including US, HK, TW
