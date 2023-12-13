@@ -14,6 +14,7 @@ import type {RecoverPasswordRequest} from '@/features/auth/api'
 interface RecoverPasswordData extends RecoverPasswordRequest {}
 
 const recoverPasswordSchema = zod.object({
+  accessCode: zod.string().min(1, 'Access code is required'),
   email: zod.string().min(1, 'Email is required'),
 })
 
@@ -61,7 +62,9 @@ export const RecoverPassword = () => {
           ) : (
             <>
               <Typography sx={{my: 2}} variant='subtitle1'>
-                {"Enter your email and we'll send you a link to reset your password."}
+                {
+                  "Enter your email and access code and we'll send you a link to reset your password."
+                }
               </Typography>
 
               <TextField
@@ -75,6 +78,17 @@ export const RecoverPassword = () => {
                 required
                 type='text'
                 {...register('email')}
+              />
+
+              <TextField
+                error={!!formState.errors.accessCode}
+                fullWidth
+                helperText={formState.errors.accessCode?.message}
+                label='Access Code'
+                margin='normal'
+                required
+                type='text'
+                {...register('accessCode')}
               />
 
               <Button disabled={isLoading} fullWidth sx={{my: 2}} type='submit' variant='contained'>
