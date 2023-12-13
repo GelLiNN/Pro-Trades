@@ -21,6 +21,10 @@ export const authSlice = createSlice({
     // },
   } as AuthState,
   reducers: {
+    clearCredentials: state => {
+      state.token = null
+      state.user = null
+    },
     setCredentials: (state, action: PayloadAction<SetCredentialsPayload>) => {
       const {
         payload: {token, user},
@@ -32,4 +36,4 @@ export const authSlice = createSlice({
   },
 })
 
-export const {setCredentials} = authSlice.actions
+export const {clearCredentials, setCredentials} = authSlice.actions
