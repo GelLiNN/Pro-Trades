@@ -1,10 +1,8 @@
-import {AUTH_API_BASE_URL} from './constants'
-
 import {api} from '@/store'
 
 import type {User} from '@/features/users/types'
 
-export interface LoginRequest {
+export interface LoginBody {
   email: string
   password: string
 }
@@ -13,13 +11,14 @@ export interface LoginResponse {
   token: string
   user: User
 }
+
 const extendedApi = api.injectEndpoints({
   endpoints: builder => ({
-    login: builder.mutation<LoginResponse, LoginRequest>({
-      query: loginRequest => ({
-        body: loginRequest,
+    login: builder.mutation<LoginResponse, LoginBody>({
+      query: loginBody => ({
+        body: loginBody,
         method: 'POST',
-        url: `${AUTH_API_BASE_URL}/login`,
+        url: 'auth/Login',
       }),
     }),
   }),

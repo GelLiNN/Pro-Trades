@@ -1,10 +1,8 @@
-import {AUTH_API_BASE_URL} from './constants'
-
 import {api} from '@/store'
 
 import type {User} from '@/features/users/types'
 
-export interface RegisterRequest {
+export interface RegisterBody {
   accessCode: string
   email: string
   password: string
@@ -18,11 +16,11 @@ export interface RegisterResponse {
 
 const extendedApi = api.injectEndpoints({
   endpoints: builder => ({
-    register: builder.mutation<RegisterResponse, RegisterRequest>({
-      query: registerRequest => ({
-        body: registerRequest,
+    register: builder.mutation<RegisterResponse, RegisterBody>({
+      query: registerBody => ({
+        body: registerBody,
         method: 'POST',
-        url: `${AUTH_API_BASE_URL}/register`,
+        url: 'auth/Register',
       }),
     }),
   }),
