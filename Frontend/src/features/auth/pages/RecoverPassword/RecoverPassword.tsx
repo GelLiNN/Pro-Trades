@@ -4,14 +4,14 @@ import {useRecoverPasswordMutation} from '@/features/auth/api'
 import {addNotification} from '@/features/notifications/state'
 import {useDispatch} from '@/store'
 
-import {Button, Grid, Link, TextField, Typography} from '@mui/material'
-import {Check} from '@mui/icons-material'
+import {Check, Email, Key} from '@mui/icons-material'
+import {Button, Grid, InputAdornment, Link, TextField, Typography} from '@mui/material'
 import {Form} from '@/components/Form'
 import {AuthLayout} from '@/features/auth/components/AuthLayout'
 
-import type {RecoverPasswordRequest} from '@/features/auth/api'
+import type {RecoverPasswordBody} from '@/features/auth/api'
 
-interface RecoverPasswordData extends RecoverPasswordRequest {}
+interface RecoverPasswordData extends RecoverPasswordBody {}
 
 const recoverPasswordSchema = zod.object({
   accessCode: zod.string().min(1, 'Access code is required'),
@@ -73,8 +73,16 @@ export const RecoverPassword = () => {
                 error={!!formState.errors.email}
                 fullWidth
                 helperText={formState.errors.email?.message}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <Email />
+                    </InputAdornment>
+                  ),
+                }}
                 label='Email'
                 margin='normal'
+                placeholder='email@example.com'
                 required
                 type='text'
                 {...register('email')}
@@ -84,8 +92,16 @@ export const RecoverPassword = () => {
                 error={!!formState.errors.accessCode}
                 fullWidth
                 helperText={formState.errors.accessCode?.message}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <Key />
+                    </InputAdornment>
+                  ),
+                }}
                 label='Access Code'
                 margin='normal'
+                placeholder='super-secret-access-code'
                 required
                 type='text'
                 {...register('accessCode')}

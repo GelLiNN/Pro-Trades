@@ -1,4 +1,4 @@
-import {useCallback} from 'react'
+import {useCallback, useState} from 'react'
 import {useNavigate} from 'react-router-dom'
 import * as zod from 'zod'
 import {useLoginMutation} from '@/features/auth/api'
@@ -6,13 +6,14 @@ import {setCredentials} from '@/features/auth/state'
 import {addNotification} from '@/features/notifications/state'
 import {useDispatch} from '@/store'
 
-import {Button, Grid, Link, TextField} from '@mui/material'
+import {Email, Key, Visibility, VisibilityOff} from '@mui/icons-material'
+import {Button, Grid, IconButton, InputAdornment, Link, TextField} from '@mui/material'
 import {Form} from '@/components/Form'
 import {AuthLayout} from '@/features/auth/components/AuthLayout'
 
-import type {LoginRequest} from '@/features/auth/api'
+import type {LoginBody} from '@/features/auth/api'
 
-interface LoginData extends LoginRequest {}
+interface LoginData extends LoginBody {}
 
 const loginSchema = zod.object({
   email: zod.string().min(1, 'Email is required'),
@@ -22,6 +23,12 @@ const loginSchema = zod.object({
 export const Login = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+
+  const handleTogglePasswordVisibility = useCallback(() => {
+    setIsPasswordVisible(isPasswordVisible => !isPasswordVisible)
+  }, [])
 
   const [login, {isLoading}] = useLoginMutation()
 
@@ -41,7 +48,7 @@ export const Login = () => {
         dispatch(
           addNotification({
             message: 'Failed to log in',
-            severity: 'error',
+            severity: 'info',
           })
         )
       }
@@ -60,8 +67,16 @@ export const Login = () => {
               error={!!formState.errors.email}
               fullWidth
               helperText={formState.errors.email?.message}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position='start'>
+                    <Email />
+                  </InputAdornment>
+                ),
+              }}
               label='Email'
               margin='normal'
+              placeholder='email@example.com'
               required
               type='text'
               {...register('email')}
@@ -72,10 +87,29 @@ export const Login = () => {
               error={!!formState.errors.password}
               fullWidth
               helperText={formState.errors.password?.message}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position='end'>
+                    <IconButton
+                      aria-label='toggle password visibility'
+                      edge='end'
+                      onClick={handleTogglePasswordVisibility}
+                    >
+                      {isPasswordVisible ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+                startAdornment: (
+                  <InputAdornment position='start'>
+                    <Key />
+                  </InputAdornment>
+                ),
+              }}
               label='Password'
               margin='normal'
+              placeholder='••••••••••'
               required
-              type='password'
+              type={isPasswordVisible ? 'text' : 'password'}
               {...register('password')}
             />
 
