@@ -388,8 +388,19 @@ namespace PT.Middleware
             }
 
             // Add little trend value bonus although Idk
-            decimal trendValueBonus = trendValue > 0 ? 7 : -7;
-            return hedgeBonus + trendValueBonus;
+            decimal trendValueBonus = 0;
+            if (trendValue > 0)
+            {
+                trendValueBonus = 2.0M * (decimal) Math.PI;
+            }
+            else if (trendValue < 0)
+            {
+                trendValueBonus = -2.0M * (decimal)Math.PI;
+            }
+            // Limit hedge sentiment bonus to 25
+            hedgeBonus += trendValueBonus;
+            hedgeBonus = Math.Min(25, hedgeBonus);
+            return hedgeBonus;
         }
     }
 }
