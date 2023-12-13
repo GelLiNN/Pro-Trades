@@ -3,6 +3,35 @@
     /*
      * Alpaca Models
      */
+    public class AlpacaHistory
+    {
+        // Data for 30d, 10d, today
+        public List<decimal> PriceAvgXList { get; set; }
+        public List<decimal> PriceAvgYList { get; set; }
+        public List<decimal> VolAvgXList { get; set; }
+        public List<decimal> VolAvgYList { get; set; }
+
+        // 30 day average volume in USD
+        public decimal AverageVolumeUSD { get; set; }
+
+        // Volume today in USD
+        public decimal VolumeUSD { get; set; }
+
+        // Price history object for internal indicators library
+        public IEnumerable<Skender.Stock.Indicators.Quote> PriceHistory;
+
+        // Constructor
+        public AlpacaHistory()
+        {
+            PriceHistory = new List<Skender.Stock.Indicators.Quote>();
+            PriceAvgXList = new List<decimal>();
+            PriceAvgYList = new List<decimal>();
+            VolAvgXList = new List<decimal>();
+            VolAvgYList = new List<decimal>();
+        }
+    }
+
+
     public class CompanyStatsA
     {
         public string Symbol { get; set; }

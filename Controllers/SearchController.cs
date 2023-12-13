@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Mvc;
 using PT.Middleware;
 using PT.Models.RequestModels;
 using PT.Services;
@@ -25,21 +18,74 @@ namespace PT.Controllers
             _rm = rm;
         }
 
-        [HttpGet("/Search")]
-        public IActionResult Search()
-        {
-            return View("Search");
-        }
-
         /*
          * Composite Score Endpoints
          */
-        [HttpGet("/GetCompositeScore/{symbol}")]
+        [HttpGet("api/search/GetCompanyStats/{symbol}")]
+        public CompanyStats GetCompanyStats(string symbol)
+        {
+            symbol = symbol.ToUpper();
+            return YahooFinance.GetCompanyStatsAsync(symbol, _rm).Result;
+        }
+
+        [HttpGet("api/search/GetCompositeScore/{symbol}")]
         public CompositeScoreResult GetCompositeScore(string symbol)
         {
             symbol = symbol.ToUpper();
             YahooQuotesApi.Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
-            return Indicators.GetCompositeScoreResult(symbol, quote, _rm); //no indicator API needed
+            return Indicators.GetCompositeScoreResult(symbol, quote, _rm);
+        }
+
+        /*
+         * Cache related endpoints
+         */
+        [HttpGet("api/search/GetCacheView")]
+        public CacheViewResult GetCacheView()
+        {
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            return new CacheViewResult
+            {
+                CacheCount = cachedSymbols.Count,
+                ScrapeCount = _cache.ScrapedSymbols.Count,
+                ScrapeAttemptCount = _cache.ScrapedSymbolsAttempted,
+                CacheKeys = cachedSymbols
+            };
+        }
+
+        // Main endpoint for getting all company scores for now
+        [HttpGet("api/search/DumpCache")]
+        public List<CompositeScoreResult> DumpCache()
+        {
+            List<CompositeScoreResult> cachedScores = new List<CompositeScoreResult>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompositeScoreResult company = (CompositeScoreResult)_cache.Get(cacheKey);
+                if (company != null)
+                {
+                    cachedScores.Add(company);
+                }
+            }
+            return cachedScores;
+        }
+
+        // Endpoint for getting primes
+        [HttpGet("api/search/GetCachedPrimes")]
+        public List<CompositeScoreResult> GetCachedPrimesYF()
+        {
+            List<CompositeScoreResult> cachedPrimes = new List<CompositeScoreResult>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
+                if (companyScore != null && companyScore.CompositeRank == "PRIME")
+                {
+                    cachedPrimes.Add(companyScore);
+                }
+            }
+            return cachedPrimes;
         }
 
         /*
@@ -67,92 +113,34 @@ namespace PT.Controllers
         /*
          * Yahoo Finance related endpoints
          */
-        [HttpGet("/GetCompanyStatsYF/{symbol}")]
-        public CompanyStatsYF GetCompanyStatsYF(string symbol)
-        {
-            return YahooFinance.GetCompanyStatsAsync(symbol, _rm).Result;
-        }
-
-        // TODO: Fix this endpoint
-        [HttpGet("/GetQuoteYF/{symbol}")]
+        [HttpGet("api/search/GetQuoteYF/{symbol}")]
         public YahooQuotesApi.Security GetQuoteYF(string symbol)
         {
             return YahooFinance.GetQuoteAsync(symbol).Result;
         }
 
         // This is primamrily to test the cache functionality outside of a background task
-        [HttpGet("/GetAllCompaniesYF")]
+        [HttpGet("api/search/GetAllCompanies")]
         public CompaniesListYF GetAllCompaniesYF()
         {
             return Companies.GetAllCompaniesAsync(_rm).Result;
         }
 
-        [HttpGet("/GetScreenedCompaniesYF/{screenId}")]
+        [HttpGet("api/search/GetScreenedCompaniesYF/{screenId}")]
         public CompaniesListYF GetScreenedCompaniesYF(string screenId)
         {
             CompaniesListYF companies = Companies.GetAllCompaniesAsync(_rm).Result;
             return YahooFinance.GetScreenedCompaniesAsync(companies, screenId).Result;
         }
 
-        /*
-         * Cache related endpoints
-         */
-        [HttpGet("/GetCachedSymbolsYF")]
-        public CacheViewResult GetCachedSymbolsYF()
-        {
-            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
-            return new CacheViewResult
-            {
-                CacheCount = cachedSymbols.Count,
-                ScrapeCount = _cache.ScrapedSymbols.Count,
-                CacheKeys = cachedSymbols
-            };
-        }
-
-        // Main endpoint for getting all scores for now
-        [HttpGet("/GetCachedCompaniesYF")]
-        public List<CompanyStatsYF> GetCachedCompaniesYF()
-        {
-            List<CompanyStatsYF> cachedCompanies = new List<CompanyStatsYF>();
-
-            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
-            foreach (string cacheKey in cachedSymbols)
-            {
-                CompanyStatsYF company = (CompanyStatsYF)_cache.Get(cacheKey);
-                if (company != null)
-                {
-                    cachedCompanies.Add(company);
-                }
-            }
-            return cachedCompanies;
-        }
-
-        // Endpoint for getting primes
-        [HttpGet("/GetCachedPrimesYF")]
-        public List<CompanyStatsYF> GetCachedPrimesYF()
-        {
-            List<CompanyStatsYF> cachedPrimes = new List<CompanyStatsYF>();
-
-            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
-            foreach (string cacheKey in cachedSymbols)
-            {
-                CompanyStatsYF company = (CompanyStatsYF)_cache.Get(cacheKey);
-                if (company != null && company.CompositeScoreResult != null && company.CompositeScoreResult.CompositeRank == "PRIME")
-                {
-                    cachedPrimes.Add(company);
-                }
-            }
-            return cachedPrimes;
-        }
-
-        [HttpGet("/GetCachedSymbolsIEX")]
+        [HttpGet("api/search/GetCachedSymbolsIEX")]
         public HashSet<string> GetCachedSymbolsIEX()
         {
             HashSet<string> cachedSymbols = _cache.GetCachedSymbols("iex-companies");
             return cachedSymbols;
         }
 
-        [HttpGet("/GetCachedCompaniesIEX")]
+        [HttpGet("api/search/GetCachedCompaniesIEX")]
         public List<CompanyStatsIEX> GetCachedCompaniesIEX()
         {
             List<CompanyStatsIEX> cachedCompanies = new List<CompanyStatsIEX>();
@@ -170,7 +158,7 @@ namespace PT.Controllers
         /*
          * AlphaVantage related endpoints
          */
-        [HttpGet("/GetIndicatorAV/{function}/{symbol}/{days}")] //indicator == function
+        [HttpGet("api/search/GetIndicatorAV/{function}/{symbol}/{days}")] //indicator == function
         public IActionResult GetIndicatorAV(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
@@ -183,7 +171,7 @@ namespace PT.Controllers
             };
         }
 
-        [HttpGet("/GetCompositeScoreAV/{symbol}")]
+        [HttpGet("api/search/GetCompositeScoreAV/{symbol}")]
         public CompositeScoreResult GetCompositeScoreAV(string symbol)
         {
             string adxResponse = AlphaVantage.CompleteAlphaVantageRequest("ADX", symbol).Result;
@@ -210,7 +198,7 @@ namespace PT.Controllers
         /*
          * TwelveData related endpoints
          */
-        [HttpGet("/GetIndicatorTD/{function}/{symbol}/{days}")] //indicator == function
+        [HttpGet("api/search/GetIndicatorTD/{function}/{symbol}/{days}")] //indicator == function
         public IActionResult GetIndicatorTD(string function, string symbol, string days)
         {
             int numOfDays = Int32.Parse(days);
@@ -239,25 +227,25 @@ namespace PT.Controllers
         /*
          * Financial Modeling Prep dependent endpoints
          */
-        [HttpGet("/GetCompanyStatsFMP/{symbol}")]
+        [HttpGet("api/search/GetCompanyStatsFMP/{symbol}")]
         public CompanyStatsFMP GetCompanyStatsFMP(string symbol)
         {
             return FMP.GetCompanyStatsAsync(symbol).Result;
         }
 
-        [HttpGet("/GetQuoteFMP/{symbol}")]
+        [HttpGet("api/search/GetQuoteFMP/{symbol}")]
         public string GetQuoteFMP(string symbol)
         {
             return FMP.GetQuote(symbol);
         }
 
-        [HttpGet("/GetAllCompaniesFMP")]
+        [HttpGet("api/search/GetAllCompaniesFMP")]
         public CompaniesListFMP GetAllCompaniesFMP()
         {
             return FMP.GetAllCompaniesAsync(_rm).Result;
         }
 
-        [HttpGet("/GetScreenedCompaniesFMP/{screenId}")]
+        [HttpGet("api/search/GetScreenedCompaniesFMP/{screenId}")]
         public CompaniesListFMP GetScreenedCompaniesFMP(string screenId)
         {
             CompaniesListFMP companies = FMP.GetAllCompaniesAsync(_rm).Result;
@@ -267,7 +255,7 @@ namespace PT.Controllers
         /*
          * ZacksRank related endpoints
          */
-        [HttpGet("/GetZacksRank/{symbol}")]
+        [HttpGet("api/search/GetZacksRank/{symbol}")]
         public string GetZacksRank(string symbol)
         {
             //return _node.TestNodeInterop();
@@ -278,71 +266,24 @@ namespace PT.Controllers
         /*
          * TipRanks related endpoints
          */
-        [HttpGet("/GetTipRanksData/{symbol}")]
-        public TipRanksResult GetTipRanksData(string symbol)
+        [HttpGet("api/search/GetTipRanksData/{symbol}")]
+        public HedgeFundsResult GetTipRanksData(string symbol)
         {
             //TipRanks takes lower case symbols
             return TipRanks.GetTipRanksResult(symbol.ToLower(), _rm);
         }
 
-        [HttpGet("/GetTipRanksSentiment/{symbol}")]
+        [HttpGet("api/search/GetTipRanksSentiment/{symbol}")]
         public string GetTipRanksSentiment(string symbol)
         {
             //TipRanks takes lower case symbols
             return TipRanks.GetSentiment(symbol.ToLower(), _rm);
         }
 
-        [HttpGet("/GetTipRanksTrending")]
+        [HttpGet("api/search/GetTipRanksTrending")]
         public TipRanksTrendingCompany[] GetTipRanksTrending()
         {
             return TipRanks.GetTrendingCompanies(_rm);
-        }
-
-        /*
-         * Other endpoints
-         */
-        [HttpGet("/Test")]
-        public string Test()
-        {
-            //Stuff from my codillity assessment for Sameksha
-            //Job links
-
-            /*int[] A = new int[5] { 1, 2, 3, 4, 5 };
-            int[] sortA = new int[5];
-            int len = A.Length;
-            A.CopyTo(sortA, 0);
-            Array.Sort(sortA);
-            Console.WriteLine();
-
-            HashSet<int> ints = new HashSet<int>();
-            foreach (int val in A)
-            {
-                if (!ints.Contains(val))
-                    ints.Add(val);
-            }*/
-
-            string s = "abc";
-            char[] chars = s.ToCharArray();
-            List<string> combos = new List<string>();
-            for (int i = 0; i < chars.Length; i++)
-            {
-                char toRemove = chars[i];
-                string combo = string.Empty;
-
-                for (int y = 0; y < chars.Length; i++)
-                {
-                    char current = chars[y];
-                    if (current != toRemove)
-                    {
-                        combo += current;
-                    }
-                }
-                Console.WriteLine(combo);
-                combos.Add(combo);
-            }
-            string[] combosArray = combos.ToArray();
-            Array.Sort(combosArray);
-            return String.Join(",", combosArray);
         }
     }
 }

@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Primitives;
 using PT.Middleware;
 using PT.Models.RequestModels;
 
 namespace PT.Services
 {
-    //MemoryCache wrapper for storing cache keys and otherwise assisting with cache functionality
+    // MemoryCache wrapper for storing cache keys and otherwise assisting with cache functionality
     public class DataCache
     {
         protected RequestManager _rm;
@@ -33,6 +30,7 @@ namespace PT.Services
 
         // Globals
         public HashSet<string> ScrapedSymbols; // For seeing progress while loading
+        public int ScrapedSymbolsAttempted;
         public Dictionary<string, HashSet<string>> CachedSymbols; // CacheId => Cached Symbols
         public Dictionary<string, string> ExceptionReport;
         public List<string> CacheIds = new List<string> { "iex-companies", "yf-companies" };
@@ -47,6 +45,7 @@ namespace PT.Services
             _yfCompaniesCache = new MemoryCache(new MemoryCacheOptions());
 
             ScrapedSymbols = new HashSet<string>();
+            ScrapedSymbolsAttempted = 0;
 
             CachedSymbols = new Dictionary<string, HashSet<string>>();
             foreach (string cacheId in CacheIds)
@@ -55,7 +54,7 @@ namespace PT.Services
             ExceptionReport = new Dictionary<string, string>();
         }
 
-        //Get object by cacheKey <channel>-<cacheType>-<symbol>
+        // Get object by cacheKey <channel>-<cacheType>-<symbol>
         public object Get(string cacheKey)
         {
             string[] tokens = cacheKey.Split('-');
@@ -72,30 +71,29 @@ namespace PT.Services
                     }
                     return iexCompanyEntry;
                 case "yf-companies":
-                    CompanyStatsYF yfCompanyEntry;
-                    if (!_yfCompaniesCache.TryGetValue(cacheKey, out yfCompanyEntry))
+                    CompositeScoreResult scoreCacheEntry;
+                    if (!_yfCompaniesCache.TryGetValue(cacheKey, out scoreCacheEntry))
                     {
                         //Not in cache, so we can update the cache with private helper
                         UpdateYFCompanyCacheEntry(cacheKey, null, EvictionReason.None, this);
-                        _yfCompaniesCache.TryGetValue(cacheKey, out yfCompanyEntry);
+                        _yfCompaniesCache.TryGetValue(cacheKey, out scoreCacheEntry);
                     }
-                    return yfCompanyEntry;
+                    return scoreCacheEntry;
                 default:
-                    throw new Exception("Cache ID " + cacheId + " is not supported by PimService Cache.");
+                    throw new Exception("Cache ID " + cacheId + " is not supported by Pro-Trades Cache.");
             }
         }
 
         // Add passed object to correct cache based on cacheKey <channel>-<cacheType>-<symbol>
-        public void Add(object product, string cacheKey)
+        public void Add(object scorePacket, string cacheKey)
         {
             string[] tokens = cacheKey.Split('-');
             string cacheId = tokens[0] + "-" + tokens[1];
-            int expirationMinutes = new Random().Next(MinCacheUpdateAge, MaxCacheUpdateAge);
-            var expirationTime = DateTime.Now.Add(new TimeSpan(0, expirationMinutes, 0));
 
             // If you want the cache entry to expire
-            //var expirationToken = new CancellationChangeToken(
-            //new CancellationTokenSource(TimeSpan.FromMinutes(expirationMinutes + .01)).Token);
+            int expirationMinutes = new Random().Next(MinCacheUpdateAge, MaxCacheUpdateAge);
+            var expirationTime = DateTime.Now.Add(new TimeSpan(0, expirationMinutes, 0));
+            var expirationToken = new CancellationChangeToken(new CancellationTokenSource(TimeSpan.FromMinutes(expirationMinutes + .01)).Token);
 
             MemoryCacheEntryOptions options;
             if (AutoUpdateDisabled)
@@ -107,21 +105,21 @@ namespace PT.Services
             {
                 options = new MemoryCacheEntryOptions()
                     .SetPriority(CacheItemPriority.NeverRemove)
-                    .SetAbsoluteExpiration(expirationTime);
-                //.AddExpirationToken(expirationToken);
+                    .SetAbsoluteExpiration(expirationTime)
+                    .AddExpirationToken(expirationToken);
             }
             switch (cacheId)
             {
                 case "iex-companies":
                     options.RegisterPostEvictionCallback(callback: UpdateIEXCompanyCacheEntry, state: this); //DEPRECATED
-                    _iexCompaniesCache.Set(cacheKey, product, options);
+                    _iexCompaniesCache.Set(cacheKey, scorePacket, options);
                     break;
                 case "yf-companies":
                     options.RegisterPostEvictionCallback(callback: UpdateYFCompanyCacheEntry, state: this);
-                    _yfCompaniesCache.Set(cacheKey, product, options);
+                    _yfCompaniesCache.Set(cacheKey, scorePacket, options);
                     break;
                 default:
-                    throw new Exception("Cache ID " + cacheId + " is not supported by PimService Cache.");
+                    throw new Exception("Cache ID " + cacheId + " is not supported by Pro-Trades Cache.");
             }
             string curSymbol = cacheKey.Split('-')[2];
             lock (CachedSymbols)
@@ -138,6 +136,7 @@ namespace PT.Services
             try
             {
                 Stopwatch sw = new Stopwatch(); sw.Start();
+                
                 string cacheKey = (string)key;
                 string channel = cacheKey.Split('-')[0];
                 string symbol = cacheKey.Split('-')[2];
@@ -155,6 +154,7 @@ namespace PT.Services
             {
                 Debug.WriteLine("ERROR UpdateIEXCompanyCacheEntry: " + e.Message);
             }
+            ScrapedSymbolsAttempted++;
         }
 
         // Yahoo Finance Company Cache Entry Update Routine
@@ -162,24 +162,25 @@ namespace PT.Services
         {
             try
             {
-                Stopwatch sw = new Stopwatch(); sw.Start();
+                //Stopwatch sw = new Stopwatch(); sw.Start();
                 string cacheKey = (string)key;
                 string channel = cacheKey.Split('-')[0];
                 string symbol = cacheKey.Split('-')[2];
 
                 // Remove before updating and re-adding
                 RemoveCachedSymbol(cacheKey);
+                YahooQuotesApi.Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
+                CompositeScoreResult result =  Indicators.GetCompositeScoreResult(symbol, quote, _rm);
 
-                CompanyStatsYF companyStats = YahooFinance.GetCompanyStatsAsync(symbol, _rm).Result;
-
-                // Save YF Company to cache
-                Add(companyStats, cacheKey);
-                string perf = sw.ElapsedMilliseconds.ToString();
+                // Save score to cache
+                Add(result, cacheKey);
+                //string perf = sw.ElapsedMilliseconds.ToString();
             }
             catch (Exception e)
             {
                 Debug.WriteLine("ERROR UpdateYFCompanyCacheEntry: " + e.Message);
             }
+            ScrapedSymbolsAttempted++;
         }
 
         public void AddCachedSymbol(string cacheKey)
@@ -223,6 +224,91 @@ namespace PT.Services
             return null;
         }
 
+        // Scrape all symbols first, then start cache loading
+        public async Task LoadCacheAsync(string cacheId)
+        {
+            await Task.Run(() =>
+            {
+                // Get Nasdaq symbols
+                string nasdaqData = _rm.GetFromUri(Companies.NasdaqSymbolsUri);
+                string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+
+                for (int i = 1; i < nasdaqDataLines.Length - 1; i++) // trim first and last row
+                {
+                    string line = nasdaqDataLines[i];
+                    string[] data = line.Split('|');
+                    if (data.Count() > 3)
+                    {
+                        string symbol = data[1];
+                        if (!string.IsNullOrEmpty(symbol) && !CachedSymbols[cacheId].Contains(symbol))
+                        {
+                            bool isNasdaq = data[0] == "Y";
+                            if (isNasdaq)
+                            {
+                                ScrapedSymbols.Add(symbol);
+                            }
+                        }
+                    }
+                }
+
+                // Get OTC Markets symbols
+                string otcMarketsData = _rm.GetFromUri(Companies.OtcMarketsUri);
+                string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+
+                for (int j = 1; j < otcMarketsDataLines.Length; j++) // trim first row
+                {
+                    string line = otcMarketsDataLines[j];
+                    string[] data = line.Split(',');
+                    if (data.Length > 3)
+                    {
+                        string symbol = data[0];
+                        if (!string.IsNullOrEmpty(symbol) && !CachedSymbols[cacheId].Contains(symbol))
+                        {
+                            ScrapedSymbols.Add(symbol);
+                        }
+                    }
+                }
+
+                // Use DefaultCacheLimit from custom config
+                int limit = Program.Config.GetValue<int>("Custom:DefaultCacheLimit");
+
+                // Ensure combined set is randomized, then start loading cache with Get function
+                Random r = new Random();
+                string[] randomizedSymbols = ScrapedSymbols.OrderBy(x => r.Next()).ToArray();
+                for (int k = 0; k < randomizedSymbols.Length; k++) // do not trim
+                {
+                    if (CachedSymbols["yf-companies"].Count > limit)
+                    {
+                        break; // Quick stop cache loading
+                    }
+                    string symbol = randomizedSymbols[k];
+                    string cacheKey = string.Format("{0}-{1}", cacheId, symbol);
+                    Get(cacheKey);
+                }
+
+                /*Parallel Edition
+                Parallel.ForEach(ids, Common.ParallelOptions, (entityId) =>
+                {
+                    string cacheKey = string.Format("{0}-{1}", cacheId, entityId);
+                    try
+                    {
+                        if (!this.CachedStyles.ContainsKey(cacheKey))
+                        {
+                            this.Get(cacheKey);
+                            Interlocked.Increment(ref count);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        lock (ExceptionReport) { ExceptionReport.Add(cacheKey, "Error: " + e.Message + ", StackTrace: " + e.StackTrace); }
+                        return;
+                    }
+                });*/
+
+            }).ConfigureAwait(false);
+        }
+
+        // Other things we may want
         /*public void ClearAll()
         {
             this.CachedUpcs = new CustomDictionary<string, HashSet<string>>();
@@ -248,7 +334,7 @@ namespace PT.Services
                     _psPricesCache = new MemoryCache(new MemoryCacheOptions());
                     break;
                 default:
-                    throw new Exception("Cache ID " + cacheId + " is not supported by PimService Cache.");
+                    throw new Exception("Cache ID " + cacheId + " is not supported by Pro-Trades Cache.");
             }
             foreach (string cacheKey in CachedStyles.Keys)
             {
@@ -261,88 +347,5 @@ namespace PT.Services
                     lock (CachedUpcs) { CachedUpcs.Remove(cacheKey); }
             }
         }*/
-
-        public async Task LoadCacheAsync(string cacheId)
-        {
-            int count = 0;
-            await Task.Run(() =>
-            {
-                // See total symbols scraped first
-                string nasdaqData = _rm.GetFromUri(Companies.NasdaqSymbolsUri);
-                string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-                // Ensure set is randomized
-                Random r1 = new Random();
-                string[] randomizedNasdaqLines = nasdaqDataLines.OrderBy(x => r1.Next()).ToArray();
-                for (int i = 1; i < randomizedNasdaqLines.Length - 1; i++) // trim first and last row
-                {
-                    string line = randomizedNasdaqLines[i];
-                    string[] data = line.Split('|');
-                    if (data.Count() > 3)
-                    {
-                        string symbol = data[1];
-                        if (!string.IsNullOrEmpty(symbol) && !CachedSymbols[cacheId].Contains(symbol))
-                        {
-                            bool isNasdaq = data[0] == "Y";
-                            if (isNasdaq)
-                            {
-                                ScrapedSymbols.Add(symbol);
-                            }
-                        }
-                    }
-                }
-
-                string otcMarketsData = _rm.GetFromUri(Companies.OtcMarketsUri);
-                string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-                // Ensure set is randomized
-                Random r2 = new Random();
-                string[] randomizedOtcMarketsLines = otcMarketsDataLines.OrderBy(x => r2.Next()).ToArray();
-                for (int j = 1; j < randomizedOtcMarketsLines.Length; j++) // trim first row
-                {
-                    string line = randomizedOtcMarketsLines[j];
-                    string[] data = line.Split(',');
-                    if (data.Length > 3)
-                    {
-                        string symbol = data[0];
-                        if (!string.IsNullOrEmpty(symbol) && !CachedSymbols[cacheId].Contains(symbol))
-                        {
-                            ScrapedSymbols.Add(symbol);
-                        }
-                    }
-                }
-
-                // Ensure combined set is randomized, then start loading cache with Get function
-                Random r3 = new Random();
-                string[] randomizedSymbols = ScrapedSymbols.OrderBy(x => r3.Next()).ToArray();
-                for (int k = 0; k < randomizedSymbols.Length; k++) // do not trim
-                {
-                    string symbol = randomizedSymbols[k];
-                    string cacheKey = string.Format("{0}-{1}", cacheId, symbol);
-                    Get(cacheKey);
-                    count++;
-                }
-
-                /*Parallel Edition
-                Parallel.ForEach(ids, Common.ParallelOptions, (entityId) =>
-                {
-                    string cacheKey = string.Format("{0}-{1}", cacheId, entityId);
-                    try
-                    {
-                        if (!this.CachedStyles.ContainsKey(cacheKey))
-                        {
-                            this.Get(cacheKey);
-                            Interlocked.Increment(ref count);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        lock (ExceptionReport) { ExceptionReport.Add(cacheKey, "Error: " + e.Message + ", StackTrace: " + e.StackTrace); }
-                        return;
-                    }
-                });*/
-
-            }).ConfigureAwait(false);
-        }
     }
 }

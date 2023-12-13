@@ -1,18 +1,9 @@
 ﻿using Newtonsoft.Json;
 using PT.Models.RequestModels;
 using PT.Services;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using YahooQuotesApi;
+using static PT.Models.RequestModels.TipRanksDataResponse;
 
 namespace PT.Middleware
 {
@@ -27,7 +18,7 @@ namespace PT.Middleware
         private static readonly int InsiderNonInformativeBuyTypeId = 4;
         private static readonly int InsiderNonInformativeSellTypeId = 51;
 
-        public static TipRanksResult GetTipRanksResult(string symbol, RequestManager rm)
+        public static HedgeFundsResult GetTipRanksResult(string symbol, RequestManager rm)
         {
             //Return a data object that contains:
             //Aggregated ratings data and ratings providers
@@ -46,7 +37,7 @@ namespace PT.Middleware
                 List<Insider> insiders = trResponse.insiders
                     .Where(x => DateTime.Compare(x.rDate, startDate) > 0)
                     .ToList();
-                List<ConsensusOverTime> bsns = trResponse.consensusOverTime
+                List<BestConsensusOverTime> bsns = trResponse.bestConsensusOverTime
                     .Where(x => DateTime.Compare(x.date, startDate) > 0)
                     .ToList();
                 List<Expert> ratings = trResponse.experts
@@ -56,8 +47,12 @@ namespace PT.Middleware
                     .Where(x => DateTime.Compare(x.date, startDate) > 0)
                     .ToList();
 
+                // Average hedge fun ratings will form score base
+                decimal averageRating = GetAverageRating(ratings, trResponse);
+                decimal ratingsBase = (averageRating / 6.0M) * 100; //Get score using the average rating as a percentage of (max rating + 1.0)
 
-                //find the slope of the buy and sell consensuses (net) from bsns
+                // Add hedge fund buy sell rankings bonus
+                // find the slope of the buy and sell consensuses (net) from bsns
                 List<decimal> bsnYList = bsns
                     .Select(x => Convert.ToDecimal(x.consensus + x.buy - x.sell))
                     .ToList();
@@ -79,17 +74,15 @@ namespace PT.Middleware
                     bsnBonus += bsnSlope >= 0 ? (bsnSlope * bsnSlopeMultiplier) + 5 : -(bsnSlope * bsnSlopeMultiplier) - 5;
                 }
 
-                decimal averageRating = GetAverageRating(ratings, trResponse);
-
                 //Add price target bonus 5 if the target is more than 5% greater than last price
                 //Add price target bonus 10 if the target is more than 10% greater than last price
                 //Add price target bonus -10 if the target is less than last price
                 decimal priceTargetBonus = 0;
                 decimal priceTarget = 0;
                 decimal lastPrice = Convert.ToDecimal(trResponse.prices[trResponse.prices.Length - 1].p);
-                if (trResponse.portfolioHoldingData.priceTarget != null)
+                if (trResponse.portfolioHoldingData.bestPriceTarget != null)
                 {
-                    priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.priceTarget);
+                    priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.bestPriceTarget);
                 }
                 else if (bsns.Count > 0)
                 {
@@ -107,59 +100,64 @@ namespace PT.Middleware
                     decimal diff = priceTarget - lastPrice;
                     decimal percentChange = (diff / Math.Abs(lastPrice)) * 100;
                     priceTargetBonus += percentChange >= 5 ? 5 : 0;
-                    priceTargetBonus += percentChange >= 10 ? 5 + diff : 0;
+                    priceTargetBonus += percentChange >= 10 ? 5 + Math.Min(30, diff) : 0;
                     priceTargetBonus += percentChange < 0 ? -10 : 0;
                 }
 
                 //Other bonuses for recent insider buy-ins, institutional holdings, and hedge funds
                 decimal insiderBonus = GetInsiderBonus(insiders);
                 decimal holdingBonus = GetHoldingBonus(holdings);
-                decimal hedgeBonus = GetHedgeBonus(trResponse.hedgeFundData);
+                decimal hedgeSentimentBonus = GetHedgeSentimentBonus(trResponse.hedgeFundData);
 
                 decimal ratingsComposite = 0;
-                ratingsComposite += (averageRating / 6.5M) * 100; //Get score using the average rating as a percentage of (max rating + 1.5)
+                ratingsComposite += ratingsBase;
                 ratingsComposite += bsnBonus; //Add bsn bonus from above
                 ratingsComposite += priceTargetBonus; //Add price target bonus from above
                 ratingsComposite += insiderBonus; //Add insider bonus from above
-                ratingsComposite += hedgeBonus; //Add hedge bonus from above
+                ratingsComposite += holdingBonus; //Add holding bonus from above
+                ratingsComposite += hedgeSentimentBonus; //Add hedge sentiment bonus from above
 
                 ratingsComposite = Math.Min(ratingsComposite, 100); // cap composite at 100, no extra weight
                 ratingsComposite = Math.Max(ratingsComposite, 0); // limit composite at 0, no negatives
 
-                return new TipRanksResult
+                return new HedgeFundsResult
                 {
                     RatingsComposite = ratingsComposite,
-                    Insiders = insiders,
-                    Holdings = holdings,
-                    ThirdPartyRatings = ratings,
-                    ConsensusOverTime = bsns,
+                    RatingsBase = ratingsBase,
                     InsiderBonus = insiderBonus,
                     HoldingBonus = holdingBonus,
-                    HedgeBonus = hedgeBonus,
+                    HedgeSentimentBonus = hedgeSentimentBonus,
+                    HedgeBsnBonus = bsnBonus,
                     PriceTarget = priceTarget,
                     HedgeSentiment = Convert.ToDecimal(trResponse.hedgeFundData.sentiment),
                     HedgeTrendAction = Convert.ToDecimal(trResponse.hedgeFundData.trendAction),
                     HedgeTrendValue = Convert.ToDecimal(trResponse.hedgeFundData.trendValue),
+                    Insiders = insiders,
+                    Holdings = holdings,
+                    ThirdPartyRatings = ratings,
+                    ConsensusOverTime = bsns,
                     ErrorMessage = string.Empty
                 };
             }
             catch (Exception e)
             {
                 Debug.WriteLine("EXCEPTION CAUGHT: TipRanks.cs GetTipRanksResult for symbol " + symbol + ", message: " + e.Message);
-                return new TipRanksResult
+                return new HedgeFundsResult
                 {
                     RatingsComposite = 33.0M, // Have pity on the peseants
-                    Insiders = null,
-                    Holdings = null,
-                    ThirdPartyRatings = null,
-                    ConsensusOverTime = null,
+                    RatingsBase = 0,
                     InsiderBonus = 0,
                     HoldingBonus = 0,
-                    HedgeBonus = 0,
+                    HedgeSentimentBonus = 0,
+                    HedgeBsnBonus = 0,
                     PriceTarget = 0,
                     HedgeSentiment = 0,
                     HedgeTrendAction = 0,
                     HedgeTrendValue = 0,
+                    Insiders = null,
+                    Holdings = null,
+                    ThirdPartyRatings = null,
+                    ConsensusOverTime = null,
                     ErrorMessage = e.Message
                 };
             }
@@ -355,7 +353,7 @@ namespace PT.Middleware
             return holdingBonus;
         }
 
-        private static decimal GetHedgeBonus(HedgeFundData hedgeData)
+        private static decimal GetHedgeSentimentBonus(HedgeFundData hedgeData)
         {
             decimal hedgeBonus = 0;
             decimal sentiment = Convert.ToDecimal(hedgeData.sentiment);

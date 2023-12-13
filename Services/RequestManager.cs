@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
@@ -32,12 +33,35 @@ namespace PT.Services
         }
 
         // Helper to get response string via normal http "GET" request
-        public string GetFromUri(string uri)
+        /*public string GetFromUri(string uri)
         {
             using HttpResponseMessage response = _client.GetAsync(uri).GetAwaiter().GetResult();
             response.EnsureSuccessStatusCode();
             string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
             return responseBody;
+        }*/
+
+        // Helper to get response string via normal http "GET" request with optional headers
+        public string GetFromUri(string uri, Dictionary<string, string>? headers = null)
+        {
+            var request = new HttpRequestMessage()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = new Uri(uri)
+            };
+            if (headers != null)
+            {
+                foreach (var key in headers.Keys)
+                {
+                    request.Headers.Add(key, headers[key]);
+                }
+            }
+            using (var response = _client.SendAsync(request).GetAwaiter().GetResult())
+            {
+                response.EnsureSuccessStatusCode();
+                string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                return responseBody;
+            }
         }
 
         //Helper to complete web request and return response as string with appropriate throttling

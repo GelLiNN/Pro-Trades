@@ -2,8 +2,9 @@
 {
     public class CompositeScoreResult
     {
-        public string Symbol { get; set; }
-        public string DataProviders { get; set; }
+        public string? Symbol { get; set; }
+        public string? Name { get; set; }
+        public string? Exchange { get; set; }
         public decimal Price { get; set; }
         public int PriceHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
@@ -16,15 +17,18 @@
         public decimal FundamentalsComposite { get; set; }
         public string CompositeRank { get; set; }
         public decimal CompositeScoreValue { get; set; }
+        public long TimeToScoreMS { get; set; }
         public ShortInterestResult ShortInterest { get; set; }
         public FundamentalsResult Fundamentals { get; set; }
-        public TipRanksResult TipRanks { get; set; }
+        public HedgeFundsResult HedgeFunds { get; set; }
+        public string DataProviders { get; set; }
     }
 
     public class CacheViewResult
     {
         public int CacheCount { get; set; }
         public int ScrapeCount { get; set; }
+        public int ScrapeAttemptCount { get; set; }
         public HashSet<string> CacheKeys { get; set; }
     }
 
@@ -40,6 +44,7 @@
 
     public class FundamentalsResult
     {
+        public decimal FundamentalsComposite { get; set; }
         public decimal VolumeUSD { get; set; }
         public decimal AverageVolumeUSD { get; set; }
         public decimal VolumeSlope { get; set; }
@@ -51,13 +56,12 @@
         public bool HasDividends { get; set; }
         public bool IsBlacklisted { get; set; }
         public string Message { get; set; }
-        public decimal FundamentalsComposite { get; set; }
     }
 
     /*
      * Yahoo Models
      */
-    public class CompanyStatsYF
+    public class CompanyStats
     {
         public string Symbol { get; set; }
         public string CompanyName { get; set; }
@@ -100,7 +104,7 @@
         //public List<DividendTick> Dividends { get; set; }
         //public List<SplitTick> Splits { get; set; }
 
-        public CompanyStatsYF()
+        public CompanyStats()
         {
             //Dividends = new List<DividendTick>();
             //Splits = new List<SplitTick>();
@@ -125,7 +129,7 @@
     {
         public string Symbol { get; set; }
         public string Exchange { get; set; }
-        public CompanyStatsYF Stats { get; set; }
+        public CompanyStats Stats { get; set; }
     }
 
     /*

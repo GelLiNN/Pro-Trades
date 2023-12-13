@@ -15,5 +15,11 @@
 
         // Encryption
         public const string KEY_GENERATION_FAILED = "Encryption failed to generate key.";
+
+        // API identifiers and other constant values
+        public const string ALPACA_KEY_ID = "APCA-API-KEY-ID";
+        public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
+        public static readonly int DEFAULT_HISTORY_DAYS = 375;
+        public static readonly decimal DEFAULT_VOLUME_USD_DISQUALIFYING_LIMIT = 1000000.0M;
     }
 }
