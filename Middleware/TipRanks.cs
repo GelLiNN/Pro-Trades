@@ -71,7 +71,8 @@ namespace PT.Middleware
                 decimal bsnBonus = 0;
                 if (hasBsns)
                 {
-                    bsnBonus += bsnSlope >= 0 ? (bsnSlope * bsnSlopeMultiplier) + 5 : -(bsnSlope * bsnSlopeMultiplier) - 5;
+                    decimal bsnWeight = 2 * (decimal) Math.PI;
+                    bsnBonus += bsnSlope >= 0 ? (bsnSlope * bsnSlopeMultiplier) + bsnWeight : -(bsnSlope * bsnSlopeMultiplier) - bsnWeight;
                 }
 
                 //Add price target bonus 5 if the target is more than 5% greater than last price

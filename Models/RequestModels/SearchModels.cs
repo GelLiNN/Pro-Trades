@@ -17,7 +17,8 @@
         public decimal FundamentalsComposite { get; set; }
         public string CompositeRank { get; set; }
         public decimal CompositeScoreValue { get; set; }
-        public long TimeToScoreMS { get; set; }
+        public long ScoreTimeMS { get; set; }
+        public DateTime ScoreDate { get; set; }
         public ShortInterestResult ShortInterest { get; set; }
         public FundamentalsResult Fundamentals { get; set; }
         public HedgeFundsResult HedgeFunds { get; set; }

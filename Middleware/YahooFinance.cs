@@ -86,7 +86,7 @@ namespace PT.Middleware
                 }
 
                 var score = GetCompositeScoreInternal(symbol, quote, rm);
-                score.TimeToScoreMS = sw.ElapsedMilliseconds;
+                score.ScoreTimeMS = sw.ElapsedMilliseconds;
                 if (score.CompositeScoreValue > 0)
                     companyStat.CompositeScoreResult = score;
             }
