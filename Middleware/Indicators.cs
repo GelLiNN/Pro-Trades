@@ -191,7 +191,8 @@ namespace PT.Middleware
                 FundamentalsComposite = fundResult.FundamentalsComposite,
                 CompositeScoreValue = (adxCompositeScore + aroonCompositeScore + obvCompositeScore + macdCompositeScore +
                     shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + hfResult.RatingsComposite) / 7,
-                TimeToScoreMS = sw.ElapsedMilliseconds,
+                ScoreTimeMS = sw.ElapsedMilliseconds,
+                ScoreDate = DateTime.Now,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
                 HedgeFunds = hfResult
