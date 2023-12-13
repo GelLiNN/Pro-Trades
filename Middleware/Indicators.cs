@@ -132,7 +132,10 @@ namespace PT.Middleware
 
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote, RequestManager rm)
         {
-            List<PriceTick> yahooHistory = YahooFinance.GetHistoryAsync(symbol, 300).Result;
+            Stopwatch sw = Stopwatch.StartNew();
+            
+            // Yahoo Finance price history
+            /*List<PriceTick> yahooHistory = YahooFinance.GetHistoryAsync(symbol, Constants.DEFAULT_HISTORY_DAYS).Result;
             List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
 
             foreach (PriceTick data in yahooHistory)
@@ -146,10 +149,20 @@ namespace PT.Middleware
                 curData.Date = data.Date.ToDateTimeUnspecified();
                 historyList.Add(curData);
             }
-            IEnumerable<Skender.Stock.Indicators.Quote> history = historyList.AsEnumerable();
+            IEnumerable<Skender.Stock.Indicators.Quote> history = historyList.AsEnumerable();*/
+
+            // Alpaca API price history
+            AlpacaHistory alpacaHistory = Alpaca.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).Result;
+            IEnumerable<Skender.Stock.Indicators.Quote> history = alpacaHistory.PriceHistory;
 
             // This was only used for the bbands composite I think
-            List<Skender.Stock.Indicators.Quote> supplement = historyList.TakeLast(7).ToList();
+            //List<Skender.Stock.Indicators.Quote> supplement = alpacaHistory.PriceHistory.TakeLast(7).ToList();
+
+            // get fundamentals with YahooFinance price history
+            //FundamentalsResult fundResult = GetFundamentalsResultOld(symbol, quote);
+
+            // get fundamentals with Alpaca price history
+            FundamentalsResult fundResult = GetFundamentalsResult(symbol, quote, alpacaHistory);
 
             decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
             decimal obvCompositeScore = GetIndicatorComposite(symbol, "OBV", history, 7);
@@ -158,30 +171,30 @@ namespace PT.Middleware
             decimal aroonCompositeScore = GetIndicatorComposite(symbol, "AROON", history, 7);
 
             ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7, rm);
-
-            FundamentalsResult fundResult = GetFundamentals(symbol, quote);
-
-            TipRanksResult trResult = TipRanks.GetTipRanksResult(symbol, rm);
+            HedgeFundsResult hfResult = TipRanks.GetTipRanksResult(symbol, rm);
 
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
                 Symbol = symbol,
-                DataProviders = "YahooFinance, FINRA, TipRanks",
+                Name = quote.LongName,
+                Exchange = quote.FullExchangeName,
+                DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks",
                 Price = decimal.Parse(quote.RegularMarketPrice.ToString()),
                 PriceHistoryDays = history.Count(),
                 ADXComposite = adxCompositeScore,
                 OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
-                //BBANDSComposite = bbandsCompositeScore,
-                RatingsComposite = trResult.RatingsComposite,
+                // BBANDSComposite = bbandsCompositeScore,
+                RatingsComposite = hfResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
                 CompositeScoreValue = (adxCompositeScore + aroonCompositeScore + obvCompositeScore + macdCompositeScore +
-                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + trResult.RatingsComposite) / 7,
+                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + hfResult.RatingsComposite) / 7,
+                TimeToScoreMS = sw.ElapsedMilliseconds,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
-                TipRanks = trResult
+                HedgeFunds = hfResult
             };
 
             // This is where blacklisting happens, right now only from bad volume
@@ -199,6 +212,298 @@ namespace PT.Middleware
             scoreResult.CompositeRank = rank;
 
             return scoreResult;
+        }
+
+        // Fundamentals (advanced stats, volume, price, earnings and filings up-to-date)
+        // RELIES completely on unofficial yahoo finance API for now
+        public static FundamentalsResult GetFundamentalsResult(string symbol, Security quote, AlpacaHistory history)
+        {
+            try
+            {
+                List<decimal> normalizedPrice = GetNormalizedData(history.PriceAvgYList);
+
+                decimal priceSlope = GetSlope(history.PriceAvgXList, history.PriceAvgYList);
+
+                decimal normalizedPriceSlope = GetSlope(history.PriceAvgXList, normalizedPrice);
+                decimal normalizedPriceSlopeMultiplier = GetSlopeMultiplier(normalizedPriceSlope);
+
+
+                List<decimal> normalizedVolume = GetNormalizedData(history.VolAvgYList);
+
+                decimal volumeSlope = GetSlope(history.VolAvgXList, history.VolAvgYList);
+
+                decimal normalizedVolumeSlope = GetSlope(history.VolAvgXList, normalizedVolume);
+                decimal normalizedVolumeSlopeMultiplier = GetSlopeMultiplier(normalizedVolumeSlope);
+
+                // Do stuff with PE and EPS data
+                decimal peTrailing = 0.0M;
+                try { peTrailing = decimal.Parse(quote.TrailingPE.ToString()); }
+                catch (Exception e) { /*do nothing*/ }
+
+                decimal peForward = 0.0M;
+                try { peForward = decimal.Parse(quote.ForwardPE.ToString()); }
+                catch (Exception e) { /*set to trailing*/ peForward = peTrailing; }
+
+                decimal epsTrailing = 0.0M;
+                try { epsTrailing = decimal.Parse(quote.EpsTrailingTwelveMonths.ToString()); }
+                catch (Exception e) { /*do nothing*/ }
+
+                decimal epsForward = 0.0M;
+                try { epsForward = decimal.Parse(quote.EpsForward.ToString()); }
+                catch (Exception e) { /*set to trailing*/ epsForward = epsTrailing; }
+
+                decimal averageEPS = 0.0M, growthEPS = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
+
+                averageEPS = (epsForward + epsTrailing) / 2;
+                growthEPS = epsForward - epsTrailing;
+
+                averagePE = (peForward + peTrailing) / 2;
+                growthPE = peForward - peTrailing;
+
+                // Make base score based on EPS activity
+                decimal epsBase = GetEPSBase(averageEPS, growthEPS);
+
+                // Add PE ratio activity bonus
+                decimal peBonus = GetPEBonus(averagePE, growthPE);
+
+                // Add dividend bonus
+                decimal divBonus = GetDividendBonus(quote);
+
+                //Add positive fractional bonus if current volume is greater than average volume, negative otherwise
+                decimal diff = history.VolumeUSD - history.AverageVolumeUSD;
+                decimal percentChange = (diff / Math.Abs(history.AverageVolumeUSD)) * 100;
+                decimal volumeTrendingBonus = 0;
+
+                // Reward cases
+                if (0 < percentChange && percentChange <= 100)
+                {
+                    volumeTrendingBonus += (percentChange / 20) + (decimal)Math.PI;
+                }
+                else if (100 < percentChange)
+                {
+                    volumeTrendingBonus += 10 + (decimal)Math.PI;
+                }
+                // Penalty cases
+                else if (0 > percentChange && percentChange >= -100)
+                {
+                    volumeTrendingBonus += (percentChange / 20) - (decimal)Math.PI;
+                }
+                else if (-100 > percentChange)
+                {
+                    volumeTrendingBonus += -10 - (decimal)Math.PI;
+                }
+
+                // calculate composite score based on the following values and weighted multipliers
+                // Base value should be calculated based on EPS and PE data
+                // Bonuses added for positive volume and price slopes, PE Growth, and dividends
+                decimal composite = 0;
+                composite += epsBase;
+                composite += peBonus;
+                composite += divBonus;
+                composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : -3; // penalty
+                composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : -3; // penalty
+                composite += volumeTrendingBonus;
+
+                composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
+                composite = Math.Max(composite, 0); // limit composite at 0, no negatives
+
+                // disqualify if less than USD volume multiplicative from constants
+                var disqualifyingLimit = Constants.DEFAULT_VOLUME_USD_DISQUALIFYING_LIMIT;
+                bool volumeDisqualified = (history.VolumeUSD < disqualifyingLimit || history.AverageVolumeUSD < disqualifyingLimit);
+                bool hasDivs = quote.DividendRate != null && quote.DividendYield != null;
+
+                return new FundamentalsResult
+                {
+                    FundamentalsComposite = composite,
+                    VolumeUSD = history.VolumeUSD,
+                    AverageVolumeUSD = history.AverageVolumeUSD,
+                    VolumeSlope = volumeSlope,
+                    PriceSlope = priceSlope,
+                    AverageEPS = averageEPS,
+                    AveragePE = averagePE,
+                    GrowthEPS = growthEPS,
+                    GrowthPE = growthPE,
+                    HasDividends = hasDivs,
+                    IsBlacklisted = volumeDisqualified,
+                    Message = string.Empty
+                };
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("EXCEPTION CAUGHT: Indicators.cs GetFundamentals for symbol " + symbol + ", message: " + e.Message);
+                return new FundamentalsResult
+                {
+                    FundamentalsComposite = 50.0M, //Pity Points for exceptions getting data
+                    VolumeUSD = 0.0M,
+                    AverageVolumeUSD = 0.0M,
+                    VolumeSlope = 0.0M,
+                    PriceSlope = 0.0M,
+                    AverageEPS = 0.0M,
+                    AveragePE = 0.0M,
+                    GrowthEPS = 0.0M,
+                    GrowthPE = 0.0M,
+                    HasDividends = false,
+                    IsBlacklisted = false,
+                    Message = e.Message
+                };
+            }
+        }
+
+        // Fundamentals (advanced stats, volume, price, earnings and filings up-to-date)
+        // RELIES completely on unofficial yahoo finance API for now
+        public static FundamentalsResult GetFundamentalsResultOld(string symbol, Security quote)
+        {
+            try
+            {
+                List<decimal> priceYList = new List<decimal>();
+                priceYList.Add(Convert.ToDecimal(quote.TwoHundredDayAverage));
+                priceYList.Add(Convert.ToDecimal(quote.FiftyDayAverage));
+                priceYList.Add(Convert.ToDecimal(quote.RegularMarketPrice));
+
+                List<decimal> normalizedPrice = GetNormalizedData(priceYList);
+
+                List<decimal> priceXList = new List<decimal>();
+                for (int i = 1; i <= priceYList.Count; i++)
+                    priceXList.Add(i);
+
+                decimal priceSlope = GetSlope(priceXList, priceYList);
+
+                decimal normalizedPriceSlope = GetSlope(priceXList, normalizedPrice);
+                decimal normalizedPriceSlopeMultiplier = GetSlopeMultiplier(normalizedPriceSlope);
+
+                List<decimal> volumeYList = new List<decimal>();
+                volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume3Month));
+                volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume10Day));
+                volumeYList.Add(Convert.ToDecimal(quote.RegularMarketVolume));
+
+                List<decimal> normalizedVolume = GetNormalizedData(volumeYList);
+
+                List<decimal> volumeXList = new List<decimal>();
+                for (int i = 1; i <= volumeYList.Count; i++)
+                    volumeXList.Add(i);
+
+                decimal volumeSlope = GetSlope(volumeXList, volumeYList);
+
+                decimal normalizedVolumeSlope = GetSlope(volumeXList, normalizedVolume);
+                decimal normalizedVolumeSlopeMultiplier = GetSlopeMultiplier(normalizedVolumeSlope);
+
+                decimal volumeUSD = Convert.ToDecimal(quote.RegularMarketVolume) *
+                    Convert.ToDecimal(quote.RegularMarketPrice);
+
+                decimal averageVolumeUSD = Convert.ToDecimal(quote.AverageDailyVolume3Month) *
+                    Convert.ToDecimal(quote.FiftyDayAverage);
+
+                //Do stuff with PE and EPS data
+                decimal peTrailing = 0.0M;
+                try { peTrailing = decimal.Parse(quote.TrailingPE.ToString()); }
+                catch (Exception e) { /*do nothing*/ }
+
+                decimal peForward = 0.0M;
+                try { peForward = decimal.Parse(quote.ForwardPE.ToString()); }
+                catch (Exception e) { /*set to trailing*/ peForward = peTrailing; }
+
+                decimal epsTrailing = 0.0M;
+                try { epsTrailing = decimal.Parse(quote.EpsTrailingTwelveMonths.ToString()); }
+                catch (Exception e) { /*do nothing*/ }
+
+                decimal epsForward = 0.0M;
+                try { epsForward = decimal.Parse(quote.EpsForward.ToString()); }
+                catch (Exception e) { /*set to trailing*/ epsForward = epsTrailing; }
+
+                decimal averageEPS = 0.0M, growthEPS = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
+
+                averageEPS = (epsForward + epsTrailing) / 2;
+                growthEPS = epsForward - epsTrailing;
+
+                averagePE = (peForward + peTrailing) / 2;
+                growthPE = peForward - peTrailing;
+
+                //Make base score based on EPS activity
+                decimal epsBase = GetEPSBase(averageEPS, growthEPS);
+
+                //Add PE ratio activity bonus
+                decimal peBonus = GetPEBonus(averagePE, growthPE);
+
+                //Add dividend bonus
+                decimal divBonus = GetDividendBonus(quote);
+
+                //Add positive fractional bonus if current volume is greater than average volume, negative otherwise
+                decimal diff = volumeUSD - averageVolumeUSD;
+                decimal percentChange = (diff / Math.Abs(averageVolumeUSD)) * 100;
+                decimal volumeTrendingBonus = 0;
+
+                // Reward cases
+                if (0 < percentChange && percentChange <= 100)
+                {
+                    volumeTrendingBonus += (percentChange / 20) + (decimal)Math.PI;
+                }
+                else if (100 < percentChange)
+                {
+                    volumeTrendingBonus += 10 + (decimal)Math.PI;
+                }
+                // Penalty cases
+                else if (0 > percentChange && percentChange >= -100)
+                {
+                    volumeTrendingBonus += (percentChange / 20) - (decimal)Math.PI;
+                }
+                else if (-100 > percentChange)
+                {
+                    volumeTrendingBonus += -10 - (decimal)Math.PI;
+                }
+
+                //calculate composite score based on the following values and weighted multipliers
+                //Base value should be calculated based on EPS and PE data
+                //Bonuses added for positive volume and price slopes, PE Growth, and dividends
+                decimal composite = 0;
+                composite += epsBase;
+                composite += peBonus;
+                composite += divBonus;
+                composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : -3; //penalty
+                composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : -3; //penalty
+                composite += volumeTrendingBonus;
+
+                composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
+                composite = Math.Max(composite, 0); // limit composite at 0, no negatives
+
+                decimal disqualifyingLimit = 1000000.0M; //disqualify if less than 1 million USD volume per day
+
+                bool hasDivs = quote.DividendRate != null && quote.DividendYield != null;
+
+                return new FundamentalsResult
+                {
+                    VolumeUSD = volumeUSD,
+                    AverageVolumeUSD = averageVolumeUSD,
+                    VolumeSlope = volumeSlope,
+                    PriceSlope = priceSlope,
+                    AverageEPS = averageEPS,
+                    AveragePE = averagePE,
+                    GrowthEPS = growthEPS,
+                    GrowthPE = growthPE,
+                    HasDividends = hasDivs,
+                    IsBlacklisted = (volumeUSD < disqualifyingLimit && averageVolumeUSD < disqualifyingLimit),
+                    Message = string.Empty,
+                    FundamentalsComposite = composite
+                };
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("EXCEPTION CAUGHT: Indicators.cs GetFundamentals for symbol " + symbol + ", message: " + e.Message);
+                return new FundamentalsResult
+                {
+                    VolumeUSD = 0.0M,
+                    AverageVolumeUSD = 0.0M,
+                    VolumeSlope = 0.0M,
+                    PriceSlope = 0.0M,
+                    AverageEPS = 0.0M,
+                    AveragePE = 0.0M,
+                    GrowthEPS = 0.0M,
+                    GrowthPE = 0.0M,
+                    HasDividends = false,
+                    IsBlacklisted = false,
+                    Message = e.Message,
+                    FundamentalsComposite = 50.0M //Pity Points for exceptions getting data
+                };
+            }
         }
 
         public static decimal GetADXComposite(IEnumerable<AdxResult> resultSet, int daysToCalculate)
@@ -692,163 +997,6 @@ namespace PT.Middleware
         public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int N)
         {
             return source.Skip(Math.Max(0, source.Count() - N));
-        }
-
-        //Fundamentals (volume, price, earnings and filings up-to-date
-        //RELIES completely on unofficial yahoo finance API for now
-        public static FundamentalsResult GetFundamentals(string symbol, Security quote)
-        {
-            try
-            {
-                List<decimal> priceYList = new List<decimal>();
-                priceYList.Add(Convert.ToDecimal(quote.TwoHundredDayAverage));
-                priceYList.Add(Convert.ToDecimal(quote.FiftyDayAverage));
-                priceYList.Add(Convert.ToDecimal(quote.RegularMarketPrice));
-
-                List<decimal> normalizedPrice = GetNormalizedData(priceYList);
-
-                List<decimal> priceXList = new List<decimal>();
-                for (int i = 1; i <= priceYList.Count; i++)
-                    priceXList.Add(i);
-
-                decimal priceSlope = GetSlope(priceXList, priceYList);
-
-                decimal normalizedPriceSlope = GetSlope(priceXList, normalizedPrice);
-                decimal normalizedPriceSlopeMultiplier = GetSlopeMultiplier(normalizedPriceSlope);
-
-                List<decimal> volumeYList = new List<decimal>();
-                volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume3Month));
-                volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume10Day));
-                volumeYList.Add(Convert.ToDecimal(quote.RegularMarketVolume));
-
-                List<decimal> normalizedVolume = GetNormalizedData(volumeYList);
-
-                List<decimal> volumeXList = new List<decimal>();
-                for (int i = 1; i <= volumeYList.Count; i++)
-                    volumeXList.Add(i);
-
-                decimal volumeSlope = GetSlope(volumeXList, volumeYList);
-
-                decimal normalizedVolumeSlope = GetSlope(volumeXList, normalizedVolume);
-                decimal normalizedVolumeSlopeMultiplier = GetSlopeMultiplier(normalizedVolumeSlope);
-
-                decimal volumeUSD = Convert.ToDecimal(quote.RegularMarketVolume) *
-                    Convert.ToDecimal(quote.RegularMarketPrice);
-
-                decimal averageVolumeUSD = Convert.ToDecimal(quote.AverageDailyVolume3Month) *
-                    Convert.ToDecimal(quote.FiftyDayAverage);
-
-                //Do stuff with PE and EPS data
-                decimal peTrailing = 0.0M;
-                try { peTrailing = decimal.Parse(quote.TrailingPE.ToString()); }
-                catch (Exception e) { /*do nothing*/ }
-
-                decimal peForward = 0.0M;
-                try { peForward = decimal.Parse(quote.ForwardPE.ToString()); }
-                catch (Exception e) { /*set to trailing*/ peForward = peTrailing; }
-
-                decimal epsTrailing = 0.0M;
-                try { epsTrailing = decimal.Parse(quote.EpsTrailingTwelveMonths.ToString()); }
-                catch (Exception e) { /*do nothing*/ }
-
-                decimal epsForward = 0.0M;
-                try { epsForward = decimal.Parse(quote.EpsForward.ToString()); }
-                catch (Exception e) { /*set to trailing*/ epsForward = epsTrailing; }
-
-                decimal averageEPS = 0.0M, growthEPS = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
-
-                averageEPS = (epsForward + epsTrailing) / 2;
-                growthEPS = epsForward - epsTrailing;
-
-                averagePE = (peForward + peTrailing) / 2;
-                growthPE = peForward - peTrailing;
-
-                //Make base score based on EPS activity
-                decimal epsBase = GetEPSBase(averageEPS, growthEPS);
-
-                //Add PE ratio activity bonus
-                decimal peBonus = GetPEBonus(averagePE, growthPE);
-
-                //Add dividend bonus
-                decimal divBonus = GetDividendBonus(quote);
-
-                //Add positive fractional bonus if current volume is greater than average volume, negative otherwise
-                decimal diff = volumeUSD - averageVolumeUSD;
-                decimal percentChange = (diff / Math.Abs(averageVolumeUSD)) * 100;
-                decimal volumeTrendingBonus = 0;
-
-                // Reward cases
-                if (0 < percentChange && percentChange <= 100)
-                {
-                    volumeTrendingBonus += (percentChange / 20) + (decimal) Math.PI;
-                }
-                else if (100 < percentChange)
-                {
-                    volumeTrendingBonus += 10 + (decimal) Math.PI;
-                }
-                // Penalty cases
-                else if (0 > percentChange && percentChange >= -100)
-                {
-                    volumeTrendingBonus += (percentChange / 20) - (decimal) Math.PI;
-                }
-                else if (-100 > percentChange)
-                {
-                    volumeTrendingBonus += -10 - (decimal) Math.PI;
-                }
-
-                //calculate composite score based on the following values and weighted multipliers
-                //Base value should be calculated based on EPS and PE data
-                //Bonuses added for positive volume and price slopes, PE Growth, and dividends
-                decimal composite = 0;
-                composite += epsBase;
-                composite += peBonus;
-                composite += divBonus;
-                composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : -3; //penalty
-                composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : -3; //penalty
-                composite += volumeTrendingBonus;
-
-                composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
-                composite = Math.Max(composite, 0); // limit composite at 0, no negatives
-
-                decimal disqualifyingLimit = 1000000.0M; //disqualify if less than 1 million USD volume per day
-
-                bool hasDivs = quote.DividendRate != null && quote.DividendYield != null;
-
-                return new FundamentalsResult
-                {
-                    VolumeUSD = volumeUSD,
-                    AverageVolumeUSD = averageVolumeUSD,
-                    VolumeSlope = volumeSlope,
-                    PriceSlope = priceSlope,
-                    AverageEPS = averageEPS,
-                    AveragePE = averagePE,
-                    GrowthEPS = growthEPS,
-                    GrowthPE = growthPE,
-                    HasDividends = hasDivs,
-                    IsBlacklisted = (volumeUSD < disqualifyingLimit && averageVolumeUSD < disqualifyingLimit),
-                    Message = string.Empty,
-                    FundamentalsComposite = composite
-                };
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("EXCEPTION CAUGHT: Indicators.cs GetFundamentals for symbol " + symbol + ", message: " + e.Message);
-                return new FundamentalsResult
-                {
-                    VolumeUSD = 0.0M,
-                    AverageVolumeUSD = 0.0M,
-                    VolumeSlope = 0.0M,
-                    PriceSlope = 0.0M,
-                    AverageEPS = 0.0M,
-                    AveragePE = 0.0M,
-                    GrowthEPS = 0.0M,
-                    GrowthPE = 0.0M,
-                    HasDividends = false,
-                    IsBlacklisted = false,
-                    Message = e.Message,
-                    FundamentalsComposite = 50.0M //Pity Points for exceptions getting data
-                };
-            }
         }
 
         public static decimal GetSlope(List<decimal> xList, List<decimal> yList)

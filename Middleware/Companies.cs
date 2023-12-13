@@ -32,8 +32,8 @@ namespace PT.Middleware
                         if (isNasdaq)
                         {
                             // Below makes it slow
-                            // CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
-                            CompanyStatsYF stats = new CompanyStatsYF();
+                            // CompanyStats stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                            CompanyStats stats = new CompanyStats();
                             CompanyYF company = new CompanyYF
                             {
                                 Symbol = symbol,
@@ -58,8 +58,8 @@ namespace PT.Middleware
                     if (!companies.SymbolsToCompanies.ContainsKey(symbol) && !String.IsNullOrEmpty(symbol))
                     {
                         // Below makes it slow
-                        // CompanyStatsYF stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
-                        CompanyStatsYF stats = new CompanyStatsYF();
+                        // CompanyStats stats = YahooFinance.GetCompanyStatsAsync(symbol).Result;
+                        CompanyStats stats = new CompanyStats();
                         CompanyYF company = new CompanyYF
                         {
                             Symbol = symbol,

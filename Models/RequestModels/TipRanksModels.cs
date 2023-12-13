@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using static PT.Models.RequestModels.TipRanksDataResponse;
 
 namespace PT.Models.RequestModels
 {
@@ -655,46 +656,52 @@ namespace PT.Models.RequestModels
         public DateTime lastRatingDate { get; set; }
     }
 
-    public class TipRanksResult
+    public class HedgeFundsResult
     {
-        //list of insider purchases with dates, ranks, names
-        public List<Insider> Insiders { get; set; }
-
-        //list of hedge funds with holdings with amounts, ranks, names
-        //list of institutional holdings by date going back 2 years
-        public List<HoldingsByTime> Holdings { get; set; }
-
-        //list of Expert Ratings with names, stars, original stars
-        public List<Expert> ThirdPartyRatings { get; set; }
-
-        //list of TipRanks consensus ratings and price targets by date going back 3 months
-        public List<ConsensusOverTime> ConsensusOverTime { get; set; }
-
-        //ratings composite score
+        // ratings composite score
         public decimal RatingsComposite { get; set; }
 
-        //price target
+        // price target
         public decimal PriceTarget { get; set; }
 
-        //insiders from past 3 months
+        // ratings base score from average rating
+        public decimal RatingsBase { get; set; }
+
+        // insiders from past 3 months
         public decimal InsiderBonus { get; set; }
 
-        //holdings from past 3 months
+        // holdings from past 3 months
         public decimal HoldingBonus { get; set; }
 
-        //hedge bonus
-        public decimal HedgeBonus { get; set; }
+        // hedge sentiment bonus
+        public decimal HedgeSentimentBonus { get; set; }
 
-        //hedge sentiment value with .5 as the median
+        // hedge bsn bonus
+        public decimal HedgeBsnBonus { get; set; }
+
+        // hedge sentiment value with .5 as the median
         public decimal HedgeSentiment { get; set; }
 
-        //hedge trend actions mean something
+        // hedge trend actions mean something
         public decimal HedgeTrendAction { get; set; }
 
-        //hedge trend values mean something WRT the trend value above
+        // hedge trend values mean something WRT the trend value above
         public decimal HedgeTrendValue { get; set; }
 
-        //keep track of failures
+        // list of insider purchases with dates, ranks, names
+        public List<Insider> Insiders { get; set; }
+
+        // list of hedge funds with holdings with amounts, ranks, names
+        // list of institutional holdings by date going back 2 years
+        public List<HoldingsByTime> Holdings { get; set; }
+
+        // list of Expert Ratings with names, stars, original stars
+        public List<Expert> ThirdPartyRatings { get; set; }
+
+        // list of TipRanks consensus ratings and price targets by date going back 3 months
+        public List<BestConsensusOverTime> ConsensusOverTime { get; set; }
+
+        // keep track of failures
         public string ErrorMessage { get; set; }
     }
 }

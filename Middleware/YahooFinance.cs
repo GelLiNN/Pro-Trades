@@ -12,9 +12,10 @@ namespace PT.Middleware
     {
 
         // With YahooQuotesApi
-        public static async Task<CompanyStatsYF> GetCompanyStatsAsync(string symbol, RequestManager rm)
+        public static async Task<CompanyStats> GetCompanyStatsAsync(string symbol, RequestManager rm)
         {
-            CompanyStatsYF companyStat = new CompanyStatsYF();
+            Stopwatch sw = Stopwatch.StartNew();
+            CompanyStats companyStat = new CompanyStats();
             try
             {
                 // Yahoo Quote
@@ -84,21 +85,8 @@ namespace PT.Middleware
                     };
                 }
 
-                //Yahoo Dividends for the last year
-                //You should be able to query data from various markets including US, HK, TW
-
-                /*var dividends = await Yahoo.GetDividendsAsync(symbol, DateTime.Now.AddYears(-1), DateTime.Now);
-                foreach (DividendTick div in dividends)
-                    companyStat.Dividends.Add(div);*/
-
-                //Yahoo historical trade data and splits data
-                /*var splits = await Yahoo.GetSplitsAsync(symbol, DateTime.Now.AddYears(-1), DateTime.Now);
-                foreach (var split in splits)
-                    companyStat.Splits.Add(split);*/
-
-                //Composite Score, this gets the YF quote twice right now
-                //TODO: Update this method to not get YF quote twice during cache loading
                 var score = GetCompositeScoreInternal(symbol, quote, rm);
+                score.TimeToScoreMS = sw.ElapsedMilliseconds;
                 if (score.CompositeScoreValue > 0)
                     companyStat.CompositeScoreResult = score;
             }
@@ -153,7 +141,7 @@ namespace PT.Middleware
             {
                 string symbol = company.Key;
                 CompanyYF companyObject = company.Value;
-                CompanyStatsYF stats = companyObject.Stats;
+                CompanyStats stats = companyObject.Stats;
                 if (stats.Price < 20 && stats.Price > .01M && stats.VolumeAverage10dUSD > 1000000
                     /*&& !String.IsNullOrEmpty(stats.Earnings.EPSReportDate)*/)
                 {
@@ -166,7 +154,7 @@ namespace PT.Middleware
         // Used internally for cache loading
         public static CompositeScoreResult GetCompositeScoreInternal(string symbol, Security quote, RequestManager rm)
         {
-            return Indicators.GetCompositeScoreResult(symbol, quote, rm); //no indicator API needed
+            return Indicators.GetCompositeScoreResult(symbol, quote, rm);
         }
     }
 }
