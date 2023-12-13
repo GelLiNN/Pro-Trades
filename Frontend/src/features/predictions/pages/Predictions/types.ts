@@ -1,3 +1,12 @@
+export interface HeadCell {
+  align: 'center' | 'left' | 'right'
+  isSortable: boolean
+  key: keyof Stock
+  label: string
+}
+
+export type Order = 'asc' | 'desc'
+
 export type StockScoreRank = 'BAD' | 'FAIR' | 'GOOD' | 'PRIME'
 
 export interface Stock {
@@ -7,12 +16,3 @@ export interface Stock {
   scoreValue: number
   symbol: string
 }
-
-export interface HeadCell {
-  align: 'center' | 'left' | 'right'
-  isSortable: boolean
-  key: keyof Stock
-  label: string
-}
-
-export type Order = 'asc' | 'desc'

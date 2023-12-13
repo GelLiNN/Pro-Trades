@@ -109,7 +109,7 @@ export const PredictionsTable = ({rows}: Props) => {
                   </TableCell>
 
                   <TableCell align='right' width={1}>
-                    {scoreValue}
+                    {scoreValue.toFixed(2)}
                   </TableCell>
 
                   <TableCell

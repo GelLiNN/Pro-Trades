@@ -1,5 +1,7 @@
-import {FilterList, Search} from '@mui/icons-material'
-import {IconButton, InputAdornment, TextField, Toolbar, Tooltip, Typography} from '@mui/material'
+import {useCallback, useRef} from 'react'
+
+import {Search} from '@mui/icons-material'
+import {InputAdornment, TextField, Toolbar, Typography} from '@mui/material'
 
 import type {ChangeEvent} from 'react'
 
@@ -8,8 +10,23 @@ interface Props {
 }
 
 export const PredictionsTableToolbar = ({onChangeSearch}: Props) => {
+  const timerRef = useRef<NodeJS.Timeout>()
+
+  const handleChangeSearch = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+
+      timerRef.current = setTimeout(() => {
+        onChangeSearch(event)
+      }, 250)
+    },
+    [onChangeSearch]
+  )
+
   return (
-    <Toolbar sx={{pl: {xs: 2}, pr: {xs: 1}}}>
+    <Toolbar sx={{px: {xs: 2}}}>
       <Typography id='tableTitle' sx={{mr: 'auto'}} variant='h6'>
         Stock Predictions
       </Typography>
@@ -22,16 +39,10 @@ export const PredictionsTableToolbar = ({onChangeSearch}: Props) => {
             </InputAdornment>
           ),
         }}
-        onChange={onChangeSearch}
+        onChange={handleChangeSearch}
         placeholder='Search...'
         size='small'
       />
-
-      <Tooltip title='Filters'>
-        <IconButton>
-          <FilterList />
-        </IconButton>
-      </Tooltip>
     </Toolbar>
   )
 }
