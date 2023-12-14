@@ -16,6 +16,7 @@
         // Encryption & Security
         public const string KEY_GENERATION_FAILED = "Encryption failed to generate key.";
         public const string AUTH_HEADER = "x-auth-token";
+        public const string PT_CORS = "PTCORS";
 
         // API identifiers and other constant values
         public const string ALPACA_KEY_ID = "APCA-API-KEY-ID";
