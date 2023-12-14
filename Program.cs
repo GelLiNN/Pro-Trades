@@ -36,22 +36,6 @@ namespace PT
 
             var builder = WebApplication.CreateBuilder(args);
 
-            // Enable CORS (https://learn.microsoft.com/en-us/aspnet/core/security/cors?view=aspnetcore-8.0)
-            var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-
-            builder
-                .Services
-                .AddCors(options =>
-                {
-                    options.AddPolicy(
-                        name: MyAllowSpecificOrigins,
-                        policy =>
-                        {
-                            policy.WithOrigins("http://localhost:7778");
-                        }
-                    );
-                });
-
             // Add services to the container.
             var connectionString =
                 Config.GetValue<string>("PostgresConnectionString")
@@ -93,7 +77,7 @@ namespace PT
                     );
                 });
 
-            // Setup CORS for the serice collection
+            // Add CORS (https://learn.microsoft.com/en-us/aspnet/core/security/cors?view=aspnetcore-8.0)
             builder
                 .Services
                 .AddCors(options =>
@@ -102,9 +86,7 @@ namespace PT
                         name: Constants.PT_CORS,
                         policy =>
                         {
-                            policy
-                                .WithOrigins("https://localhost:7777", "https://localhost:7778")
-                                .WithMethods("POST", "GET");
+                            policy.WithOrigins("http://localhost:7778").WithMethods("POST", "GET");
                         }
                     );
                 });
@@ -128,7 +110,7 @@ namespace PT
             app.UseRouting();
 
             // Must be placed after `UseRouting` but before `UseAuthorization`
-            app.UseCors(MyAllowSpecificOrigins);
+            app.UseCors(Constants.PT_CORS);
 
             app.UseAuthentication();
             app.UseAuthorization();
@@ -148,9 +130,6 @@ namespace PT
                 swagger.SwaggerEndpoint("/swagger/v1/swagger.json", "Pro-Trades API V1");
             });
             app.UseDeveloperExceptionPage();
-
-            // Use CORS with the built app object
-            app.UseCors(Constants.PT_CORS);
 
             app.Run();
         }
