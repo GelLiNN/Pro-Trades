@@ -1,18 +1,18 @@
-import {useCallback, useEffect} from 'react'
+import {useCallback, useEffect, useState} from 'react'
 import {useNavigate, useSearchParams} from 'react-router-dom'
 import * as zod from 'zod'
 import {useResetPasswordMutation} from '@/features/auth/api'
 import {addNotification} from '@/features/notifications/state'
 import {useDispatch} from '@/store'
 
-import {Button, Link, TextField, Typography} from '@mui/material'
-import {Check} from '@mui/icons-material'
+import {Check, Lock, Visibility, VisibilityOff} from '@mui/icons-material'
+import {Button, IconButton, InputAdornment, Link, TextField, Typography} from '@mui/material'
 import {Form} from '@/components/Form'
 import {AuthLayout} from '@/features/auth/components/AuthLayout'
 
-import type {ResetPasswordRequest} from '@/features/auth/api'
+import type {ResetPasswordBody} from '@/features/auth/api'
 
-interface ResetPasswordData extends Omit<ResetPasswordRequest, 'token'> {}
+interface ResetPasswordData extends Omit<ResetPasswordBody, 'token'> {}
 
 const resetPasswordSchema = zod.object({
   password: zod.string().min(1, 'Password is required'),
@@ -21,6 +21,12 @@ const resetPasswordSchema = zod.object({
 export const ResetPassword = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+
+  const handleTogglePasswordVisibility = useCallback(() => {
+    setIsPasswordVisible(isPasswordVisible => !isPasswordVisible)
+  }, [])
 
   const [resetPassword, {isLoading, isSuccess}] = useResetPasswordMutation()
   const [searchParams] = useSearchParams()
@@ -81,10 +87,29 @@ export const ResetPassword = () => {
                 error={!!formState.errors.password}
                 fullWidth
                 helperText={formState.errors.password?.message}
-                label='New Password'
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position='end'>
+                      <IconButton
+                        aria-label='toggle password visibility'
+                        edge='end'
+                        onClick={handleTogglePasswordVisibility}
+                      >
+                        {isPasswordVisible ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <Lock />
+                    </InputAdornment>
+                  ),
+                }}
+                label='Password'
                 margin='normal'
+                placeholder='••••••••••'
                 required
-                type='password'
+                type={isPasswordVisible ? 'text' : 'password'}
                 {...register('password')}
               />
 
