@@ -32,6 +32,10 @@ namespace PT.Migrations
                         .HasColumnType("text")
                         .HasColumnName("Email");
 
+                    b.Property<bool>("IsLoggedIn")
+                        .HasColumnType("boolean")
+                        .HasColumnName("IsLoggedIn");
+
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("text")

@@ -11,7 +11,7 @@ using PT;
 namespace PT.Migrations
 {
     [DbContext(typeof(PTContext))]
-    [Migration("20231214005358_InitialCreate")]
+    [Migration("20231214223230_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -34,6 +34,10 @@ namespace PT.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("Email");
+
+                    b.Property<bool>("IsLoggedIn")
+                        .HasColumnType("boolean")
+                        .HasColumnName("IsLoggedIn");
 
                     b.Property<string>("Password")
                         .IsRequired()

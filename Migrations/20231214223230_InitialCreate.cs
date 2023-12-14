@@ -19,7 +19,8 @@ namespace PT.Migrations
                     Username = table.Column<string>(type: "text", nullable: false),
                     Email = table.Column<string>(type: "text", nullable: false),
                     Password = table.Column<string>(type: "text", nullable: false),
-                    UserTypeId = table.Column<int>(type: "integer", nullable: false)
+                    UserTypeId = table.Column<int>(type: "integer", nullable: false),
+                    IsLoggedIn = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {

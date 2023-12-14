@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PT
@@ -33,6 +33,9 @@ namespace PT
 
         [Column("UserTypeId")]
         public int UserTypeId { get; internal set; }
+
+        [Column("IsLoggedIn")]
+        public bool IsLoggedIn { get; internal set; }
     }
 
     [Table("userTypes")]
