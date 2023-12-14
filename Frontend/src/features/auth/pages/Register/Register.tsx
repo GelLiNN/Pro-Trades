@@ -1,4 +1,4 @@
-import {useCallback} from 'react'
+import {useCallback, useState} from 'react'
 import {useNavigate} from 'react-router-dom'
 import * as zod from 'zod'
 import {useRegisterMutation} from '@/features/auth/api'
@@ -6,13 +6,14 @@ import {setCredentials} from '@/features/auth/state'
 import {addNotification} from '@/features/notifications/state'
 import {useDispatch} from '@/store'
 
-import {Button, Grid, Link, TextField} from '@mui/material'
+import {Email, Key, Lock, Person, Visibility, VisibilityOff} from '@mui/icons-material'
+import {Button, Grid, IconButton, InputAdornment, Link, TextField} from '@mui/material'
 import {Form} from '@/components/Form'
 import {AuthLayout} from '@/features/auth/components/AuthLayout'
 
-import type {RegisterRequest} from '@/features/auth/api'
+import type {RegisterBody} from '@/features/auth/api'
 
-interface RegisterData extends RegisterRequest {}
+interface RegisterData extends RegisterBody {}
 
 const registerSchema = zod.object({
   accessCode: zod.string().min(1, 'Access code is required'),
@@ -24,6 +25,12 @@ const registerSchema = zod.object({
 export const Register = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+
+  const handleTogglePasswordVisibility = useCallback(() => {
+    setIsPasswordVisible(isPasswordVisible => !isPasswordVisible)
+  }, [])
 
   const [register, {isLoading}] = useRegisterMutation()
 
@@ -62,8 +69,16 @@ export const Register = () => {
               error={!!formState.errors.username}
               fullWidth
               helperText={formState.errors.username?.message}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position='start'>
+                    <Person />
+                  </InputAdornment>
+                ),
+              }}
               label='Username'
               margin='normal'
+              placeholder='Username99'
               required
               type='text'
               {...register('username')}
@@ -71,11 +86,20 @@ export const Register = () => {
 
             <TextField
               autoComplete='email'
+              autoFocus
               error={!!formState.errors.email}
               fullWidth
               helperText={formState.errors.email?.message}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position='start'>
+                    <Email />
+                  </InputAdornment>
+                ),
+              }}
               label='Email'
               margin='normal'
+              placeholder='email@example.com'
               required
               type='text'
               {...register('email')}
@@ -86,10 +110,29 @@ export const Register = () => {
               error={!!formState.errors.password}
               fullWidth
               helperText={formState.errors.password?.message}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position='end'>
+                    <IconButton
+                      aria-label='toggle password visibility'
+                      edge='end'
+                      onClick={handleTogglePasswordVisibility}
+                    >
+                      {isPasswordVisible ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+                startAdornment: (
+                  <InputAdornment position='start'>
+                    <Lock />
+                  </InputAdornment>
+                ),
+              }}
               label='Password'
               margin='normal'
+              placeholder='••••••••••'
               required
-              type='password'
+              type={isPasswordVisible ? 'text' : 'password'}
               {...register('password')}
             />
 
@@ -97,8 +140,16 @@ export const Register = () => {
               error={!!formState.errors.accessCode}
               fullWidth
               helperText={formState.errors.accessCode?.message}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position='start'>
+                    <Key />
+                  </InputAdornment>
+                ),
+              }}
               label='Access Code'
               margin='normal'
+              placeholder='super-secret-access-code'
               required
               type='text'
               {...register('accessCode')}
