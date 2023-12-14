@@ -11,7 +11,7 @@ using PT;
 namespace PT.Migrations
 {
     [DbContext(typeof(PTContext))]
-    [Migration("20231206210912_InitialCreate")]
+    [Migration("20231214005358_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -26,26 +26,28 @@ namespace PT.Migrations
 
             modelBuilder.Entity("PT.User", b =>
                 {
-                    b.Property<int>("UserId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                    b.Property<string>("UserId")
+                        .HasColumnType("text")
                         .HasColumnName("UserId");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserId"));
-
-                    b.Property<string>("UserEmail")
+                    b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("UserEmail");
+                        .HasColumnName("Email");
 
-                    b.Property<string>("UserName")
+                    b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("UserName");
+                        .HasColumnName("Password");
 
                     b.Property<int>("UserTypeId")
                         .HasColumnType("integer")
                         .HasColumnName("UserTypeId");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Username");
 
                     b.HasKey("UserId");
 

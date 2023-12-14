@@ -16,8 +16,8 @@ namespace PT
         // Application config can be read from anywhere in the app
         public static IConfiguration Config { get; set; }
 
-        public static string ExecutingPath { get; set; } = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName)
-            ?? Environment.CurrentDirectory;
+        public static string ExecutingPath { get; set; } = 
+            Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName) ?? Environment.CurrentDirectory;
 
         public static void Main(string[] args)
         {
@@ -67,6 +67,17 @@ namespace PT
                 swagger.SwaggerDoc("v1", new OpenApiInfo { Title = "Pro-Trades API", Version = "v1" });
             });
 
+            // Setup CORS for the serice collection
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(name: Constants.PT_CORS,
+                    policy =>
+                    {
+                        policy.WithOrigins("https://localhost:7777", "https://localhost:7778")
+                            .WithMethods("POST", "GET");
+                    });
+            });
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -103,6 +114,9 @@ namespace PT
                 swagger.SwaggerEndpoint("/swagger/v1/swagger.json", "Pro-Trades API V1");
             });
             app.UseDeveloperExceptionPage();
+
+            // Use CORS with the built app object
+            app.UseCors(Constants.PT_CORS);
 
             app.Run();
         }
