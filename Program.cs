@@ -86,7 +86,10 @@ namespace PT
                         name: Constants.PT_CORS,
                         policy =>
                         {
-                            policy.WithOrigins("http://localhost:7778").WithMethods("POST", "GET");
+                            policy
+                                .WithOrigins("http://localhost:7778")
+                                .AllowAnyHeader()
+                                .AllowAnyMethod();
                         }
                     );
                 });

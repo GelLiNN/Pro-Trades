@@ -1,12 +1,7 @@
-﻿using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
 using PT.Middleware;
 using PT.Models.RequestModels;
-using PT.Services;
-using System.Net.Mime;
 
 namespace PT.Controllers
 {
@@ -22,22 +17,29 @@ namespace PT.Controllers
         }
 
         [HttpPost("api/auth/Register")]
-        public IActionResult RegisterAccount(RegistrationRequest req)
+        public IActionResult RegisterAccount([FromBody] RegistrationRequest req)
         {
             try
             {
                 string userId = Guid.NewGuid().ToString();
 
                 // TODO: add more comprehensive validation results
-                bool isValid = !String.IsNullOrEmpty(req.AccessCode) && !String.IsNullOrEmpty(req.Username)
-                    && !String.IsNullOrEmpty(req.Email) && !String.IsNullOrEmpty(req.Password)
+                bool isValid =
+                    !String.IsNullOrEmpty(req.AccessCode)
+                    && !String.IsNullOrEmpty(req.Username)
+                    && !String.IsNullOrEmpty(req.Email)
+                    && !String.IsNullOrEmpty(req.Password)
                     && req.AccessCode == Program.Config.GetValue<string>("AlphaAccessCode");
 
                 if (isValid)
                 {
                     //string date = DateTime.Now.AddDays(100).ToString("mm/dd/yyyy");
                     string date = "12/12/2024";
-                    string encryptedPass = LicenseGenerator.CreateEncryptedKey(req.Username, req.Password, date);
+                    string encryptedPass = LicenseGenerator.CreateEncryptedKey(
+                        req.Username,
+                        req.Password,
+                        date
+                    );
                     User newUser = new User
                     {
                         UserId = userId,
@@ -48,11 +50,7 @@ namespace PT.Controllers
                     };
                     _ptContext.User.Add(newUser);
                     int result = _ptContext.SaveChanges();
-                    return new ContentResult
-                    {
-                        Content = userId,
-                        StatusCode = 200,
-                    };
+                    return new ContentResult { Content = userId, StatusCode = 200, };
                 }
                 else
                 {
@@ -74,7 +72,8 @@ namespace PT.Controllers
         {
             try
             {
-                User? user = _ptContext.User
+                User? user = _ptContext
+                    .User
                     .Where(x => x.Username == req.Username)
                     .FirstOrDefault();
                 if (user != null)
@@ -82,8 +81,13 @@ namespace PT.Controllers
                     string encryptedPassFromDb = user.Password;
                     string usernameInput = req.Username;
                     string passwordInput = req.Password;
-                    DecryptedTokenItems decryptedItems = SecurityHelper.DecryptUserToken(encryptedPassFromDb);
-                    if (decryptedItems.Username == usernameInput && decryptedItems.Password == passwordInput)
+                    DecryptedTokenItems decryptedItems = SecurityHelper.DecryptUserToken(
+                        encryptedPassFromDb
+                    );
+                    if (
+                        decryptedItems.Username == usernameInput
+                        && decryptedItems.Password == passwordInput
+                    )
                     {
                         // Decrypted password and username match, proceed to send back session token
                         Response.Headers.Add(Constants.AUTH_HEADER, encryptedPassFromDb);
@@ -139,7 +143,8 @@ namespace PT.Controllers
                 Request.Headers.TryGetValue(Constants.AUTH_HEADER, out StringValues value);
                 string token = value.ToString();
                 DecryptedTokenItems decryptedItems = SecurityHelper.DecryptUserToken(token);
-                User? user = _ptContext.User
+                User? user = _ptContext
+                    .User
                     .Where(x => x.Username == decryptedItems.Username)
                     .FirstOrDefault();
 
