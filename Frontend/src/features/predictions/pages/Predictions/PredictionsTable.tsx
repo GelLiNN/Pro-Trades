@@ -1,7 +1,8 @@
 import {useCallback, useMemo, useState} from 'react'
-import {getFilterFunction, getSortFunction} from './helpers'
+import {formatNumber, getFilterFunction, getSortFunction} from './helpers'
 
 import {
+  Box,
   Divider,
   Paper,
   Table,
@@ -10,6 +11,7 @@ import {
   TableContainer,
   TablePagination,
   TableRow,
+  Typography,
 } from '@mui/material'
 import {PredictionsTableHead} from './PredictionsTableHead'
 import {PredictionsTableToolbar} from './PredictionsTableToolbar'
@@ -18,10 +20,11 @@ import type {ChangeEvent, MouseEvent} from 'react'
 import type {Order, Stock} from './types'
 
 interface Props {
+  lastUpdatedDate: Date
   rows: Stock[]
 }
 
-export const PredictionsTable = ({rows}: Props) => {
+export const PredictionsTable = ({lastUpdatedDate, rows}: Props) => {
   const [search, setSearch] = useState('')
   const [order, setOrder] = useState<Order>('desc')
   const [orderBy, setOrderBy] = useState<keyof Stock>('scoreValue')
@@ -82,21 +85,19 @@ export const PredictionsTable = ({rows}: Props) => {
           overflowY: 'scroll',
         }}
       >
-        <Table aria-labelledby='tableTitle' size='small' stickyHeader sx={{minWidth: 750}}>
+        <Table aria-labelledby='tableTitle' size='small' stickyHeader>
           <PredictionsTableHead onRequestSort={handleRequestSort} order={order} orderBy={orderBy} />
 
           <TableBody>
             {visibleRows.map(visibleRow => {
-              const {name, price, scoreRank, scoreValue, symbol} = visibleRow
+              const {name, price, scoreRank, scoreValue, symbol, throughput} = visibleRow
 
               return (
                 <TableRow
                   hover
                   key={symbol}
                   onClick={event => handleClick(event, symbol)}
-                  sx={{
-                    cursor: 'pointer',
-                  }}
+                  sx={{cursor: 'pointer'}}
                 >
                   <TableCell component='th' scope='row' width={1}>
                     {symbol}
@@ -105,11 +106,15 @@ export const PredictionsTable = ({rows}: Props) => {
                   <TableCell>{name}</TableCell>
 
                   <TableCell align='right' width={150}>
-                    ${price.toFixed(2)}
+                    ${formatNumber(price, 2)}
                   </TableCell>
 
-                  <TableCell align='right' width={1}>
-                    {scoreValue.toFixed(2)}
+                  <TableCell align='right' width={150}>
+                    ${formatNumber(throughput, 2)}
+                  </TableCell>
+
+                  <TableCell align='right' width={100}>
+                    {formatNumber(scoreValue, 2)}
                   </TableCell>
 
                   <TableCell
@@ -117,12 +122,13 @@ export const PredictionsTable = ({rows}: Props) => {
                     sx={theme => ({
                       backgroundColor: {
                         BAD: theme.palette.error.light,
+                        DISQUALIFIED: theme.palette.error.main,
                         FAIR: theme.palette.warning.light,
                         GOOD: theme.palette.success.light,
                         PRIME: theme.palette.success.main,
                       }[scoreRank],
                     })}
-                    width={100}
+                    width={125}
                   >
                     {scoreRank}
                   </TableCell>
@@ -135,15 +141,27 @@ export const PredictionsTable = ({rows}: Props) => {
 
       <Divider />
 
-      <TablePagination
-        component='div'
-        count={rows.length}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        rowsPerPageOptions={[25, 50, 100]}
-      />
+      <Box sx={{display: 'grid', gridAutoFlow: 'column', alignItems: 'center', pl: 2}}>
+        <Typography
+          color='text.secondary'
+          fontSize={10}
+          fontStyle='italic'
+          fontWeight={500}
+          variant='body2'
+        >
+          Last updated {lastUpdatedDate.toLocaleString()}
+        </Typography>
+
+        <TablePagination
+          component='div'
+          count={rows.length}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          rowsPerPageOptions={[25, 50, 100]}
+        />
+      </Box>
     </Paper>
   )
 }

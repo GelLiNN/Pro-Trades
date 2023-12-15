@@ -30,3 +30,9 @@ export const getSortFunction = <T, Key extends keyof T>(order: Order, orderBy: K
   order === 'desc'
     ? (a: T, b: T) => descendingComparator(a, b, orderBy)
     : (a: T, b: T) => -descendingComparator(a, b, orderBy)
+
+export const formatNumber = (number: number, decimalPlaces: number = 0) =>
+  number.toLocaleString('en-US', {
+    maximumFractionDigits: decimalPlaces,
+    minimumFractionDigits: decimalPlaces,
+  })

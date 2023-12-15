@@ -7,7 +7,7 @@ export interface HeadCell {
 
 export type Order = 'asc' | 'desc'
 
-export type StockScoreRank = 'BAD' | 'FAIR' | 'GOOD' | 'PRIME'
+export type StockScoreRank = 'BAD' | 'DISQUALIFIED' | 'FAIR' | 'GOOD' | 'PRIME'
 
 export interface Stock {
   name: string
@@ -15,4 +15,5 @@ export interface Stock {
   scoreRank: StockScoreRank
   scoreValue: number
   symbol: string
+  throughput: number
 }

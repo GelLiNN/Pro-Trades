@@ -22,6 +22,12 @@ export const HEAD_CELLS: HeadCell[] = [
   {
     align: 'right',
     isSortable: true,
+    key: 'throughput',
+    label: 'Throughput',
+  },
+  {
+    align: 'right',
+    isSortable: true,
     key: 'scoreValue',
     label: 'Score',
   },
