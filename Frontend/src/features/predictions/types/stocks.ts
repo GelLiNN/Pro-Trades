@@ -1,6 +1,7 @@
 export interface Stock {
   // Basics
   dataProviders: string
+  name: string
   price: number
   priceHistoryDays: number
   symbol: string
@@ -8,7 +9,7 @@ export interface Stock {
   // Composites
   adxComposite: number
   aroonComposite: number
-  compositeRank: string
+  compositeRank: 'BAD' | 'DISQUALIFIED' | 'FAIR' | 'GOOD' | 'PRIME'
   compositeScoreValue: number
   fundamentalsComposite: number
   macdComposite: number
