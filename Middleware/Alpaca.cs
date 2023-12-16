@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using PT.Services;
 using Skender.Stock.Indicators;
 using System.Xml;
@@ -38,7 +38,7 @@ namespace PT.Middleware
             // Averages we must compute
             decimal avgPrice30d = 0;
             decimal avgPrice10d = 0;
-            decimal lastPrice = 0;
+            decimal lastPriceVw = 0;
             decimal avgVol30d = 0;
             decimal avgVol10d = 0;
             decimal lastVol = 0;
@@ -64,7 +64,7 @@ namespace PT.Middleware
                 }
                 if (isLast)
                 {
-                    lastPrice += Convert.ToDecimal(curData["vw"].ToString());
+                    lastPriceVw += Convert.ToDecimal(curData["vw"].ToString());
                     lastVol += Convert.ToDecimal(curData["v"].ToString());
                 }
 
@@ -81,13 +81,13 @@ namespace PT.Middleware
             avgVol30d = avgVol30d / 30.0M;
             avgPrice10d = avgPrice10d / 10.0M;
             avgVol10d = avgVol10d / 10.0M;
-            alpacaHistory.VolumeUSD = lastPrice * lastVol;
+            alpacaHistory.VolumeUSD = lastPriceVw * lastVol;
             alpacaHistory.AverageVolumeUSD = avgPrice30d * avgVol30d;
 
             // Make X and Y Lists
             alpacaHistory.PriceAvgYList.Add(avgPrice30d);
             alpacaHistory.PriceAvgYList.Add(avgPrice10d);
-            alpacaHistory.PriceAvgYList.Add(lastPrice);
+            alpacaHistory.PriceAvgYList.Add(lastPriceVw);
             for (int i = 1; i <= alpacaHistory.PriceAvgYList.Count; i++)
                 alpacaHistory.PriceAvgXList.Add(i);
 

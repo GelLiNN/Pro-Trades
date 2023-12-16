@@ -1,4 +1,4 @@
-﻿using PT.Models.RequestModels;
+using PT.Models.RequestModels;
 using PT.Services;
 using Skender.Stock.Indicators;
 using System.Diagnostics;
@@ -179,7 +179,8 @@ namespace PT.Middleware
                 Name = quote.LongName,
                 Exchange = quote.FullExchangeName,
                 DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks",
-                Price = decimal.Parse(quote.RegularMarketPrice.ToString()),
+                PriceL = decimal.Parse(quote.RegularMarketPrice.ToString()),
+                PriceVW = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 1],
                 PriceHistoryDays = history.Count(),
                 ADXComposite = adxCompositeScore,
                 OBVComposite = obvCompositeScore,

@@ -1,11 +1,12 @@
-﻿namespace PT.Models.RequestModels
+namespace PT.Models.RequestModels
 {
     public class CompositeScoreResult
     {
         public string? Symbol { get; set; }
         public string? Name { get; set; }
         public string? Exchange { get; set; }
-        public decimal Price { get; set; }
+        public decimal PriceL { get; set; }
+        public decimal PriceVW { get; set; }
         public int PriceHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
         public decimal OBVComposite { get; set; }
