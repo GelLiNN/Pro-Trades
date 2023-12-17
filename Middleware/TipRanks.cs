@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using PT.Models.RequestModels;
 using PT.Services;
 using System.Diagnostics;
@@ -11,8 +11,8 @@ namespace PT.Middleware
     {
         private static readonly string TipRanksBaseUrl = @"https://www.tipranks.com/api/stocks/";
 
-        //I obtained the context for these IDs by comparing the TipRanks API data to the listed insider trades on their site
-        //Use them in the GetData method to decipher the insider buys and sells
+        // I obtained the context for these IDs by comparing the TipRanks API data to the listed insider trades on their site
+        // Use them in the GetData method to decipher the insider buys and sells
         private static readonly int InsiderInformativeBuyTypeId = 2;
         private static readonly int InsiderInformativeSellTypeId = 7;
         private static readonly int InsiderNonInformativeBuyTypeId = 4;
@@ -20,11 +20,11 @@ namespace PT.Middleware
 
         public static HedgeFundsResult GetTipRanksResult(string symbol, RequestManager rm)
         {
-            //Return a data object that contains:
-            //Aggregated ratings data and ratings providers
-            //Aggregated insider transactions data, insider names, insider ratings
-            //Aggregated insitutional transactions data, hedge fund ratings, hedge fund names
-            //Composite score of the above 3 items
+            // Return a data object that contains:
+            // Aggregated ratings data and ratings providers
+            // Aggregated insider transactions data, insider names, insider ratings
+            // Aggregated insitutional transactions data, hedge fund ratings, hedge fund names
+            // Composite score of the above 3 items
 
             try
             {
@@ -32,7 +32,7 @@ namespace PT.Middleware
 
                 TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseString);
 
-                //filter results to the last 3 months
+                // Filter results to the last 3 months
                 DateTime startDate = DateTime.Now.AddMonths(-3);
                 List<Insider> insiders = trResponse.insiders
                     .Where(x => DateTime.Compare(x.rDate, startDate) > 0)
@@ -49,7 +49,7 @@ namespace PT.Middleware
 
                 // Average hedge fun ratings will form score base
                 decimal averageRating = GetAverageRating(ratings, trResponse);
-                decimal ratingsBase = (averageRating / 6.0M) * 100; //Get score using the average rating as a percentage of (max rating + 1.0)
+                decimal ratingsBase = (averageRating / 6.0M) * 100; // Get score using the average rating as a percentage of (max rating + 1.0)
 
                 // Add hedge fund buy sell rankings bonus
                 // find the slope of the buy and sell consensuses (net) from bsns
@@ -75,9 +75,9 @@ namespace PT.Middleware
                     bsnBonus += bsnSlope >= 0 ? (bsnSlope * bsnSlopeMultiplier) + bsnWeight : -(bsnSlope * bsnSlopeMultiplier) - bsnWeight;
                 }
 
-                //Add price target bonus 5 if the target is more than 5% greater than last price
-                //Add price target bonus 10 if the target is more than 10% greater than last price
-                //Add price target bonus -10 if the target is less than last price
+                // Add price target bonus 5 if the target is more than 5% greater than last price
+                // Add price target bonus 10 if the target is more than 10% greater than last price
+                // Add price target bonus -10 if the target is less than last price
                 decimal priceTargetBonus = 0;
                 decimal priceTarget = 0;
                 decimal lastPrice = Convert.ToDecimal(trResponse.prices[trResponse.prices.Length - 1].p);
@@ -85,19 +85,23 @@ namespace PT.Middleware
                 {
                     priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.bestPriceTarget);
                 }
+                else if (trResponse.portfolioHoldingData.priceTarget != null)
+                {
+                    priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.priceTarget);
+                }
                 else if (bsns.Count > 0)
                 {
                     priceTarget = Convert.ToDecimal(bsns[bsns.Count - 1].priceTarget);
                 }
                 else
                 {
-                    var chicken = "nuggets"; //Find some other way to get price target
+                    var chicken = "nuggets"; // Find some other way to get price target
                 }
                 
-                //Protect against failure to get price target
+                // Protect against failure to get price target
                 if (priceTarget != 0)
                 {
-                    //Formulate price target bonus
+                    // Formulate price target bonus
                     decimal diff = priceTarget - lastPrice;
                     decimal percentChange = (diff / Math.Abs(lastPrice)) * 100;
                     priceTargetBonus += percentChange >= 5 ? 5 : 0;
@@ -105,18 +109,18 @@ namespace PT.Middleware
                     priceTargetBonus += percentChange < 0 ? -10 : 0;
                 }
 
-                //Other bonuses for recent insider buy-ins, institutional holdings, and hedge funds
+                // Other bonuses for recent insider buy-ins, institutional holdings, and hedge funds
                 decimal insiderBonus = GetInsiderBonus(insiders);
                 decimal holdingBonus = GetHoldingBonus(holdings);
                 decimal hedgeSentimentBonus = GetHedgeSentimentBonus(trResponse.hedgeFundData);
 
                 decimal ratingsComposite = 0;
                 ratingsComposite += ratingsBase;
-                ratingsComposite += bsnBonus; //Add bsn bonus from above
-                ratingsComposite += priceTargetBonus; //Add price target bonus from above
-                ratingsComposite += insiderBonus; //Add insider bonus from above
-                ratingsComposite += holdingBonus; //Add holding bonus from above
-                ratingsComposite += hedgeSentimentBonus; //Add hedge sentiment bonus from above
+                ratingsComposite += bsnBonus; // Add bsn bonus from above
+                ratingsComposite += priceTargetBonus; // Add price target bonus from above
+                ratingsComposite += insiderBonus; // Add insider bonus from above
+                ratingsComposite += holdingBonus; // Add holding bonus from above
+                ratingsComposite += hedgeSentimentBonus; // Add hedge sentiment bonus from above
 
                 ratingsComposite = Math.Min(ratingsComposite, 100); // cap composite at 100, no extra weight
                 ratingsComposite = Math.Max(ratingsComposite, 0); // limit composite at 0, no negatives
@@ -166,10 +170,10 @@ namespace PT.Middleware
 
         public static string GetSentiment(string symbol, RequestManager rm)
         {
-            //Return a data object that contains:
-            //total bullish sentiment
-            //total bearish sentiment
-            //Composite score of sentiment
+            // Return a data object that contains:
+            // total bullish sentiment
+            // total bearish sentiment
+            // Composite score of sentiment
             string responseString = rm.GetFromUri(TipRanksBaseUrl + "getNewsSentiments/?ticker=" + symbol);
             TipRanksSentimentResponse trResponse = JsonConvert.DeserializeObject<TipRanksSentimentResponse>(responseString);
 
@@ -186,7 +190,7 @@ namespace PT.Middleware
 
             string bsn = "Buy Sentiments: " + totalBuySentiments + ", Sell Sentiments: " + totalSellSentiments + ", Neutral Sentiments: " + totalNeutralSentiments;
 
-            //Have to do these annoying null checks apparently
+            // Have to do these annoying null checks apparently
             string bullish = "Average Bullish Sentiment: ";
             string bearish = "Average Bearish Sentiment: ";
             if (trResponse.sentiment != null)
@@ -214,9 +218,9 @@ namespace PT.Middleware
 
         public static TipRanksTrendingCompany[] GetTrendingCompanies(RequestManager rm)
         {
-            //Return a data object that contains:
-            //all recent top stocks from TipRanks
-            //other stuff maybe?
+            // Return a data object that contains:
+            // all recent top stocks from TipRanks
+            // other stuff maybe?
 
             string responseString = rm.GetFromUri(TipRanksBaseUrl + "gettrendingstocks/?daysago=30&which=most");
             TipRanksTrendingCompany[] trResponse = JsonConvert.DeserializeObject<TipRanksTrendingCompany[]>(responseString);
@@ -242,7 +246,7 @@ namespace PT.Middleware
 
         private static decimal GetAverageRating(List<Expert> ratings, TipRanksDataResponse trResponse)
         {
-            //find the average rating normally
+            // find the average rating normally
             if (ratings.Count > 0)
             {
                 List<decimal> ratingNums = ratings
@@ -271,16 +275,16 @@ namespace PT.Middleware
 
         private static decimal GetInsiderBonus(List<Insider> insiders)
         {
-            //Found the meanings of these actions by visiting Insider.link URL
-            //i.e. https://www.sec.gov/Archives/edgar/data/1486056/000112760223026226/xslF345X03/form4.xml
+            // Found the meanings of these actions by visiting Insider.link URL
+            // i.e. https://www.sec.gov/Archives/edgar/data/1486056/000112760223026226/xslF345X03/form4.xml
             HashSet<int> insiderBuyActions = new HashSet<int> { 2, 3 };
             HashSet<int> insiderSellActions = new HashSet<int> { 1, 4 };
 
 
-            //Add insider bonuses, 3 points per insider if more than 1mil holding
-            //Add insider bonuses, 2 points per insider if more than 500k holding
-            //Add insider bonuses, 1 points per insider if less than 500k holding
-            //Add insider bonuses, negative inverse for above on sells
+            // Add insider bonuses, 3 points per insider if more than 1mil holding
+            // Add insider bonuses, 2 points per insider if more than 500k holding
+            // Add insider bonuses, 1 points per insider if less than 500k holding
+            // Add insider bonuses, negative inverse for above on sells
             decimal insiderBonus = 0;
             foreach (var insider in insiders)
             {
@@ -338,12 +342,12 @@ namespace PT.Middleware
                 {
                     holdingBonus += (decimal) Math.PI * 2;
                 }
-                //Add holding bonuses if 1mil or more holding
+                // Add holding bonuses if 1mil or more holding
                 if (amountHolding >= 1000000)
                 {
                     holdingBonus += (decimal) Math.PI * 2;
                 }
-                //Add smaller holding bonuses if more than 0 holding
+                // Add smaller holding bonuses if more than 0 holding
                 else if (amountHolding > 0)
                 {
                     holdingBonus += (decimal) Math.PI;
