@@ -87,7 +87,7 @@ namespace PT.Controllers
             {
                 return new ContentResult
                 {
-                    Content = "Auth RegisterException: " + ex.Message,
+                    Content = "Auth Register Exception: " + ex.Message,
                     StatusCode = 500,
                 };
             }
