@@ -1,4 +1,4 @@
-﻿using LogLevel = NLog.LogLevel;
+using LogLevel = NLog.LogLevel;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,7 +7,7 @@ using PT.Models.RequestModels;
 
 namespace PT.Middleware
 {
-    public static class SecurityHelper
+    public static class DecryptionHelper
     {
         private const string LICENSE_INVALID = "License from config.json is invalid: {0}";
         private const string LICENSE_EXPIRED = "License from config.json is Expired: {0}";
@@ -16,21 +16,21 @@ namespace PT.Middleware
         private const string ARGUMENT_ERROR = "Encrypted argument does not match expected parameters";
         private const string NULL_KEY_ERROR = "Encrypted arguments are null or empty";
 
-        public const string KEY = "371745DD060DEB5BF75C542Z8B586C38";  // 32 bytes
-        public const string IV = "2195D9B8DF1EL117";                   // 16 bytes
+        public const string IV = "2195D9B8DF1EL117"; // 16 bytes
 
         /// <summary>
-        /// Checks whether the passed encrypted token is valid or not
+        /// Decrypts the passed encrypted token, checking for validity
         /// </summary>
         /// <param name="token">string encrypted user token</param>
+        /// <param name="isPassword">true for password tokens, false for session tokens</param>
         /// <returns>true if license is valid, false otherwise</returns>
         /// <exception cref="ArgumentException">Provided license is not valid.</exception>
         /// <exception cref="FormatException">Format for license is not valid.</exception>
-        public static DecryptedTokenItems DecryptUserToken(string token)
+        public static DecryptedTokenItems DecryptUserToken(string token, bool isPassword)
         {
             try
             {
-                var result = DecryptToken(token);
+                var result = DecryptToken(token, isPassword);
                 int dateDiff = DateTime.Compare(result.ExpireDate, DateTime.Now);
 
                 // check if license is invalid
@@ -84,22 +84,33 @@ namespace PT.Middleware
         // Private helper to turn a string into a byte Array
         private static byte[] ToBytes(this string str) => string.IsNullOrEmpty(str) ? Array.Empty<byte>() : Encoding.ASCII.GetBytes(str);
 
-        private static DecryptedTokenItems DecryptToken(string hexLicense)
+        private static DecryptedTokenItems DecryptToken(string hexLicense, bool isPassword)
         {
+
             var cypherBytes = hexLicense.HexStringToByteArray();
 
-            var license = DecryptRegistration(cypherBytes, KEY.ToBytes(), IV.ToBytes());
-
-            var date = license[^8..];
-            DateTime dateObj = DateTime.ParseExact(date, "MMddyyyy", null, DateTimeStyles.None);
-            String[] tokens = license.Split(".");
-
-            return new DecryptedTokenItems
+            var temp = GetKeySaltPair(isPassword);
+            if (!String.IsNullOrEmpty(temp.key) && !String.IsNullOrEmpty(temp.salt))
             {
-                Username = tokens[0],
-                Password = tokens[1],
-                ExpireDate = dateObj
-            };
+                var license = DecryptRegistration(cypherBytes, temp.key.ToBytes(), IV.ToBytes());
+
+                var date = license[^8..];
+                DateTime dateObj = DateTime.ParseExact(date, "MMddyyyy", null, DateTimeStyles.None);
+                String[] tokens = license.Split(".");
+
+                DecryptedTokenItems items =  new DecryptedTokenItems
+                {
+                    Username = tokens[0],
+                    ExpireDate = dateObj
+                };
+                items.Password = isPassword ? tokens[1] : String.Empty;
+                return items;
+            }
+            else
+            {
+                // Error getting Key and Salt pair from config
+                return new DecryptedTokenItems();
+            }
         }
 
         // Private helper to Decrypt the AES byte[] 
@@ -144,13 +155,29 @@ namespace PT.Middleware
 
             return text;
         }
+
+        public static (string? key, string? salt) GetKeySaltPair(bool isPassword)
+        {
+            string key = string.Empty;
+            string salt = string.Empty;
+            if (isPassword)
+            {
+                key = Program.Config.GetValue<string>(Constants.PASSWORD_KEY);
+                salt = Program.Config.GetValue<string>(Constants.PASSWORD_SALT);
+            }
+            else
+            {
+                key = Program.Config.GetValue<string>(Constants.SESSION_KEY);
+                salt = Program.Config.GetValue<string>(Constants.SESSION_SALT);
+            }
+            return (key, salt);
+        }
     }
 
-    public partial class LicenseGenerator
+    public partial class EncryptionHelper
     {
-        protected LicenseGenerator() { }
+        protected EncryptionHelper() { }
 
-        private const string Salt = "P005AL7"; // 16 bytes
         private const string DateSlashSeparator = "/";
         private const string DateDashSeparator = "-";
 
@@ -164,13 +191,16 @@ namespace PT.Middleware
         /// <param name="username">Username token to encrypt with</param>
         /// <param name="pass">Password token to encrypt with</param>
         /// <param name="expDate">Date of expiration in format mm/dd/yyyy</param>
-        public static string CreateEncryptedKey(string username, string pass, string expDate)
+        /// <param name="isPassword">true for password tokens, false for session tokens</param>
+        public static string CreateEncryptedKey(string username, string pass, string expDate, bool isPassword)
         {
             bool valid = ValidateInputs(username, pass, expDate);
-            if (valid)
+            var temp = DecryptionHelper.GetKeySaltPair(isPassword);
+
+            if (valid && !String.IsNullOrEmpty(temp.key) && !String.IsNullOrEmpty(temp.salt))
             {
-                string token = $"{username}.{pass}.";
-                string key = GenerateKeyHelper(token, expDate);
+                string token = isPassword ? $"{username}.{pass}." : $"{username}.";
+                string key = GenerateKeyHelper(token, expDate, temp.key, temp.salt);
                 return key;
             }
             return string.Empty;
@@ -181,13 +211,15 @@ namespace PT.Middleware
         /// </summary>
         /// <param name="token"></param>
         /// <param name="expiration"></param>
+        /// <param name="k"></param>
+        /// <param name="s"></param>
         /// <returns></returns>
         /// <exception cref="SystemException"></exception>
-        private static string GenerateKeyHelper(string token, string expiration)
+        private static string GenerateKeyHelper(string token, string expiration, string k, string s)
         {
             var time = CleanDate(expiration);
 
-            var plainText = token + Salt + time;
+            var plainText = token + s + time;
 
             if (string.IsNullOrEmpty(plainText))
             {
@@ -195,8 +227,8 @@ namespace PT.Middleware
             }
 
             using var aes = Aes.Create();
-            aes.Key = StrToBytes(SecurityHelper.KEY);
-            aes.IV = StrToBytes(SecurityHelper.IV);
+            aes.Key = StrToBytes(k);
+            aes.IV = StrToBytes(DecryptionHelper.IV);
 
             var cipherText = EncryptRegistration(plainText, aes.Key, aes.IV);
             return GetKeyFromCipher(cipherText);

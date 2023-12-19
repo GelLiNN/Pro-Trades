@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using PT.Middleware;
 using PT.Models.RequestModels;
@@ -23,6 +23,15 @@ namespace PT.Controllers
             {
                 string userId = Guid.NewGuid().ToString();
 
+                // First check for existing user
+                var existingUser = _ptContext.User
+                    .Where(x => x.Email == req.Email || x.Username == req.Username)
+                    .FirstOrDefault();
+                if (existingUser != null)
+                {
+                    return BadRequest("Auth Error: User already exists with passed username and/or email");
+                }
+
                 // TODO: add more comprehensive validation results
                 bool isValid =
                     !String.IsNullOrEmpty(req.AccessCode)
@@ -34,9 +43,9 @@ namespace PT.Controllers
                 if (isValid)
                 {
                     //string date = DateTime.Now.AddDays(100).ToString("mm/dd/yyyy");
-                    string date = "12/12/2024";
+                    string date = Constants.PASSWORD_EXP_DATE;
                     string encryptedPass =
-                        LicenseGenerator.CreateEncryptedKey(req.Username, req.Password, date);
+                        EncryptionHelper.CreateEncryptedKey(req.Username, req.Password, date, true);
 
                     User newUser = new User
                     {
@@ -83,7 +92,7 @@ namespace PT.Controllers
                     string passwordInput = req.Password;
 
                     DecryptedTokenItems decryptedItems =
-                        SecurityHelper.DecryptUserToken(encryptedPassFromDb);
+                        DecryptionHelper.DecryptUserToken(encryptedPassFromDb, true);
 
                     if (decryptedItems.Username == usernameInput
                         && decryptedItems.Password == passwordInput)
@@ -95,9 +104,13 @@ namespace PT.Controllers
 
                         // proceed to send back session token
                         // Response.Headers.Add(Constants.AUTH_HEADER, encryptedPassFromDb);
+                        string date = Constants.SESSION_EXP_DATE;
+                        string sessionToken =
+                            EncryptionHelper.CreateEncryptedKey(usernameInput, passwordInput, date, false);
+
                         SessionResponse response = new SessionResponse
                         {
-                            AuthToken = encryptedPassFromDb,
+                            AuthToken = sessionToken,
                             UserId = user.UserId,
                             UserTypeId = user.UserTypeId,
                             Username = user.Username,
@@ -109,13 +122,13 @@ namespace PT.Controllers
                     else
                     {
                         // User not authenticated
-                        return BadRequest("Auth Error: User not authenticated");
+                        return BadRequest("Auth Error: User credentials not authenticated");
                     }
                 }
                 else
                 {
                     // User not found in db
-                    return BadRequest("Auth Error: User not found");
+                    return BadRequest("Auth Error: User not found with passed username");
                 }
             }
             catch (Exception ex)
@@ -136,7 +149,7 @@ namespace PT.Controllers
                 // Obtain token header, decrypt, then query database
                 Request.Headers.TryGetValue(Constants.AUTH_HEADER, out StringValues value);
                 string token = value.ToString();
-                DecryptedTokenItems decryptedItems = SecurityHelper.DecryptUserToken(token);
+                DecryptedTokenItems decryptedItems = DecryptionHelper.DecryptUserToken(token, false);
                 User? user = _ptContext
                     .User
                     .Where(x => x.Username == decryptedItems.Username && x.IsLoggedIn)
@@ -197,19 +210,19 @@ namespace PT.Controllers
                 // Obtain token header, decrypt, then query database
                 Request.Headers.TryGetValue(Constants.AUTH_HEADER, out StringValues value);
                 string token = value.ToString();
-                DecryptedTokenItems decryptedItems = SecurityHelper.DecryptUserToken(token);
+                DecryptedTokenItems decryptedItems = DecryptionHelper.DecryptUserToken(token, false);
                 User? user = _ptContext
                     .User
                     .Where(x => x.Username == decryptedItems.Username && x.IsLoggedIn)
                     .FirstOrDefault();
 
-                if (user != null && user.Password == token)
+                if (user != null)
                 {
                     // Decrypted password and username match, proceed to send back session token
                     // Response.Headers.Add(Constants.AUTH_HEADER, user.Password);
                     SessionResponse response = new SessionResponse
                     {
-                        AuthToken = user.Password,
+                        AuthToken = token,
                         UserId = user.UserId,
                         UserTypeId = user.UserTypeId,
                         Username = user.Username,
