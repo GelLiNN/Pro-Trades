@@ -1,4 +1,4 @@
-﻿namespace PT
+namespace PT
 {
     public static class Constants
     {
@@ -14,6 +14,12 @@
         public const string LOG_TIMESTAMP = "{0} | {1}";
 
         // Encryption & Security
+        public const string SESSION_EXP_DATE = "12/12/2024";
+        public const string SESSION_KEY = "SessionKey";
+        public const string SESSION_SALT = "SessionSalt";
+        public const string PASSWORD_EXP_DATE = "12/12/2024";
+        public const string PASSWORD_KEY = "PasswordKey";
+        public const string PASSWORD_SALT = "PasswordSalt";
         public const string KEY_GENERATION_FAILED = "Encryption failed to generate key.";
         public const string AUTH_HEADER = "x-auth-token";
         public const string PT_CORS = "PTCORS";
