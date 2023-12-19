@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using PT.Middleware;
 using PT.Models.RequestModels;
+using SendGrid;
 
 namespace PT.Controllers
 {
@@ -42,6 +43,7 @@ namespace PT.Controllers
 
                 if (isValid)
                 {
+                    // Create new user and add to the DB
                     //string date = DateTime.Now.AddDays(100).ToString("mm/dd/yyyy");
                     string date = Constants.PASSWORD_EXP_DATE;
                     string encryptedPass =
@@ -59,18 +61,33 @@ namespace PT.Controllers
                     _ptContext.User.Add(newUser);
                     int result = _ptContext.SaveChanges();
 
-                    return Ok(userId);
+                    // Login and return a new SessionResponse
+                    LoginRequest loginRequest = new LoginRequest
+                    {
+                        Username = req.Username,
+                        Password = req.Password,
+                    };
+                    SessionResponse response = LoginHelper(loginRequest, newUser);
+                    if (!String.IsNullOrEmpty(response.AuthToken))
+                    {
+                        return Ok(response);
+                    }
+                    else
+                    {
+                        // User not authenticated
+                        return BadRequest("Auth Register Error: Could not login after registering");
+                    }
                 }
                 else
                 {
-                    return BadRequest("Auth Error: Failed to provide valid inputs");
+                    return BadRequest("Auth Register Error: Failed to provide valid inputs");
                 }
             }
             catch (Exception ex)
             {
                 return new ContentResult
                 {
-                    Content = "Auth Exception: " + ex.Message,
+                    Content = "Auth RegisterException: " + ex.Message,
                     StatusCode = 500,
                 };
             }
@@ -82,63 +99,73 @@ namespace PT.Controllers
             try
             {
                 User? user = _ptContext.User
-                    .Where(x => x.Username == req.Username && !x.IsLoggedIn)
+                    .Where(x => x.Username == req.Username)
                     .FirstOrDefault();
 
-                if (user != null)
+                if (user != null && !String.IsNullOrEmpty(req.Password))
                 {
-                    string encryptedPassFromDb = user.Password;
-                    string usernameInput = req.Username;
-                    string passwordInput = req.Password;
-
-                    DecryptedTokenItems decryptedItems =
-                        DecryptionHelper.DecryptUserToken(encryptedPassFromDb, true);
-
-                    if (decryptedItems.Username == usernameInput
-                        && decryptedItems.Password == passwordInput)
+                    SessionResponse loginResponse = LoginHelper(req, user);
+                    if (!String.IsNullOrEmpty(loginResponse.AuthToken))
                     {
-                        // Decrypted password and username match, so mark User as logged in
-                        user.IsLoggedIn = true;
-                        _ptContext.Update(user);
-                        int result = _ptContext.SaveChanges();
-
-                        // proceed to send back session token
-                        // Response.Headers.Add(Constants.AUTH_HEADER, encryptedPassFromDb);
-                        string date = Constants.SESSION_EXP_DATE;
-                        string sessionToken =
-                            EncryptionHelper.CreateEncryptedKey(usernameInput, passwordInput, date, false);
-
-                        SessionResponse response = new SessionResponse
-                        {
-                            AuthToken = sessionToken,
-                            UserId = user.UserId,
-                            UserTypeId = user.UserTypeId,
-                            Username = user.Username,
-                            Email = user.Email,
-                            IsLoggedIn = user.IsLoggedIn
-                        };
-                        return Ok(response);
+                        return Ok(loginResponse);
                     }
                     else
                     {
                         // User not authenticated
-                        return BadRequest("Auth Error: User credentials not authenticated");
+                        return BadRequest("Auth Login Error: User credentials not authenticated");
                     }
                 }
                 else
                 {
                     // User not found in db
-                    return BadRequest("Auth Error: User not found with passed username");
+                    return BadRequest("Auth Login Error: User not found with passed username");
                 }
             }
             catch (Exception ex)
             {
                 return new ContentResult
                 {
-                    Content = "Auth Exception: " + ex.Message,
+                    Content = "Auth Login Exception: " + ex.Message,
                     StatusCode = 500,
                 };
             }
+        }
+
+        private SessionResponse LoginHelper(LoginRequest req, User user)
+        {
+            SessionResponse response = new SessionResponse();
+            string encryptedPassFromDb = user.Password;
+            string usernameInput = req.Username;
+            string passwordInput = req.Password;
+
+            DecryptedTokenItems decryptedItems =
+                DecryptionHelper.DecryptUserToken(encryptedPassFromDb, true);
+
+            if (decryptedItems.Username == usernameInput
+                && decryptedItems.Password == passwordInput)
+            {
+                // Decrypted password and username match, so mark User as logged in
+                user.IsLoggedIn = true;
+                _ptContext.Update(user);
+                int result = _ptContext.SaveChanges();
+
+                // proceed to send back session token
+                // Response.Headers.Add(Constants.AUTH_HEADER, encryptedPassFromDb);
+                string date = Constants.SESSION_EXP_DATE;
+                string sessionToken =
+                    EncryptionHelper.CreateEncryptedKey(usernameInput, passwordInput, date, false);
+
+                response = new SessionResponse
+                {
+                    AuthToken = sessionToken,
+                    UserId = user.UserId,
+                    UserTypeId = user.UserTypeId,
+                    Username = user.Username,
+                    Email = user.Email,
+                    IsLoggedIn = user.IsLoggedIn
+                };
+            }
+            return response;
         }
 
         [HttpPost("api/auth/Logout")]
@@ -202,7 +229,7 @@ namespace PT.Controllers
             return Ok();
         }
 
-        [HttpPost("api/auth/CheckSession")]
+        [HttpGet("api/auth/CheckSession")]
         public IActionResult CheckSession()
         {
             try
