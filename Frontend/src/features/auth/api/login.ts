@@ -1,10 +1,12 @@
 import {api} from '@/store'
+import {getUserFromResponse} from './utils'
 
 import type {User} from '@/features/users/types'
+import type {RawLoginResponse} from './types'
 
 export interface LoginBody {
-  email: string
   password: string
+  username: string
 }
 
 export interface LoginResponse {
@@ -19,6 +21,10 @@ const extendedApi = api.injectEndpoints({
         body: loginBody,
         method: 'POST',
         url: 'auth/Login',
+      }),
+      transformResponse: (response: RawLoginResponse) => ({
+        token: response.authToken,
+        user: getUserFromResponse(response),
       }),
     }),
   }),
