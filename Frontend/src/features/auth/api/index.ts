@@ -1,4 +1,6 @@
+export * from './getUser'
 export * from './login'
+export * from './logout'
 export * from './recoverPassword'
 export * from './register'
 export * from './resetPassword'

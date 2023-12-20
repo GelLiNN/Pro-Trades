@@ -2,6 +2,7 @@ import {HEADER_HEIGHT, SITE_NAME} from '@/constants'
 
 import {useCallback} from 'react'
 import {useNavigate} from 'react-router-dom'
+import {useLogoutMutation} from '@/features/auth/api'
 import {useAuth} from '@/features/auth/hooks'
 import {clearCredentials} from '@/features/auth/state'
 import {useDispatch} from '@/store'
@@ -12,11 +13,13 @@ export const Header = () => {
   const auth = useAuth()
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const [logout] = useLogoutMutation()
 
   const handleLogout = useCallback(() => {
+    logout()
     dispatch(clearCredentials())
     navigate('/')
-  }, [dispatch, navigate])
+  }, [dispatch, logout, navigate])
 
   return (
     <Toolbar component='header' sx={{height: HEADER_HEIGHT, flexWrap: 'wrap'}}>

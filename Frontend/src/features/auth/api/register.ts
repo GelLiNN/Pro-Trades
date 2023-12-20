@@ -1,6 +1,8 @@
 import {api} from '@/store'
+import {getUserFromResponse} from './utils'
 
 import type {User} from '@/features/users/types'
+import type {RawRegisterResponse} from './types'
 
 export interface RegisterBody {
   accessCode: string
@@ -21,6 +23,10 @@ const extendedApi = api.injectEndpoints({
         body: registerBody,
         method: 'POST',
         url: 'auth/Register',
+      }),
+      transformResponse: (response: RawRegisterResponse) => ({
+        token: response.authToken,
+        user: getUserFromResponse(response),
       }),
     }),
   }),

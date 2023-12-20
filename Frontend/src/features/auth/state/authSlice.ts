@@ -1,7 +1,7 @@
 import {createSlice} from '@reduxjs/toolkit'
+import {authStorage} from '@/features/auth/utils'
 
 import type {PayloadAction} from '@reduxjs/toolkit'
-import type {LoginResponse} from '@/features/auth/api'
 import type {User} from '@/features/users/types'
 
 interface AuthState {
@@ -9,29 +9,38 @@ interface AuthState {
   user: User | null
 }
 
-interface SetCredentialsPayload extends LoginResponse {}
+interface SetCredentialsPayload {
+  token?: string
+  user?: User
+}
 
 export const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    token: null,
+    token: authStorage.getToken(),
     user: null,
-    // user: {
-    //   id: 1,
-    // },
   } as AuthState,
   reducers: {
     clearCredentials: state => {
+      authStorage.clearToken()
+
       state.token = null
       state.user = null
     },
+
     setCredentials: (state, action: PayloadAction<SetCredentialsPayload>) => {
       const {
         payload: {token, user},
       } = action
 
-      state.token = token
-      state.user = user
+      if (token) {
+        authStorage.setToken(token)
+        state.token = token
+      }
+
+      if (user) {
+        state.user = user
+      }
     },
   },
 })

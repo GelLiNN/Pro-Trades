@@ -21,7 +21,7 @@ namespace PT
         public const string PASSWORD_KEY = "PasswordKey";
         public const string PASSWORD_SALT = "PasswordSalt";
         public const string KEY_GENERATION_FAILED = "Encryption failed to generate key.";
-        public const string AUTH_HEADER = "x-auth-token";
+        public const string AUTH_HEADER = "authorization";
         public const string PT_CORS = "PTCORS";
 
         // API identifiers and other constant values
