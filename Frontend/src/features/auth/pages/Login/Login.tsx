@@ -6,7 +6,7 @@ import {setCredentials} from '@/features/auth/state'
 import {addNotification} from '@/features/notifications/state'
 import {useDispatch} from '@/store'
 
-import {Email, Key, Visibility, VisibilityOff} from '@mui/icons-material'
+import {Key, Person, Visibility, VisibilityOff} from '@mui/icons-material'
 import {Button, Grid, IconButton, InputAdornment, Link, TextField} from '@mui/material'
 import {Form} from '@/components/Form'
 import {AuthLayout} from '@/features/auth/components/AuthLayout'
@@ -16,8 +16,8 @@ import type {LoginBody} from '@/features/auth/api'
 interface LoginData extends LoginBody {}
 
 const loginSchema = zod.object({
-  email: zod.string().min(1, 'Email is required'),
   password: zod.string().min(1, 'Password is required'),
+  username: zod.string().min(1, 'Username is required'),
 })
 
 export const Login = () => {
@@ -48,7 +48,7 @@ export const Login = () => {
         dispatch(
           addNotification({
             message: 'Failed to log in',
-            severity: 'info',
+            severity: 'error',
           })
         )
       }
@@ -62,24 +62,24 @@ export const Login = () => {
         {({formState, register}) => (
           <>
             <TextField
-              autoComplete='email'
+              autoComplete='username'
               autoFocus
-              error={!!formState.errors.email}
+              error={!!formState.errors.username}
               fullWidth
-              helperText={formState.errors.email?.message}
+              helperText={formState.errors.username?.message}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position='start'>
-                    <Email />
+                    <Person />
                   </InputAdornment>
                 ),
               }}
-              label='Email'
+              label='Username'
               margin='normal'
-              placeholder='email@example.com'
+              placeholder='Username99'
               required
               type='text'
-              {...register('email')}
+              {...register('username')}
             />
 
             <TextField

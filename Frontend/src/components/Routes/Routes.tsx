@@ -1,7 +1,7 @@
+import {lazyImport} from '@/utils'
+
 import {Navigate, Route, Routes as RoutesBase} from 'react-router-dom'
 import {AuthOutlet} from './AuthOutlet'
-
-import {lazyImport} from '@/utils'
 
 const {Login} = lazyImport(() => import('@/features/auth/pages/Login'), 'Login')
 const {RecoverPassword} = lazyImport(

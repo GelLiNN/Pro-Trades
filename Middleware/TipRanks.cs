@@ -54,7 +54,7 @@ namespace PT.Middleware
                 // Add hedge fund buy sell rankings bonus
                 // find the slope of the buy and sell consensuses (net) from bsns
                 List<decimal> bsnYList = bsns
-                    .Select(x => Convert.ToDecimal(x.consensus + x.buy - x.sell))
+                    .Select(x => Convert.ToDecimal(x.buy - x.sell))
                     .ToList();
 
                 List<decimal> bsnXList = new List<decimal>();
@@ -71,8 +71,10 @@ namespace PT.Middleware
                 decimal bsnBonus = 0;
                 if (hasBsns)
                 {
-                    decimal bsnWeight = 2 * (decimal) Math.PI;
+                    decimal bsnWeight = (decimal) Math.PI;
+                    bsnBonus += (bsnYList[bsnYList.Count - 1] * bsnWeight) + ((decimal)bsns[^1].consensus);
                     bsnBonus += bsnSlope >= 0 ? (bsnSlope * bsnSlopeMultiplier) + bsnWeight : -(bsnSlope * bsnSlopeMultiplier) - bsnWeight;
+                    bsnBonus = Math.Min(25, bsnBonus);
                 }
 
                 // Add price target bonus 5 if the target is more than 5% greater than last price
