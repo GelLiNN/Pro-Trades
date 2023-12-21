@@ -66,8 +66,8 @@ namespace PT.Middleware
                         //https://www.investopedia.com/articles/technical/100801.asp
                         //resultSet = (JArray)data.GetValue("values");
                         //compositeScore = GetOBVComposite(resultSet, daysToCalculate);
-                        int obvPeriod = 14;
-                        IEnumerable<ObvResult> obvResults = Indicator.GetObv(history);
+                        int obvSmaPeriod = 20;
+                        IEnumerable<ObvResult> obvResults = Indicator.GetObv(history, obvSmaPeriod);
                         compositeScore = GetOBVComposite(obvResults, daysToCalculate);
                         break;
 
@@ -154,6 +154,7 @@ namespace PT.Middleware
             // Alpaca API price history
             AlpacaHistory alpacaHistory = Alpaca.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).Result;
             IEnumerable<Skender.Stock.Indicators.Quote> history = alpacaHistory.PriceHistory;
+            IEnumerable<Skender.Stock.Indicators.Quote> obvHistory = alpacaHistory.PriceHistory.TakeLast(42);
 
             // This was only used for the bbands composite I think
             //List<Skender.Stock.Indicators.Quote> supplement = alpacaHistory.PriceHistory.TakeLast(7).ToList();
@@ -165,7 +166,7 @@ namespace PT.Middleware
             FundamentalsResult fundResult = GetFundamentalsResult(symbol, quote, alpacaHistory);
 
             decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
-            decimal obvCompositeScore = GetIndicatorComposite(symbol, "OBV", history, 7);
+            decimal obvCompositeScore = GetIndicatorComposite(symbol, "OBV", obvHistory, 7);
             decimal macdCompositeScore = GetIndicatorComposite(symbol, "MACD", history, 7);
             //decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
             decimal aroonCompositeScore = GetIndicatorComposite(symbol, "AROON", history, 7);
@@ -737,7 +738,7 @@ namespace PT.Middleware
             List<decimal> histYList = macdHistYList.ToList();
             decimal histSlope = GetSlope(macdXList, histYList);
 
-            //look for buy and sell signals
+            // look for buy and sell signals
             bool macdHasBuySignal = false;
             bool macdHasSellSignal = false;
 
@@ -762,9 +763,11 @@ namespace PT.Middleware
             decimal baseSlopeMultiplier = GetSlopeMultiplier(baseSlope);
             decimal signalSlopeMultiplier = GetSlopeMultiplier(signalSlope);
 
-            // Add histBase multiplicative if macdTotalHist is not negative,
+            // Create histBase multiplicative rewarding when macdTotalHist is positive,
             // 7 pity points otherwise, and cap histBase at 30
-            decimal histBase = (macdTotalHist > 0) ? Math.Min((macdTotalHist * 3) + (decimal) Math.PI, 30) : 7;
+            decimal histWeight = 3;
+            decimal histBase = (macdTotalHist > 0) ? (macdTotalHist * histWeight) + (histWeight * (decimal)Math.PI) : 7;
+            histBase = Math.Min(30, histBase);
 
             // Calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
@@ -773,7 +776,7 @@ namespace PT.Middleware
             composite += (baseSlope > -0.05M) ? (baseSlope * baseSlopeMultiplier) + 10 : 0;
             composite += (signalSlope > -0.05M) ? (signalSlope * signalSlopeMultiplier) + 10 : 0;
             composite += (macdHasBuySignal) ? 40 : 0;
-            composite += (macdHasSellSignal) ? -30 : 0; //Reduced from 40
+            composite += (macdHasSellSignal && composite >= 60) ? -30 : 0; // Penalty
 
             return Math.Max(0, composite);
         }

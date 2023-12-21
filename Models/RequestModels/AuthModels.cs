@@ -29,6 +29,24 @@ namespace PT.Models.RequestModels
         public string Password { get; set; }
     }
 
+    public class RecoverAccountRequest
+    {
+        [JsonProperty("email")]
+        public string Email { get; set; }
+
+        [JsonProperty("accessCode")]
+        public string AccessCode { get; set; }
+    }
+
+    public class ResetPasswordRequest
+    {
+        [JsonProperty("email")]
+        public string Email { get; set; }
+
+        [JsonProperty("accessCode")]
+        public string AccessCode { get; set; }
+    }
+
     public class SessionResponse
     {
         [JsonProperty("authToken")]
