@@ -683,8 +683,8 @@ namespace PT.Middleware
             composite += obvSlopeBonus;
             composite += (zScoreSlope > 0) ? (zScoreSlope * zScoreSlopeMultiplier) : 0;
             composite += (normalizedSlope > 0) ? (normalizedSlope * normalizedSlopeMultiplier) : 0;
-            composite += (obvHasBuySignal) ? 20 : 0;
-            composite += (obvHasSellSignal) ? -15 : 0;
+            composite += (obvHasBuySignal) ? 25 : 0;
+            composite += (obvHasSellSignal && composite > 60) ? -20 : 0;
 
             return Math.Min(composite, 100); //cap OBV composite at 100, no extra weight
         }
