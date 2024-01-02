@@ -49,7 +49,7 @@ namespace PT.Middleware
 
                 // Average hedge fun ratings will form score base
                 decimal averageRating = GetAverageRating(ratings, trResponse);
-                decimal ratingsBase = (averageRating / 6.0M) * 100; // Get score using the average rating as a percentage of (max rating + 1.0)
+                decimal ratingsBase = (averageRating / 6.5M) * 100; // Get score using the average rating as a percentage of (max rating + 1.5)
 
                 // Add hedge fund buy sell rankings bonus
                 // find the slope of the buy and sell consensuses (net) from bsns
