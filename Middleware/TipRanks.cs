@@ -51,31 +51,7 @@ namespace PT.Middleware
                 decimal averageRating = GetAverageRating(ratings, trResponse);
                 decimal ratingsBase = (averageRating / 6.5M) * 100; // Get score using the average rating as a percentage of (max rating + 1.5)
 
-                // Add hedge fund buy sell rankings bonus
-                // find the slope of the buy and sell consensuses (net) from bsns
-                List<decimal> bsnYList = bsns
-                    .Select(x => Convert.ToDecimal(x.buy - x.sell))
-                    .ToList();
-
-                List<decimal> bsnXList = new List<decimal>();
-                int counter = 1;
-                foreach (decimal bsn in bsnYList)
-                {
-                    bsnXList.Add(counter);
-                    counter++;
-                }
-
-                bool hasBsns = bsnXList.Count > 0;
-                decimal bsnSlope = hasBsns ? Indicators.GetSlope(bsnXList, bsnYList) : 0;
-                decimal bsnSlopeMultiplier = Indicators.GetSlopeMultiplier(bsnSlope);
-                decimal bsnBonus = 0;
-                if (hasBsns)
-                {
-                    decimal bsnWeight = (decimal) Math.PI;
-                    bsnBonus += (bsnYList[bsnYList.Count - 1] * bsnWeight) + ((decimal)bsns[^1].consensus);
-                    bsnBonus += bsnSlope >= 0 ? (bsnSlope * bsnSlopeMultiplier) + bsnWeight : -(bsnSlope * bsnSlopeMultiplier) - bsnWeight;
-                    bsnBonus = Math.Min(25, bsnBonus);
-                }
+                decimal bsnBonus = GetBsnBonus(bsns);
 
                 // Add price target bonus 5 if the target is more than 5% greater than last price
                 // Add price target bonus 10 if the target is more than 10% greater than last price
@@ -107,8 +83,8 @@ namespace PT.Middleware
                     decimal diff = priceTarget - lastPrice;
                     decimal percentChange = (diff / Math.Abs(lastPrice)) * 100;
                     priceTargetBonus += percentChange >= 5 ? 5 : 0;
-                    priceTargetBonus += percentChange >= 10 ? 5 + Math.Min(30, diff) : 0;
-                    priceTargetBonus += percentChange < 0 ? -10 : 0;
+                    priceTargetBonus += percentChange >= 10 ? 5 + Math.Min(20, diff) : 0;
+                    priceTargetBonus += percentChange < 0 ? -15 : 0;
                 }
 
                 // Other bonuses for recent insider buy-ins, institutional holdings, and hedge funds
@@ -275,6 +251,36 @@ namespace PT.Middleware
             }
         }
 
+        private static decimal GetBsnBonus(List<BestConsensusOverTime> bsns)
+        {
+            // Add hedge fund buy sell rankings bonus
+            // find the slope of the buy and sell consensuses (net) from bsns
+            List<decimal> bsnYList = bsns
+                .Select(x => Convert.ToDecimal(x.buy - x.sell))
+                .ToList();
+
+            List<decimal> bsnXList = new List<decimal>();
+            int counter = 1;
+            foreach (decimal bsn in bsnYList)
+            {
+                bsnXList.Add(counter);
+                counter++;
+            }
+
+            bool hasBsns = bsnXList.Count > 0;
+            decimal bsnSlope = hasBsns ? Indicators.GetSlope(bsnXList, bsnYList) : 0;
+            decimal bsnSlopeMultiplier = Indicators.GetSlopeMultiplier(bsnSlope);
+            decimal bsnBonus = 0;
+            if (hasBsns)
+            {
+                decimal bsnWeight = (decimal)Math.PI / 2;
+                bsnBonus += (bsnYList[bsnYList.Count - 1] * bsnWeight) + ((decimal)bsns[^1].consensus);
+                bsnBonus += bsnSlope >= 0 ? (bsnSlope * bsnSlopeMultiplier) + bsnWeight : -(bsnSlope * bsnSlopeMultiplier) - bsnWeight;
+                bsnBonus = Math.Min(15, bsnBonus); // Limit bsn bonus to 15
+            }
+            return bsnBonus;
+        }
+
         private static decimal GetInsiderBonus(List<Insider> insiders)
         {
             // Found the meanings of these actions by visiting Insider.link URL
@@ -324,10 +330,10 @@ namespace PT.Middleware
                     insiderBonus += 3;
                 }
             }
-            // Limit insider bonus to -10 and 20
+            // Limit insider bonus to -10 and 15
             insiderBonus = Math.Max(-10, insiderBonus);
-            insiderBonus = Math.Min(20, insiderBonus);
-            return Math.Max(-10, insiderBonus);
+            insiderBonus = Math.Min(15, insiderBonus);
+            return insiderBonus;
         }
 
         private static decimal GetHoldingBonus(List<HoldingsByTime> holdings)
@@ -355,8 +361,8 @@ namespace PT.Middleware
                     holdingBonus += (decimal) Math.PI;
                 }
             }
-            // Limit holding bonus to 20
-            holdingBonus = Math.Min(20, holdingBonus);
+            // Limit holding bonus to 15
+            holdingBonus = Math.Min(15, holdingBonus);
             return holdingBonus;
         }
 
@@ -404,9 +410,9 @@ namespace PT.Middleware
             {
                 trendValueBonus = -2.0M * (decimal)Math.PI;
             }
-            // Limit hedge sentiment bonus to 25
+            // Limit hedge sentiment bonus to 15
             hedgeBonus += trendValueBonus;
-            hedgeBonus = Math.Min(25, hedgeBonus);
+            hedgeBonus = Math.Min(15, hedgeBonus);
             return hedgeBonus;
         }
     }

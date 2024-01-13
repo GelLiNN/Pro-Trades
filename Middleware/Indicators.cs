@@ -84,8 +84,8 @@ namespace PT.Middleware
                         //https://www.investopedia.com/articles/technical/04/030304.asp
                         //https://www.fmlabs.com/reference/default.htm?url=Bollinger.htm
                         //https://www.alphavantage.co/query?function=BBANDS&symbol=MSFT&interval=weekly&time_period=5&series_type=close&nbdevup=3&nbdevdn=3&apikey=demo
-                        int bbandsPeriod = 20;
-                        int standardDeviations = 2;
+                        int bbandsPeriod = 25;
+                        double standardDeviations = 2.5;
                         IEnumerable<BollingerBandsResult> bbandsResults = Indicator.GetBollingerBands(history, bbandsPeriod, standardDeviations);
                         compositeScore = GetBBANDSComposite(bbandsResults, (List<Skender.Stock.Indicators.Quote>)supplement, daysToCalculate);
                         break;
@@ -156,8 +156,8 @@ namespace PT.Middleware
             IEnumerable<Skender.Stock.Indicators.Quote> history = alpacaHistory.PriceHistory;
             IEnumerable<Skender.Stock.Indicators.Quote> obvHistory = alpacaHistory.PriceHistory.TakeLast(42);
 
-            // This was only used for the bbands composite I think
-            //List<Skender.Stock.Indicators.Quote> supplement = alpacaHistory.PriceHistory.TakeLast(7).ToList();
+            // This was only used for the bbands composite
+            List<Skender.Stock.Indicators.Quote> supplement = alpacaHistory.PriceHistory.TakeLast(7).ToList();
 
             // get fundamentals with YahooFinance price history
             //FundamentalsResult fundResult = GetFundamentalsResultOld(symbol, quote);
@@ -168,7 +168,7 @@ namespace PT.Middleware
             decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
             decimal obvCompositeScore = GetIndicatorComposite(symbol, "OBV", obvHistory, 7);
             decimal macdCompositeScore = GetIndicatorComposite(symbol, "MACD", history, 7);
-            //decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
+            decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
             decimal aroonCompositeScore = GetIndicatorComposite(symbol, "AROON", history, 7);
 
             ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7, rm);
@@ -187,7 +187,7 @@ namespace PT.Middleware
                 OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
-                // BBANDSComposite = bbandsCompositeScore,
+                BBANDSComposite = bbandsCompositeScore,
                 RatingsComposite = hfResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
@@ -573,6 +573,7 @@ namespace PT.Middleware
             composite += (adxSlope > 0.1M) ? (adxSlope * adxSlopeMultiplier) + 7 : -7; //penalty
             composite += (zScoreSlope > 0.1M) ? (zScoreSlope * zScoreSlopeMultiplier) + 7 : -7; //penalty
 
+            composite = Math.Max(composite, 0); //limit ADX composite to 0, no negatives
             return Math.Min(composite, 100); //cap ADX composite at 100, no extra weight
         }
 
@@ -686,6 +687,7 @@ namespace PT.Middleware
             composite += (obvHasBuySignal) ? 25 : 0;
             composite += (obvHasSellSignal && composite > 60) ? -20 : 0;
 
+            composite = Math.Max(composite, 0); //limit OBV composite at 0, no negatives
             return Math.Min(composite, 100); //cap OBV composite at 100, no extra weight
         }
 
@@ -778,121 +780,8 @@ namespace PT.Middleware
             composite += (macdHasBuySignal) ? 40 : 0;
             composite += (macdHasSellSignal && composite >= 60) ? -30 : 0; // Penalty
 
-            return Math.Max(0, composite);
-        }
-
-        public static decimal GetBBANDSComposite(IEnumerable<BollingerBandsResult> resultSet, List<Skender.Stock.Indicators.Quote> supplement, int daysToCalculate)
-        {
-            List<BollingerBandsResult> results = resultSet.ToList();
-            int daysCalulated = 0;
-            int numberOfResults = 0;
-            HashSet<string> dates = new HashSet<string>();
-
-            Stack<decimal> lowerBandYList = new Stack<decimal>();
-            Stack<decimal> middleBandYList = new Stack<decimal>();
-            Stack<decimal> upperBandYList = new Stack<decimal>();
-            Stack<decimal> differenceValueYList = new Stack<decimal>();
-            Stack<bool> diverging = new Stack<bool>();
-
-            for (int i = results.Count - 1; i >= 0; i--)
-            {
-                BollingerBandsResult result = results[i];
-                if (daysCalulated < daysToCalculate)
-                {
-                    decimal lowerBandValue = result.LowerBand != null ? (decimal)result.LowerBand : 0.0M;
-                    decimal middleBandValue = result.Sma != null ? (decimal)result.Sma : 0.0M;
-                    decimal upperBandValue = result.UpperBand != null ? (decimal)result.UpperBand : 0.0M;
-                    decimal difference = upperBandValue - lowerBandValue;
-
-                    lowerBandYList.Push(lowerBandValue);
-                    middleBandYList.Push(middleBandValue);
-                    upperBandYList.Push(upperBandValue);
-                    differenceValueYList.Push(difference);
-                    numberOfResults++;
-
-                    string bbandsDate = result.Date.ToString("yyyy-MM-dd");
-                    if (!dates.Contains(bbandsDate))
-                    {
-                        dates.Add(bbandsDate);
-                        daysCalulated++;
-                    }
-                }
-                else
-                    break;
-            }
-
-            List<decimal> bbandsXList = new List<decimal>();
-            for (int i = 1; i <= numberOfResults; i++)
-                bbandsXList.Add(i);
-
-            List<decimal> lowerYList = lowerBandYList.ToList();
-            decimal lowerSlope = GetSlope(bbandsXList, lowerYList);
-            List<decimal> middleYList = middleBandYList.ToList();
-            decimal middleSlope = GetSlope(bbandsXList, middleYList);
-            List<decimal> upperYList = upperBandYList.ToList();
-            decimal upperSlope = GetSlope(bbandsXList, upperYList);
-            List<decimal> differenceYList = differenceValueYList.ToList();
-            decimal differenceSlope = GetSlope(bbandsXList, differenceYList);
-
-            decimal lowerSlopeMultiplier = GetSlopeMultiplier(lowerSlope);
-            decimal middleSlopeMultiplier = GetSlopeMultiplier(middleSlope);
-            decimal upperSlopeMultiplier = GetSlopeMultiplier(upperSlope);
-
-            //look for buy and sell signals
-            bool bbandsHasBuySignal = false;
-            bool bbandsHasSellSignal = false;
-
-            //if there is more divergence than convergence in the last N days and there's positive price movement
-            //if the current price is approaching the lower band and there's positive prive volume action
-            //measure arbitrary base value minus the percentage difference between the current price and the upper band
-
-            //if there's more convergence than divergence we have low volatility, we don't want to subtract from the score
-            //1 negative day when the price is approaching the upper band would probably generate a good enough sell signal
-            //measure arbitrary base value minus the percentage difference between the current price and the lower band
-
-            List<Skender.Stock.Indicators.Quote> ochlvList = supplement.ToList();
-            decimal breakoutSlopeCutoff = 0.3M;
-            List<decimal> prices = new List<decimal>();
-            for (int i = 0; i < ochlvList.Count; i++)
-            {
-                var ochlv = ochlvList[i];
-                prices.Add(ochlv.Close);
-                if ((i - 1 >= 0 && prices[i - 1] < prices[i]) && differenceSlope > breakoutSlopeCutoff)
-                {
-                    //positive bbands breakout
-                    bbandsHasBuySignal = true;
-                    bbandsHasSellSignal = false;
-                }
-                else if ((i - 1 >= 0 && prices[i - 1] > prices[i]) && differenceSlope > breakoutSlopeCutoff)
-                {
-                    //negative bbands breakout
-                    bbandsHasBuySignal = false;
-                    bbandsHasSellSignal = true;
-                }
-            }
-            decimal priceSlope = GetSlope(bbandsXList, prices);
-
-            //To calculate the percentage increase:
-            //First: work out the difference between the two numbers you are comparing.
-            //Diff = New Number - Original Number
-            //Then: divide the difference by the original number and multiply the answer by 100.
-            //% increase = Increase ÷ Original Number × 100.
-            decimal baseValue = 40 - Math.Abs((prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100);
-            baseValue = baseValue < 0 ? 0 : baseValue;
-            baseValue = baseValue > 40 ? 40 : baseValue;
-            decimal priceSlopeBonus = priceSlope > 0.1M ? 10 : 0;
-
-            //calculate composite score based on the following values and weighted multipliers
-            decimal composite = 0;
-            composite += baseValue;
-            composite += priceSlopeBonus;
-            composite += (lowerSlope > -0.05M) ? (lowerSlope * lowerSlopeMultiplier) + 10 : 0;
-            composite += (middleSlope > 0.0M) ? (middleSlope * middleSlopeMultiplier) + 10 : -10;
-            composite += (upperSlope > -0.05M) ? (upperSlope * upperSlopeMultiplier) + 10 : 0;
-            composite += (bbandsHasBuySignal) ? 30 : 0;
-            composite += (bbandsHasSellSignal) ? -30 : 0;
-            composite = composite > 100 ? 100 : composite;
-            return Math.Max(0, composite);
+            composite = Math.Max(composite, 0); //limit MACD composite at 0, no negatives
+            return Math.Min(composite, 115); //cap MACD composite at 115, extra weight
         }
 
         public static decimal GetAROONComposite(IEnumerable<AroonResult> resultSet, int daysToCalculate)
@@ -996,7 +885,163 @@ namespace PT.Middleware
             composite += (aroonHasBuySignal) ? 25 : 0;
             composite += (aroonHasSellSignal) ? -25 : 0;
 
-            return Math.Max(0, composite);
+            composite = Math.Max(composite, 0); //limit AROON composite at 0, no negatives
+            return Math.Min(composite, 115); //cap AROON composite at 115, extra weight
+        }
+
+        public static decimal GetBBANDSComposite(IEnumerable<BollingerBandsResult> resultSet, List<Skender.Stock.Indicators.Quote> supplement, int daysToCalculate)
+        {
+            List<BollingerBandsResult> results = resultSet.ToList();
+            int daysCalulated = 0;
+            int numberOfResults = 0;
+            HashSet<string> dates = new HashSet<string>();
+
+            Stack<decimal> lowerBandYList = new Stack<decimal>();
+            Stack<decimal> middleBandYList = new Stack<decimal>();
+            Stack<decimal> upperBandYList = new Stack<decimal>();
+            Stack<decimal> differenceValueYList = new Stack<decimal>();
+
+            for (int i = results.Count - 1; i >= 0; i--)
+            {
+                BollingerBandsResult result = results[i];
+                if (daysCalulated < daysToCalculate)
+                {
+                    decimal lowerBandValue = result.LowerBand != null ? (decimal)result.LowerBand : 0.0M;
+                    decimal middleBandValue = result.Sma != null ? (decimal)result.Sma : 0.0M;
+                    decimal upperBandValue = result.UpperBand != null ? (decimal)result.UpperBand : 0.0M;
+                    decimal difference = upperBandValue - lowerBandValue;
+
+                    lowerBandYList.Push(lowerBandValue);
+                    middleBandYList.Push(middleBandValue);
+                    upperBandYList.Push(upperBandValue);
+                    differenceValueYList.Push(difference);
+                    numberOfResults++;
+
+                    string bbandsDate = result.Date.ToString("yyyy-MM-dd");
+                    if (!dates.Contains(bbandsDate))
+                    {
+                        dates.Add(bbandsDate);
+                        daysCalulated++;
+                    }
+                }
+                else
+                    break;
+            }
+
+            List<decimal> bbandsXList = new List<decimal>();
+            for (int i = 1; i <= numberOfResults; i++)
+                bbandsXList.Add(i);
+
+            List<decimal> lowerYList = lowerBandYList.ToList();
+            decimal lowerSlope = GetSlope(bbandsXList, lowerYList);
+            List<decimal> middleYList = middleBandYList.ToList();
+            decimal middleSlope = GetSlope(bbandsXList, middleYList);
+            List<decimal> upperYList = upperBandYList.ToList();
+            decimal upperSlope = GetSlope(bbandsXList, upperYList);
+            List<decimal> differenceYList = differenceValueYList.ToList();
+            decimal differenceSlope = GetSlope(bbandsXList, differenceYList);
+
+            decimal lowerSlopeMultiplier = GetSlopeMultiplier(lowerSlope);
+            decimal middleSlopeMultiplier = GetSlopeMultiplier(middleSlope);
+            decimal upperSlopeMultiplier = GetSlopeMultiplier(upperSlope);
+
+            // look for buy and sell signals
+            bool bbandsHasMedBuySignal = false;
+            bool bbandsHasMaxBuySignal = false;
+            bool bbandsHasMedSellSignal = false;
+            bool bbandsHasMaxSellSignal = false;
+
+            //if there is more divergence than convergence in the last N days and there's positive price movement
+            //if the current price is approaching the lower band and there's positive prive volume action
+            //measure arbitrary base value minus the percentage difference between the current price and the upper band
+
+            //if there's more convergence than divergence we have low volatility, we don't want to subtract from the score
+            //1 negative day when the price is approaching the upper band would probably generate a good enough sell signal
+            //measure arbitrary base value minus the percentage difference between the current price and the lower band
+
+            //New thoughts, if middle slope is positive and difference slope > cutoff, we have a buy signal?
+
+            List<Skender.Stock.Indicators.Quote> ochlvList = supplement.ToList();
+            decimal breakoutSlopeCutoff = 0.15M;
+            List<decimal> prices = new List<decimal>();
+            bool hasBreakout = differenceSlope >= breakoutSlopeCutoff;
+
+            bool crossUpperBand = false;
+            bool crossLowerBand = false;
+            bool crossMiddleBand = false;
+            for (int i = 0; i < ochlvList.Count; i++)
+            {
+                var ochlv = ochlvList[i];
+                decimal curPrice = ochlv.Close;
+                prices.Add(curPrice);
+                bool hasPrevPrice = i - 1 >= 0;
+
+                if (hasPrevPrice && curPrice <= lowerYList[i] && prices[i - 1] > lowerYList[i - 1])
+                {
+                    crossLowerBand = true;
+                }
+
+                if (hasPrevPrice && curPrice >= middleYList[i] && prices[i - 1] < middleYList[i - 1])
+                {
+                    crossMiddleBand = true;
+                }
+
+                if (hasPrevPrice && curPrice >= upperYList[i] && prices[i - 1] < upperYList[i - 1])
+                {
+                    crossUpperBand = true;
+                }
+            }
+            decimal priceSlope = GetSlope(bbandsXList, prices);
+
+            bool recentPositivity = prices[prices.Count - 1] > prices[prices.Count - 2]
+                && prices[prices.Count - 2] > prices[prices.Count - 3];
+
+            decimal bbandsBonus = 0;
+
+            // Cross lower band and have positive breakout, buy signal, max weight
+            if (crossLowerBand && recentPositivity && hasBreakout)
+            {
+                bbandsBonus += (decimal)Math.PI * 6;
+                bbandsHasMaxBuySignal = true;
+            }
+            // Cross middle band and have positive breakout, buy signal, medium weight
+            else if (crossMiddleBand && recentPositivity && hasBreakout)
+            {
+                bbandsBonus += (decimal)Math.PI * 3;
+                bbandsHasMedBuySignal = true;
+            }
+
+            // Cross upper band and have positive breakout, sell signal, medium weight
+            if (crossUpperBand && recentPositivity && hasBreakout)
+            {
+                bbandsBonus -= (decimal)Math.PI * 3;
+                bbandsHasMedSellSignal = true;
+            }
+            // Cross upper band and have negative breakout, sell signal, max weight
+            else if (crossUpperBand && !recentPositivity && hasBreakout)
+            {
+                bbandsBonus -= (decimal)Math.PI * 6;
+                bbandsHasMaxSellSignal = true;
+            }
+
+            //TODO: Need to rework this base value
+            decimal percentageDiff = (prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100;
+            decimal baseValue = 40 - percentageDiff;
+            baseValue = baseValue < 0 ? 0 : baseValue;
+            baseValue = baseValue > 40 ? 40 : baseValue;
+            decimal priceSlopeBonus = priceSlope > 0.1M ? 10 : 0;
+
+            //calculate composite score based on the following values and weighted multipliers
+            decimal composite = 0;
+            composite += baseValue;
+            composite += priceSlopeBonus;
+            composite += (lowerSlope > -0.05M) ? (lowerSlope * lowerSlopeMultiplier) + 10 : 0;
+            composite += (middleSlope > 0.0M) ? (middleSlope * middleSlopeMultiplier) + 5 : -10; // Penalty
+            composite += (upperSlope > -0.05M) ? (upperSlope * upperSlopeMultiplier) + 5 :-10; // Penalty
+            composite += bbandsBonus;
+
+            composite = Math.Min(composite, 100); // cap BBANDS composite at 100, no extra weight
+            return Math.Max(0, composite); // limit BBANDS composite at 0, no negatives
         }
 
         public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int N)
