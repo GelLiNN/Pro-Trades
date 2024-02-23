@@ -208,9 +208,9 @@ namespace PT.Middleware
                 rank = "BAD";
             else if (scoreResult.CompositeScoreValue >= 60 && scoreResult.CompositeScoreValue < 70)
                 rank = "FAIR";
-            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < 80)
+            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < 85)
                 rank = "GOOD";
-            else if (scoreResult.CompositeScoreValue >= 80)
+            else if (scoreResult.CompositeScoreValue >= 85)
                 rank = "PRIME";
             scoreResult.CompositeRank = rank;
 
@@ -1228,7 +1228,7 @@ namespace PT.Middleware
             // EPS base has default of 7 since it starts the composite
             decimal epsBase = 7;
 
-            //If everything is negative return 0
+            //If everything is negative return base
             if (averageEPS <= 0 && growthEPS <= 0)
             {
                 return epsBase;
@@ -1336,7 +1336,7 @@ namespace PT.Middleware
             {
                 peBonus += (-1 * (growthPE / 100)) - 10;
             }
-            return peBonus;
+            return Math.Max(-10, peBonus);
         }
 
         private static decimal GetDividendBonus(Security quote)
