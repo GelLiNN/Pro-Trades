@@ -36,6 +36,9 @@ namespace PT
 
         [Column("IsLoggedIn")]
         public bool IsLoggedIn { get; internal set; }
+
+        [Column("AccessCode")]
+        public string AccessCode { get; internal set; }
     }
 
     [Table("userTypes")]

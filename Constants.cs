@@ -3,7 +3,7 @@ namespace PT
     public static class Constants
     {
         // Logging
-        public const string PT_LOG = "Pro-Traades.log";
+        public const string PT_LOG = "Pro-Trades.log";
         public const string ROOT_LINUX_DIR = "/root";
         public const string LOCAL_LOGGER_NAME = "localLog";
         public const string LOGGER_BASIC_TARGET_LAYOUT = "${longdate} | ${level:uppercase=true:padding=5} | ${callsite} | ${message} | ${exception:format=type,tostring}";
@@ -29,5 +29,12 @@ namespace PT
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly int DEFAULT_HISTORY_DAYS = 375;
         public static readonly decimal DEFAULT_VOLUME_USD_DISQUALIFYING_LIMIT = 1000000.0M;
+
+
+        public static readonly string RECOVER_PASSWORD_EMAIL_TITLE = "Pro-Trades: Recover password";
+        public static readonly string RECOVER_PASSWORD_EMAIL_BODY = "Hello {0}, here's your one time passcode: {1}";
+        public static readonly string INVALID_VERIFICATION_TOKEN = "Auth Error: invalid verification token.";
+        public static readonly string TOKEN_EXPIRED = "Token has expired.";
+        public static readonly string EMAIL_AUTH_ERROR = "Auth Error: Email not tied to an existing out.";
     }
 }

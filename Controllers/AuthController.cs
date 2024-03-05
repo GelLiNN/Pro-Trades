@@ -3,6 +3,13 @@ using Microsoft.Extensions.Primitives;
 using PT.Middleware;
 using PT.Models.RequestModels;
 using SendGrid;
+using PT.Services;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
+using static TinyCsvParser.Tokenizer.RFC4180.Reader;
+using System.Security.Cryptography;
 
 namespace PT.Controllers
 {
@@ -218,13 +225,71 @@ namespace PT.Controllers
         }
 
         [HttpPost("api/auth/RecoverPassword")]
-        public IActionResult RecoverPassword()
+        public IActionResult RecoverPassword([FromBody] RecoverAccountRequest req)
         {
+            User? existingUser = _ptContext.User
+                .Where(x => x.Email == req.Email)
+                .FirstOrDefault();
+
+            if (existingUser == null)
+            {
+                return BadRequest(Constants.EMAIL_AUTH_ERROR);
+            }
+
+            JwtSecurityTokenHandler jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+
+            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor()
+            {
+                Expires= DateTime.Now.AddDays(1),
+            };
+
+            string token = jwtSecurityTokenHandler.CreateEncodedJwt(tokenDescriptor);
+
+            existingUser.AccessCode = token;
+            _ptContext.Update(existingUser);
+
+            var email = new EmailSender();
+            email.SendEmailAsync(
+                req.Email,
+                Constants.RECOVER_PASSWORD_EMAIL_TITLE,
+                string.Format(Constants.RECOVER_PASSWORD_EMAIL_BODY, existingUser.Username, token)
+            );
+
+            return Ok();
+        }
+
+        [HttpPost("api/auth/VerifyUser")]
+        public IActionResult VerifyUser([FromBody] VerifyUserRequest req)
+        {
+            var existingUser = _ptContext.User
+                .Where(x => x.AccessCode == req.AccessCode)
+                .FirstOrDefault();
+
+            if (existingUser == null)
+            {
+                return BadRequest(Constants.INVALID_VERIFICATION_TOKEN);
+            }
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var validationParameters = new TokenValidationParameters
+            {
+                RequireExpirationTime = true,
+            };
+
+            var principal = tokenHandler.ValidateToken(existingUser.AccessCode, validationParameters, out var validatedToken);
+
+            JwtSecurityToken jwtToken = (JwtSecurityToken)validatedToken;
+
+            if (jwtToken == null || jwtToken.ValidTo > DateTime.UtcNow)
+            {
+                return BadRequest(Constants.TOKEN_EXPIRED);
+            }
+
             return Ok();
         }
 
         [HttpPost("api/auth/ResetPassword")]
-        public IActionResult ResetPassword()
+        public IActionResult ResetPassword([FromBody] ResetPasswordRequest req)
         {
             return Ok();
         }
