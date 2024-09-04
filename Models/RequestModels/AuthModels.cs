@@ -38,13 +38,19 @@ namespace PT.Models.RequestModels
         public string AccessCode { get; set; }
     }
 
+    public class VerifyUserRequest
+    {
+        [JsonProperty("AccessCode")]
+        public string AccessCode { get; set; }
+    }
+
     public class ResetPasswordRequest
     {
         [JsonProperty("email")]
         public string Email { get; set; }
 
         [JsonProperty("accessCode")]
-        public string AccessCode { get; set; }
+        public int AccessCode { get; set; }
     }
 
     public class SessionResponse
