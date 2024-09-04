@@ -1,4 +1,4 @@
-﻿namespace PT.Services
+namespace PT.Services
 {
     public abstract class BackgroundTaskRunner : IHostedService
     {
