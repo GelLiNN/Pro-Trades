@@ -517,7 +517,14 @@ namespace PT.Middleware
             HashSet<string> dates = new HashSet<string>();
 
             Stack<decimal> adxValueYList = new Stack<decimal>();
+            Stack<decimal> pDmiValueYList = new Stack<decimal>();
+            Stack<decimal> nDmiValueYList = new Stack<decimal>();
+
             decimal adxTotal = 0;
+            decimal pDmiTotal = 0;
+            decimal nDmiTotal = 0;
+            bool hasBuySignal = false;
+            bool hasSellSignal = false;
 
             for (int i = results.Count - 1; i >= 0; i--)
             {
@@ -526,8 +533,26 @@ namespace PT.Middleware
                     AdxResult result = results[i];
                     decimal adxVal = result.Adx != null ? (decimal)result.Adx : 0.0M;
                     adxValueYList.Push(adxVal);
+                    decimal plusDmiVal = result.Pdi != null ? (decimal)result.Pdi : 0.0M;
+                    pDmiValueYList.Push(plusDmiVal);
+                    decimal negDmiVal = result.Mdi != null ? (decimal)result.Mdi : 0.0M;
+                    nDmiValueYList.Push(negDmiVal);
                     adxTotal += adxVal;
+                    pDmiTotal += plusDmiVal;
+                    nDmiTotal += negDmiVal;
                     numberOfResults++;
+
+                    // Get buy and sell signals
+                    if (adxVal > 25 && plusDmiVal > negDmiVal)
+                    {
+                        hasBuySignal = true;
+                        hasSellSignal = false;
+                    }
+                    else if (adxVal > 25 && plusDmiVal < negDmiVal)
+                    {
+                        hasSellSignal = true;
+                        hasBuySignal = false;
+                    }
 
                     string adxDate = result.Date.ToString("yyyy-MM-dd");
                     if (!dates.Contains(adxDate))
@@ -545,6 +570,17 @@ namespace PT.Middleware
                 adxXList.Add(i);
 
             List<decimal> adxYList = adxValueYList.ToList();
+            List<decimal> pDmiYList = pDmiValueYList.ToList();
+            List<decimal> nDmiYList = nDmiValueYList.ToList();
+
+            decimal pDmiSlope = GetSlope(adxXList, pDmiYList);
+            decimal pDmiSlopeMultiplier = GetSlopeMultiplier(pDmiSlope);
+            decimal pDmiAvg = pDmiTotal / numberOfResults;
+
+            decimal nDmiSlope = GetSlope(adxXList, nDmiYList);
+            decimal nDmiSlopeMultiplier = GetSlopeMultiplier(nDmiSlope);
+            decimal nDmiAvg = nDmiTotal / numberOfResults;
+
             decimal adxSlope = GetSlope(adxXList, adxYList);
             decimal adxSlopeMultiplier = GetSlopeMultiplier(adxSlope);
             decimal adxAvg = adxTotal / numberOfResults;
@@ -553,25 +589,46 @@ namespace PT.Middleware
             decimal zScoreSlope = GetSlope(adxXList, adxZScores);
             decimal zScoreSlopeMultiplier = GetSlopeMultiplier(zScoreSlope);
 
-            //Start with the average of the 2 most recent ADX values
-            decimal baseValue = (adxYList[adxYList.Count - 1] + adxYList[adxYList.Count - 2]) / 2;
+            decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
+            decimal bonus = Convert.ToDecimal(Math.PI);
 
-            //Add based on the most recent Z Score * 100 if it is positive
-            decimal recentZScore = adxZScores[adxZScores.Count - 1];
-            if (recentZScore > 0)
-                baseValue += (recentZScore * 100) / 2; //to even it out
-            else
-                baseValue += 10; //pity points
+            bool averageDmiTrendingPositive = pDmiAvg > nDmiAvg;
+            bool recentDmiTrendingPositive = pDmiYList[pDmiYList.Count - 1] > nDmiYList[nDmiYList.Count - 1];
+
+            //base value average of the 2 most recent +DMI values, and adx average if trending
+            //also add the most recent Z Score as an average percentage if it is positive
+            decimal baseValue = (pDmiYList[pDmiYList.Count - 1] + pDmiYList[pDmiYList.Count - 2]) / 2;
+            baseValue += averageDmiTrendingPositive ? adxAvg : 0;
+
+            //Cap base value at 42 obviously
+            baseValue = Math.Min(baseValue, 42.0M);
+
+            //Add bonus for recent trending and avg trending
+            decimal recentTrendingBonus = recentDmiTrendingPositive ? bonus * 3 : 0;
+            decimal averageTrendingBonus = averageDmiTrendingPositive ? bonus * 3 : 0;
+
+            //Add bonus and penalty for buy and sell signals
+            decimal buySignalBonus = hasBuySignal ? bonus * 7 : 0;
+            decimal sellSignalBonus = hasSellSignal ? penalty * 7 : 0;
 
             //Add bonus for ADX average above 25 per investopedia recommendation
-            decimal averageBonus = adxAvg > 25 ? 25 : -7;
+            decimal averageBuySignalBonus = adxAvg > 25 && hasBuySignal ? bonus * 3 : 0;
+
+            //Only add zscore slope bonus if +DMI > -DMI
+            decimal zScoreSlopeBonus = (zScoreSlope > 0.1m) && averageDmiTrendingPositive ?
+                (zScoreSlope * zScoreSlopeMultiplier) + bonus : 0;
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
             composite += baseValue;
-            composite += averageBonus;
-            composite += (adxSlope > 0.1M) ? (adxSlope * adxSlopeMultiplier) + 7 : -7; //penalty
-            composite += (zScoreSlope > 0.1M) ? (zScoreSlope * zScoreSlopeMultiplier) + 7 : -7; //penalty
+            composite += recentTrendingBonus;
+            composite += averageTrendingBonus;
+            composite += buySignalBonus;
+            composite += sellSignalBonus;
+            composite += averageBuySignalBonus;
+            composite += zScoreSlopeBonus;
+            composite += (pDmiSlope > 0.1m) ? (pDmiSlope * pDmiSlopeMultiplier) + bonus : 0;
+            composite += (nDmiSlope < -0.1m) ? (nDmiSlope * nDmiSlopeMultiplier) + bonus : 0;
 
             composite = Math.Max(composite, 0); //limit ADX composite to 0, no negatives
             return Math.Min(composite, 100); //cap ADX composite at 100, no extra weight
