@@ -16,7 +16,7 @@ namespace PT.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.11")
+                .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -26,6 +26,11 @@ namespace PT.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("text")
                         .HasColumnName("UserId");
+
+                    b.Property<string>("AccessCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("AccessCode");
 
                     b.Property<string>("Email")
                         .IsRequired()

@@ -62,6 +62,7 @@ namespace PT.Controllers
                         UserTypeId = 0,
                         Username = req.Username,
                         Password = encryptedPass,
+                        AccessCode = req.AccessCode,
                         Email = req.Email,
                         IsLoggedIn = false
                     };
