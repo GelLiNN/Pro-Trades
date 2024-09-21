@@ -14,8 +14,8 @@ exit
 
 # dotnet migration
 sudo su
-apt update && apt upgrade dotnet-sdk-7.0
-dotnet tool install --global dotnet-ef --version 7.0.7
+apt update && apt upgrade dotnet-sdk-8.0
+dotnet tool install --global dotnet-ef --version 8.0.8
 echo "export PATH=\"$PATH:/home/root/.dotnet/tools\"" >> ~/.bash_profile
 source ~/.bash_profile
 dotnet ef database update
