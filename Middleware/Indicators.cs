@@ -598,37 +598,40 @@ namespace PT.Middleware
             //base value average of the 2 most recent +DMI values, and adx average if trending
             //also add the most recent Z Score as an average percentage if it is positive
             decimal baseValue = (pDmiYList[pDmiYList.Count - 1] + pDmiYList[pDmiYList.Count - 2]) / 2;
-            baseValue += averageDmiTrendingPositive ? adxAvg : 0;
 
             //Cap base value at 42 obviously
             baseValue = Math.Min(baseValue, 42.0M);
 
             //Add bonus for recent trending and avg trending
-            decimal recentTrendingBonus = recentDmiTrendingPositive ? bonus * 3 : 0;
-            decimal averageTrendingBonus = averageDmiTrendingPositive ? bonus * 3 : 0;
+            decimal recentTrendingBonus = recentDmiTrendingPositive ? bonus * 2 : 0;
+            decimal averageTrendingBonus = averageDmiTrendingPositive ? bonus * 2 : 0;
 
             //Add bonus and penalty for buy and sell signals
             decimal buySignalBonus = hasBuySignal ? bonus * 7 : 0;
-            decimal sellSignalBonus = hasSellSignal ? penalty * 7 : 0;
+            decimal sellSignalPenalty = hasSellSignal ? penalty * 7 : 0;
 
             //Add bonus for ADX average above 25 per investopedia recommendation
-            decimal averageBuySignalBonus = adxAvg > 25 && hasBuySignal ? bonus * 3 : 0;
+            decimal averageBuySignalBonus = adxAvg > 25 && hasBuySignal ? bonus * 2 : 0;
 
             //Only add zscore slope bonus if +DMI > -DMI
             decimal zScoreSlopeBonus = (zScoreSlope > 0.1m) && averageDmiTrendingPositive ?
                 (zScoreSlope * zScoreSlopeMultiplier) + bonus : 0;
+
+            decimal pDmiSlopeBonus = (pDmiSlope > 0.1m) ? bonus * 2 : penalty * 2;
+            decimal nDmiSlopeBonus = (nDmiSlope < -0.1m) ? bonus * 2 : penalty * 2;
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
             composite += baseValue;
             composite += recentTrendingBonus;
             composite += averageTrendingBonus;
-            composite += buySignalBonus;
-            composite += sellSignalBonus;
-            composite += averageBuySignalBonus;
             composite += zScoreSlopeBonus;
-            composite += (pDmiSlope > 0.1m) ? (pDmiSlope * pDmiSlopeMultiplier) + bonus : 0;
-            composite += (nDmiSlope < -0.1m) ? (nDmiSlope * nDmiSlopeMultiplier) + bonus : 0;
+            composite += pDmiSlopeBonus;
+            composite += nDmiSlopeBonus;
+            composite = Math.Min(composite, 75);
+            composite += buySignalBonus;
+            composite += sellSignalPenalty;
+            composite += averageBuySignalBonus;
 
             composite = Math.Max(composite, 0); //limit ADX composite to 0, no negatives
             return Math.Min(composite, 100); //cap ADX composite at 100, no extra weight
@@ -696,18 +699,19 @@ namespace PT.Middleware
                 if (!currentIsNegative && obvPrevIsNegative)
                 {
                     obvHasBuySignal = true;
-                    if (obvHasSellSignal)
-                        obvHasSellSignal = false; //cancel the previous sell signal if buy signal is most recent
+                    obvHasSellSignal = false; //cancel the previous sell signal if buy signal is most recent
                 }
                 else if (currentIsNegative && !obvPrevIsNegative)
                 {
                     obvHasSellSignal = true;
-                    if (obvHasBuySignal)
-                        obvHasBuySignal = false; //cancel the previous buy signal if sell signal is most recent
+                    obvHasBuySignal = false; //cancel the previous buy signal if sell signal is most recent
                 }
                 obvPrev = current;
                 obvPrevIsNegative = obvPrev < 0;
             }
+
+            decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
+            decimal bonus = Convert.ToDecimal(Math.PI);
 
             //Start with the average of the 2 most recent OBV Normalized Scores
             //Only use the normalized scores if average OBV is greater than 0
@@ -729,21 +733,39 @@ namespace PT.Middleware
             baseValue = Math.Min(baseValue, 42.0M);
 
             //Add bonus if average OBV is greater than 0
-            decimal obvAverageBonus = obvAverage > 0 ? 10 : 0;
+            decimal obvAverageBonus = obvAverage > 0 ? bonus * 2 : 0;
 
             //Add bonus if OBV slope positive
-            decimal obvSlopeBonus = (obvSlope > 0) ? 10 : 0;
+            decimal obvSlopeBonus = obvSlope > 0 ? bonus * 2 : 0;
+
+            //Add Zscore slope bonus
+            decimal zScoreSlopeBonus = 0;
+            if (zScoreSlope > 0.05m && obvAverage > 0 && obvSlope > 0)
+                zScoreSlopeBonus += (zScoreSlope * zScoreSlopeMultiplier);
+            if (zScoreSlope > 0.05m)
+                zScoreSlopeBonus += bonus;
+
+            //Add Normalized slope bonus
+            decimal normalizedSlopeBonus = 0;
+            if (normalizedSlope > 0.05m && obvAverage > 0 && obvSlope > 0)
+                normalizedSlopeBonus += (normalizedSlope * normalizedSlopeMultiplier);
+            if (normalizedSlope > 0.05m)
+                normalizedSlopeBonus += bonus;
+
+            //Add bonus and penalty for buy and sell signals
+            decimal buySignalBonus = obvHasBuySignal ? bonus * 7 : 0;
+            decimal sellSignalPenalty = obvHasSellSignal ? penalty * 7 : 0;
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
             composite += baseValue;
             composite += obvAverageBonus;
             composite += obvSlopeBonus;
-            composite += (zScoreSlope > 0) ? (zScoreSlope * zScoreSlopeMultiplier) : 0;
-            composite += (normalizedSlope > 0) ? (normalizedSlope * normalizedSlopeMultiplier) : 0;
-            composite += (obvHasBuySignal) ? 25 : 0;
-            composite += (obvHasSellSignal && composite > 60) ? -20 : 0;
-
+            composite += zScoreSlopeBonus;
+            composite += normalizedSlopeBonus;
+            composite = Math.Min(composite, 75);
+            composite += buySignalBonus;
+            composite += sellSignalPenalty;
             composite = Math.Max(composite, 0); //limit OBV composite at 0, no negatives
             return Math.Min(composite, 100); //cap OBV composite at 100, no extra weight
         }
