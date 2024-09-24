@@ -54,10 +54,7 @@ const DEFAULT_ROWS: Stock[] = [
 ]
 
 export const Predictions = () => {
-  const {data, isError} = useGetPredictionsQuery()
-
-  const lastUpdatedDate = new Date()
-
+  /*const {data, isError} = useGetPredictionsQuery()
   const rows: Stock[] = isError
     ? DEFAULT_ROWS
     : data!.map(dataRow => ({
@@ -67,7 +64,10 @@ export const Predictions = () => {
         scoreValue: dataRow.compositeScoreValue,
         symbol: dataRow.symbol,
         throughput: dataRow.fundamentals.averageVolumeUSD,
-      }))
+      }))*/
+  const rows = DEFAULT_ROWS;
+
+  const lastUpdatedDate = new Date()
 
   return (
     <Layout description='Predictive composite scores.' title='Predictions'>
