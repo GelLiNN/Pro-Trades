@@ -36,7 +36,7 @@ namespace PT.Middleware
                         //For example, if the bullish indicator remains above 70 while the bearish indicator remains below 30,
                         //the trend is definitively bullish.
                         //Crossovers Between the Bullish and Bearish Indicators - Crossovers indicate confirmations if they occur
-                        //between 30 and 70.For example, if the bullish indicator crosses above the bearish indicator, it confirms a bullish trend.
+                        //between 30 and 70. For example, if the bullish indicator crosses above the bearish indicator, it confirms a bullish trend.
                         //The two Aroon indicators(bullish and bearish) can also be made into a single oscillator by
                         //making the bullish indicator 100 to 0 and the bearish indicator 0 to - 100 and finding the
                         //difference between the two values. This oscillator then varies between 100 and - 100, with 0 indicating no trend.
@@ -180,7 +180,7 @@ namespace PT.Middleware
                 Name = quote.LongName,
                 Exchange = quote.FullExchangeName,
                 DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks",
-                PriceL = decimal.Parse(quote.RegularMarketPrice.ToString()),
+                PriceL = quote.RegularMarketPrice.HasValue ? quote.RegularMarketPrice.Value : 0,
                 PriceVW = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 1],
                 PriceHistoryDays = history.Count(),
                 ADXComposite = adxCompositeScore,
@@ -255,6 +255,8 @@ namespace PT.Middleware
                 try { epsForward = decimal.Parse(quote.EpsForward.ToString()); }
                 catch (Exception e) { /*set to trailing*/ epsForward = epsTrailing; }
 
+                decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
+                decimal bonus = Convert.ToDecimal(Math.PI);
                 decimal averageEPS = 0.0M, growthEPS = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
 
                 averageEPS = (epsForward + epsTrailing) / 2;
@@ -272,40 +274,46 @@ namespace PT.Middleware
                 // Add dividend bonus
                 decimal divBonus = GetDividendBonus(quote);
 
-                //Add positive fractional bonus if current volume is greater than average volume, negative otherwise
+                // Add positive fractional bonus if current volume is greater than average volume, negative otherwise
                 decimal diff = history.VolumeUSD - history.AverageVolumeUSD;
                 decimal percentChange = (diff / Math.Abs(history.AverageVolumeUSD)) * 100;
-                decimal volumeTrendingBonus = 0;
-
+                decimal volumeTrendingModifier = 0;
                 // Reward cases
                 if (0 < percentChange && percentChange <= 100)
                 {
-                    volumeTrendingBonus += (percentChange / 20) + (decimal)Math.PI;
+                    volumeTrendingModifier += (percentChange / 20) + bonus;
                 }
                 else if (100 < percentChange)
                 {
-                    volumeTrendingBonus += 10 + (decimal)Math.PI;
+                    volumeTrendingModifier += bonus * 4;
                 }
                 // Penalty cases
                 else if (0 > percentChange && percentChange >= -100)
                 {
-                    volumeTrendingBonus += (percentChange / 20) - (decimal)Math.PI;
+                    volumeTrendingModifier += (percentChange / 20) + penalty;
                 }
                 else if (-100 > percentChange)
                 {
-                    volumeTrendingBonus += -10 - (decimal)Math.PI;
+                    volumeTrendingModifier += penalty * 4;
                 }
+
+                // Get normalized price slope and volume slope bonuses
+                decimal normalizedPriceSlopeBonus = (normalizedPriceSlope > 0.05M) ?
+                    normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
+                decimal normalizedVolumelopeBonus = (normalizedVolumeSlope > 0.05M) ?
+                    normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : 0;
 
                 // calculate composite score based on the following values and weighted multipliers
                 // Base value should be calculated based on EPS and PE data
                 // Bonuses added for positive volume and price slopes, PE Growth, and dividends
                 decimal composite = 0;
                 composite += epsBase;
+                composite += normalizedVolumelopeBonus;
+                composite += normalizedPriceSlopeBonus;
+                composite = Math.Min(60, composite);
                 composite += peBonus;
                 composite += divBonus;
-                composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : -3; // penalty
-                composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : -3; // penalty
-                composite += volumeTrendingBonus;
+                composite += volumeTrendingModifier;
 
                 composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives
@@ -352,213 +360,60 @@ namespace PT.Middleware
             }
         }
 
-        // Fundamentals (advanced stats, volume, price, earnings and filings up-to-date)
-        // RELIES completely on unofficial yahoo finance API for now
-        public static FundamentalsResult GetFundamentalsResultOld(string symbol, Security quote)
-        {
-            try
-            {
-                List<decimal> priceYList = new List<decimal>();
-                priceYList.Add(Convert.ToDecimal(quote.TwoHundredDayAverage));
-                priceYList.Add(Convert.ToDecimal(quote.FiftyDayAverage));
-                priceYList.Add(Convert.ToDecimal(quote.RegularMarketPrice));
-
-                List<decimal> normalizedPrice = GetNormalizedData(priceYList);
-
-                List<decimal> priceXList = new List<decimal>();
-                for (int i = 1; i <= priceYList.Count; i++)
-                    priceXList.Add(i);
-
-                decimal priceSlope = GetSlope(priceXList, priceYList);
-
-                decimal normalizedPriceSlope = GetSlope(priceXList, normalizedPrice);
-                decimal normalizedPriceSlopeMultiplier = GetSlopeMultiplier(normalizedPriceSlope);
-
-                List<decimal> volumeYList = new List<decimal>();
-                volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume3Month));
-                volumeYList.Add(Convert.ToDecimal(quote.AverageDailyVolume10Day));
-                volumeYList.Add(Convert.ToDecimal(quote.RegularMarketVolume));
-
-                List<decimal> normalizedVolume = GetNormalizedData(volumeYList);
-
-                List<decimal> volumeXList = new List<decimal>();
-                for (int i = 1; i <= volumeYList.Count; i++)
-                    volumeXList.Add(i);
-
-                decimal volumeSlope = GetSlope(volumeXList, volumeYList);
-
-                decimal normalizedVolumeSlope = GetSlope(volumeXList, normalizedVolume);
-                decimal normalizedVolumeSlopeMultiplier = GetSlopeMultiplier(normalizedVolumeSlope);
-
-                decimal volumeUSD = Convert.ToDecimal(quote.RegularMarketVolume) *
-                    Convert.ToDecimal(quote.RegularMarketPrice);
-
-                decimal averageVolumeUSD = Convert.ToDecimal(quote.AverageDailyVolume3Month) *
-                    Convert.ToDecimal(quote.FiftyDayAverage);
-
-                //Do stuff with PE and EPS data
-                decimal peTrailing = 0.0M;
-                try { peTrailing = decimal.Parse(quote.TrailingPE.ToString()); }
-                catch (Exception e) { /*do nothing*/ }
-
-                decimal peForward = 0.0M;
-                try { peForward = decimal.Parse(quote.ForwardPE.ToString()); }
-                catch (Exception e) { /*set to trailing*/ peForward = peTrailing; }
-
-                decimal epsTrailing = 0.0M;
-                try { epsTrailing = decimal.Parse(quote.EpsTrailingTwelveMonths.ToString()); }
-                catch (Exception e) { /*do nothing*/ }
-
-                decimal epsForward = 0.0M;
-                try { epsForward = decimal.Parse(quote.EpsForward.ToString()); }
-                catch (Exception e) { /*set to trailing*/ epsForward = epsTrailing; }
-
-                decimal averageEPS = 0.0M, growthEPS = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
-
-                averageEPS = (epsForward + epsTrailing) / 2;
-                growthEPS = epsForward - epsTrailing;
-
-                averagePE = (peForward + peTrailing) / 2;
-                growthPE = peForward - peTrailing;
-
-                //Make base score based on EPS activity
-                decimal epsBase = GetEPSBase(averageEPS, growthEPS);
-
-                //Add PE ratio activity bonus
-                decimal peBonus = GetPEBonus(averagePE, growthPE);
-
-                //Add dividend bonus
-                decimal divBonus = GetDividendBonus(quote);
-
-                //Add positive fractional bonus if current volume is greater than average volume, negative otherwise
-                decimal diff = volumeUSD - averageVolumeUSD;
-                decimal percentChange = (diff / Math.Abs(averageVolumeUSD)) * 100;
-                decimal volumeTrendingBonus = 0;
-
-                // Reward cases
-                if (0 < percentChange && percentChange <= 100)
-                {
-                    volumeTrendingBonus += (percentChange / 20) + (decimal)Math.PI;
-                }
-                else if (100 < percentChange)
-                {
-                    volumeTrendingBonus += 10 + (decimal)Math.PI;
-                }
-                // Penalty cases
-                else if (0 > percentChange && percentChange >= -100)
-                {
-                    volumeTrendingBonus += (percentChange / 20) - (decimal)Math.PI;
-                }
-                else if (-100 > percentChange)
-                {
-                    volumeTrendingBonus += -10 - (decimal)Math.PI;
-                }
-
-                //calculate composite score based on the following values and weighted multipliers
-                //Base value should be calculated based on EPS and PE data
-                //Bonuses added for positive volume and price slopes, PE Growth, and dividends
-                decimal composite = 0;
-                composite += epsBase;
-                composite += peBonus;
-                composite += divBonus;
-                composite += (normalizedPriceSlope > 0) ? normalizedPriceSlope * normalizedPriceSlopeMultiplier : -3; //penalty
-                composite += (normalizedVolumeSlope > 0) ? normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : -3; //penalty
-                composite += volumeTrendingBonus;
-
-                composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
-                composite = Math.Max(composite, 0); // limit composite at 0, no negatives
-
-                decimal disqualifyingLimit = 1000000.0M; //disqualify if less than 1 million USD volume per day
-
-                bool hasDivs = quote.DividendRate != null && quote.DividendYield != null;
-
-                return new FundamentalsResult
-                {
-                    VolumeUSD = volumeUSD,
-                    AverageVolumeUSD = averageVolumeUSD,
-                    VolumeSlope = volumeSlope,
-                    PriceSlope = priceSlope,
-                    AverageEPS = averageEPS,
-                    AveragePE = averagePE,
-                    GrowthEPS = growthEPS,
-                    GrowthPE = growthPE,
-                    HasDividends = hasDivs,
-                    IsBlacklisted = (volumeUSD < disqualifyingLimit && averageVolumeUSD < disqualifyingLimit),
-                    Message = string.Empty,
-                    FundamentalsComposite = composite
-                };
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("EXCEPTION CAUGHT: Indicators.cs GetFundamentals for symbol " + symbol + ", message: " + e.Message);
-                return new FundamentalsResult
-                {
-                    VolumeUSD = 0.0M,
-                    AverageVolumeUSD = 0.0M,
-                    VolumeSlope = 0.0M,
-                    PriceSlope = 0.0M,
-                    AverageEPS = 0.0M,
-                    AveragePE = 0.0M,
-                    GrowthEPS = 0.0M,
-                    GrowthPE = 0.0M,
-                    HasDividends = false,
-                    IsBlacklisted = false,
-                    Message = e.Message,
-                    FundamentalsComposite = 50.0M //Pity Points for exceptions getting data
-                };
-            }
-        }
-
         public static decimal GetADXComposite(IEnumerable<AdxResult> resultSet, int daysToCalculate)
         {
             List<AdxResult> results = resultSet.ToList();
-            int daysCalulated = 0;
-            int numberOfResults = 0;
-            HashSet<string> dates = new HashSet<string>();
 
-            Stack<decimal> adxValueYList = new Stack<decimal>();
-            Stack<decimal> pDmiValueYList = new Stack<decimal>();
-            Stack<decimal> nDmiValueYList = new Stack<decimal>();
+            HashSet<string> dates = new HashSet<string>();
+            int daysCalculated = 0;
+
+            Queue<decimal> adxValueYList = new Queue<decimal>();
+            Queue<decimal> pDmiValueYList = new Queue<decimal>();
+            Queue<decimal> nDmiValueYList = new Queue<decimal>();
 
             decimal adxTotal = 0;
             decimal pDmiTotal = 0;
             decimal nDmiTotal = 0;
             bool hasBuySignal = false;
             bool hasSellSignal = false;
+            int daysSinceSignal = -1;
 
-            for (int i = results.Count - 1; i >= 0; i--)
+            for (int i = results.Count - daysToCalculate; i < results.Count; i++)
             {
-                if (daysCalulated < daysToCalculate)
+                if (daysCalculated < daysToCalculate)
                 {
                     AdxResult result = results[i];
-                    decimal adxVal = result.Adx != null ? (decimal)result.Adx : 0.0M;
-                    adxValueYList.Push(adxVal);
-                    decimal plusDmiVal = result.Pdi != null ? (decimal)result.Pdi : 0.0M;
-                    pDmiValueYList.Push(plusDmiVal);
-                    decimal negDmiVal = result.Mdi != null ? (decimal)result.Mdi : 0.0M;
-                    nDmiValueYList.Push(negDmiVal);
-                    adxTotal += adxVal;
-                    pDmiTotal += plusDmiVal;
-                    nDmiTotal += negDmiVal;
-                    numberOfResults++;
-
-                    // Get buy and sell signals
-                    if (adxVal > 25 && plusDmiVal > negDmiVal)
-                    {
-                        hasBuySignal = true;
-                        hasSellSignal = false;
-                    }
-                    else if (adxVal > 25 && plusDmiVal < negDmiVal)
-                    {
-                        hasSellSignal = true;
-                        hasBuySignal = false;
-                    }
 
                     string adxDate = result.Date.ToString("yyyy-MM-dd");
                     if (!dates.Contains(adxDate))
                     {
+                        decimal adxVal = result.Adx != null ? (decimal)result.Adx : 0.0M;
+                        adxValueYList.Enqueue(adxVal);
+                        decimal plusDmiVal = result.Pdi != null ? (decimal)result.Pdi : 0.0M;
+                        pDmiValueYList.Enqueue(plusDmiVal);
+                        decimal negDmiVal = result.Mdi != null ? (decimal)result.Mdi : 0.0M;
+                        nDmiValueYList.Enqueue(negDmiVal);
+                        adxTotal += adxVal;
+                        pDmiTotal += plusDmiVal;
+                        nDmiTotal += negDmiVal;
+
+                        //Get buy and sell signals
+                        if (adxVal > 25 && plusDmiVal > negDmiVal)
+                        {
+                            //Cancel the previous sell signal if buy signal is most recent
+                            hasBuySignal = true;
+                            hasSellSignal = false;
+                            daysSinceSignal = daysToCalculate - daysCalculated;
+                        }
+                        else if (adxVal > 25 && plusDmiVal < negDmiVal)
+                        {
+                            //Cancel the previous buy signal if sell signal is most recent
+                            hasSellSignal = true;
+                            hasBuySignal = false;
+                            daysSinceSignal = daysToCalculate - daysCalculated;
+                        }
+                        daysCalculated++;
                         dates.Add(adxDate);
-                        daysCalulated++;
                     }
                 }
                 else
@@ -566,7 +421,7 @@ namespace PT.Middleware
             }
 
             List<decimal> adxXList = new List<decimal>();
-            for (int i = 1; i <= numberOfResults; i++)
+            for (int i = 1; i <= daysToCalculate; i++)
                 adxXList.Add(i);
 
             List<decimal> adxYList = adxValueYList.ToList();
@@ -575,15 +430,15 @@ namespace PT.Middleware
 
             decimal pDmiSlope = GetSlope(adxXList, pDmiYList);
             decimal pDmiSlopeMultiplier = GetSlopeMultiplier(pDmiSlope);
-            decimal pDmiAvg = pDmiTotal / numberOfResults;
+            decimal pDmiAvg = pDmiTotal / daysToCalculate;
 
             decimal nDmiSlope = GetSlope(adxXList, nDmiYList);
             decimal nDmiSlopeMultiplier = GetSlopeMultiplier(nDmiSlope);
-            decimal nDmiAvg = nDmiTotal / numberOfResults;
+            decimal nDmiAvg = nDmiTotal / daysToCalculate;
 
             decimal adxSlope = GetSlope(adxXList, adxYList);
             decimal adxSlopeMultiplier = GetSlopeMultiplier(adxSlope);
-            decimal adxAvg = adxTotal / numberOfResults;
+            decimal adxAvg = adxTotal / daysToCalculate;
 
             List<decimal> adxZScores = GetZScores(adxYList);
             decimal zScoreSlope = GetSlope(adxXList, adxZScores);
@@ -606,9 +461,9 @@ namespace PT.Middleware
             decimal recentTrendingBonus = recentDmiTrendingPositive ? bonus * 2 : 0;
             decimal averageTrendingBonus = averageDmiTrendingPositive ? bonus * 2 : 0;
 
-            //Add bonus and penalty for buy and sell signals
-            decimal buySignalBonus = hasBuySignal ? bonus * 7 : 0;
-            decimal sellSignalPenalty = hasSellSignal ? penalty * 7 : 0;
+            //Add time-scaled bonus and penalty for buy and sell signals
+            decimal buySignalBonus = GetTimeScaledBuySignalBonus(hasBuySignal, bonus, daysSinceSignal);
+            decimal sellSignalPenalty = GetTimeScaledSellSignalPenalty(hasSellSignal, penalty, daysSinceSignal);
 
             //Add bonus for ADX average above 25 per investopedia recommendation
             decimal averageBuySignalBonus = adxAvg > 25 && hasBuySignal ? bonus * 2 : 0;
@@ -640,29 +495,52 @@ namespace PT.Middleware
         public static decimal GetOBVComposite(IEnumerable<ObvResult> resultSet, int daysToCalculate)
         {
             List<ObvResult> results = resultSet.ToList();
-            int daysCalulated = 0;
-            int numberOfResults = 0;
+
             HashSet<string> dates = new HashSet<string>();
+            Queue<decimal> obvValueYList = new Queue<decimal>();
 
-            Stack<decimal> obvValueYList = new Stack<decimal>();
+            int daysCalculated = 0;
             decimal obvSum = 0;
+            bool obvHasBuySignal = false;
+            bool obvHasSellSignal = false;
+            int daysSinceSignal = -1;
 
-            for (int i = results.Count - 1; i >= 0; i--)
+            for (int i = results.Count - daysToCalculate; i < results.Count; i++)
             {
-                if (daysCalulated < daysToCalculate)
+                if (daysCalculated < daysToCalculate)
                 {
                     ObvResult result = results[i];
-                    decimal obvValue = Convert.ToDecimal(result.Obv);
-
-                    obvValueYList.Push(obvValue);
-                    obvSum += obvValue;
-                    numberOfResults++;
+                    ObvResult prevResult = results[i - 1];
 
                     string obvDate = result.Date.ToString("yyyy-MM-dd");
                     if (!dates.Contains(obvDate))
                     {
+                        decimal obvValue = Convert.ToDecimal(result.Obv);
+                        decimal prevObvValue = Convert.ToDecimal(prevResult.Obv);
+
+                        obvValueYList.Enqueue(obvValue);
+                        obvSum += obvValue;
+
+                        //Get buy and sell signals
+                        bool obvCurrentIsNegative = obvValue < 0;
+                        bool obvPrevIsNegative = prevObvValue < 0;
+                        if (!obvCurrentIsNegative && obvPrevIsNegative)
+                        {
+                            //Cancel the previous sell signal if buy signal is most recent
+                            obvHasBuySignal = true;
+                            obvHasSellSignal = false; 
+                            daysSinceSignal = daysToCalculate - daysCalculated;
+                        }
+                        else if (obvCurrentIsNegative && !obvPrevIsNegative)
+                        {
+                            //Cancel the previous buy signal if sell signal is most recent
+                            obvHasSellSignal = true;
+                            obvHasBuySignal = false;
+                            daysSinceSignal = daysToCalculate - daysCalculated;
+                        }
+
                         dates.Add(obvDate);
-                        daysCalulated++;
+                        daysCalculated++;
                     }
                 }
                 else
@@ -670,7 +548,7 @@ namespace PT.Middleware
             }
 
             List<decimal> obvXList = new List<decimal>();
-            for (int i = 1; i <= numberOfResults; i++)
+            for (int i = 1; i <= daysCalculated; i++)
                 obvXList.Add(i);
 
             List<decimal> obvYList = obvValueYList.ToList();
@@ -684,31 +562,7 @@ namespace PT.Middleware
             decimal normalizedSlope = GetSlope(normalizedScores, obvXList);
             decimal normalizedSlopeMultiplier = GetSlopeMultiplier(normalizedSlope);
 
-            decimal obvAverage = obvSum / numberOfResults;
-
-            //look for buy and sell signals
-            bool obvHasBuySignal = false;
-            bool obvHasSellSignal = false;
-
-            decimal obvPrev = obvYList[0];
-            bool obvPrevIsNegative = obvPrev < 0;
-            for (int i = 1; i < obvYList.Count(); i++)
-            {
-                decimal current = obvYList[i];
-                bool currentIsNegative = current < 0;
-                if (!currentIsNegative && obvPrevIsNegative)
-                {
-                    obvHasBuySignal = true;
-                    obvHasSellSignal = false; //cancel the previous sell signal if buy signal is most recent
-                }
-                else if (currentIsNegative && !obvPrevIsNegative)
-                {
-                    obvHasSellSignal = true;
-                    obvHasBuySignal = false; //cancel the previous buy signal if sell signal is most recent
-                }
-                obvPrev = current;
-                obvPrevIsNegative = obvPrev < 0;
-            }
+            decimal obvAverage = obvSum / daysCalculated;
 
             decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
             decimal bonus = Convert.ToDecimal(Math.PI);
@@ -752,9 +606,9 @@ namespace PT.Middleware
             if (normalizedSlope > 0.05m)
                 normalizedSlopeBonus += bonus;
 
-            //Add bonus and penalty for buy and sell signals
-            decimal buySignalBonus = obvHasBuySignal ? bonus * 7 : 0;
-            decimal sellSignalPenalty = obvHasSellSignal ? penalty * 7 : 0;
+            //Get time-scaled buy and sell signal bonus and penalty
+            decimal buySignalBonus = GetTimeScaledBuySignalBonus(obvHasBuySignal, bonus, daysSinceSignal);
+            decimal sellSignalPenalty = GetTimeScaledSellSignalPenalty(obvHasSellSignal, bonus, daysSinceSignal);
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
@@ -773,35 +627,58 @@ namespace PT.Middleware
         public static decimal GetMACDComposite(IEnumerable<MacdResult> resultSet, int daysToCalculate)
         {
             List<MacdResult> results = resultSet.ToList();
-            int daysCalulated = 0;
-            int numberOfResults = 0;
+
             HashSet<string> dates = new HashSet<string>();
+            Queue<decimal> macdHistYList = new Queue<decimal>();
+            Queue<decimal> macdBaseYList = new Queue<decimal>();
+            Queue<decimal> macdSignalYList = new Queue<decimal>();
 
-            Stack<decimal> macdHistYList = new Stack<decimal>();
-            Stack<decimal> macdBaseYList = new Stack<decimal>();
-            Stack<decimal> macdSignalYList = new Stack<decimal>();
+            int daysCalculated = 0;
             decimal macdTotalHist = 0;
+            int daysSinceSignal = -1;
+            bool macdHasBuySignal = false;
+            bool macdHasSellSignal = false;
 
-            for (int i = results.Count - 1; i >= 0; i--)
+            for (int i = results.Count - daysToCalculate; i < results.Count; i++)
             {
-                MacdResult result = results[i];
-                if (daysCalulated < daysToCalculate)
+                if (daysCalculated < daysToCalculate)
                 {
-                    decimal macdBaseValue = result.Macd != null ? (decimal)result.Macd : 0.0M;
-                    decimal macdSignalValue = result.Signal != null ? (decimal)result.Signal : 0.0M;
-                    decimal macdHistogramValue = result.Histogram != null ? (decimal)result.Histogram : 0.0M;
-
-                    macdHistYList.Push(macdHistogramValue);
-                    macdBaseYList.Push(macdBaseValue);
-                    macdSignalYList.Push(macdSignalValue);
-                    macdTotalHist += macdHistogramValue;
-                    numberOfResults++;
+                    MacdResult result = results[i];
+                    MacdResult prevResult = results[i - 1];
 
                     string macdDate = result.Date.ToString("yyyy-MM-dd");
                     if (!dates.Contains(macdDate))
                     {
+                        decimal macdBaseValue = result.Macd != null ? (decimal)result.Macd : 0.0M;
+                        decimal macdSignalValue = result.Signal != null ? (decimal)result.Signal : 0.0M;
+                        decimal curMacdHistogramValue = result.Histogram != null ? (decimal)result.Histogram : 0.0M;
+                        decimal prevMacdHistogramValue = prevResult.Histogram != null ? (decimal)prevResult.Histogram : 0.0M;
+
+                        macdHistYList.Enqueue(curMacdHistogramValue);
+                        macdBaseYList.Enqueue(macdBaseValue);
+                        macdSignalYList.Enqueue(macdSignalValue);
+                        macdTotalHist += curMacdHistogramValue;
+
+                        //Look for buy and sell signals
+                        bool macdCurrentIsNegative = curMacdHistogramValue < 0;
+                        bool macdPrevIsNegative = prevMacdHistogramValue < 0;
+                        if (!macdCurrentIsNegative && macdPrevIsNegative)
+                        {
+                            //Cancel the previous sell signal if buy signal is most recent
+                            macdHasBuySignal = true;
+                            macdHasSellSignal = false;
+                            daysSinceSignal = daysToCalculate - daysCalculated;
+                        }
+                        else if (macdCurrentIsNegative && !macdPrevIsNegative)
+                        {
+                            //Cancel the previous buy signal if sell signal is most recent
+                            macdHasSellSignal = true;
+                            macdHasBuySignal = false;
+                            daysSinceSignal = daysToCalculate - daysCalculated;
+                        }
+
                         dates.Add(macdDate);
-                        daysCalulated++;
+                        daysCalculated++;
                     }
                 }
                 else
@@ -809,7 +686,7 @@ namespace PT.Middleware
             }
 
             List<decimal> macdXList = new List<decimal>();
-            for (int i = 1; i <= numberOfResults; i++)
+            for (int i = 1; i <= daysCalculated; i++)
                 macdXList.Add(i);
 
             List<decimal> baseYList = macdBaseYList.ToList();
@@ -819,45 +696,50 @@ namespace PT.Middleware
             List<decimal> histYList = macdHistYList.ToList();
             decimal histSlope = GetSlope(macdXList, histYList);
 
-            // look for buy and sell signals
-            bool macdHasBuySignal = false;
-            bool macdHasSellSignal = false;
+            List<decimal> zScores = GetZScores(histYList);
+            decimal zScoreSlope = GetSlope(zScores, macdXList);
+            decimal zScoreSlopeMultiplier = GetSlopeMultiplier(zScoreSlope);
 
-            decimal macdPrev = histYList[0];
-            bool macdPrevIsNegative = macdPrev < 0;
-            for (int i = 1; i < histYList.Count; i++)
-            {
-                decimal current = histYList[i];
-                bool currentIsNegative = current < 0;
-                if (!currentIsNegative && macdPrevIsNegative)
-                {
-                    macdHasBuySignal = true;
-                }
-                else if (currentIsNegative && !macdPrevIsNegative)
-                {
-                    macdHasSellSignal = true;
-                }
-                macdPrev = current;
-                macdPrevIsNegative = macdPrev < 0;
-            }
-            decimal histSlopeMultiplier = GetSlopeMultiplier(histSlope);
-            decimal baseSlopeMultiplier = GetSlopeMultiplier(baseSlope);
-            decimal signalSlopeMultiplier = GetSlopeMultiplier(signalSlope);
+            decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
+            decimal bonus = Convert.ToDecimal(Math.PI);
 
-            // Create histBase multiplicative rewarding when macdTotalHist is positive,
-            // 7 pity points otherwise, and cap histBase at 30
-            decimal histWeight = 3;
-            decimal histBase = (macdTotalHist > 0) ? (macdTotalHist * histWeight) + (histWeight * (decimal)Math.PI) : 7;
+            //Create histBase multiplicative rewarding when macdTotalHist is positive,
+            //7 pity points otherwise, and cap histBase at 30
+            decimal histWeight = 2;
+            decimal histBase = (macdTotalHist > 0) ? (macdTotalHist * histWeight) + (histWeight * bonus) : 7;
             histBase = Math.Min(30, histBase);
 
-            // Calculate composite score based on the following values and weighted multipliers
+            decimal histSlopeBonus = (histSlope > 0) ? bonus : penalty;
+            decimal baseSlopeBonus = (baseSlope > 0) ? bonus * 2 : penalty;
+            decimal signalSlopeBonus = (histSlope > 0) ? bonus : penalty;
+
+            //Add histogram zscore slope bonus
+            decimal zScoreSlopeBonus = 0;
+            if (zScoreSlope > 0.1m)
+                zScoreSlopeBonus += (zScoreSlope * zScoreSlopeMultiplier);
+            if (zScoreSlope > 0)
+                zScoreSlopeBonus += bonus;
+
+            //Get previous 2 base above signal bonus
+            bool prevTwoBaseAboveSignal = baseYList[baseYList.Count - 1] > signalYList[signalYList.Count - 1]
+                && baseYList[baseYList.Count - 2] > signalYList[signalYList.Count - 2];
+            decimal baseAboveSignalBonus = prevTwoBaseAboveSignal ? bonus * 3 : 0;
+
+            //Get time-scaled buy and sell signal bonus and penalty
+            decimal buySignalBonus = GetTimeScaledBuySignalBonus(macdHasBuySignal, bonus, daysSinceSignal);
+            decimal sellSignalPenalty = GetTimeScaledSellSignalPenalty(macdHasSellSignal, bonus, daysSinceSignal);
+
+            //Calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
-            composite += histBase; 
-            composite += (histSlope > -0.05M) ? (histSlope * histSlopeMultiplier) + 20 : 0;
-            composite += (baseSlope > -0.05M) ? (baseSlope * baseSlopeMultiplier) + 10 : 0;
-            composite += (signalSlope > -0.05M) ? (signalSlope * signalSlopeMultiplier) + 10 : 0;
-            composite += (macdHasBuySignal) ? 40 : 0;
-            composite += (macdHasSellSignal && composite >= 60) ? -30 : 0; // Penalty
+            composite += histBase;
+            composite += histSlopeBonus;
+            composite += baseSlopeBonus;
+            composite += signalSlopeBonus;
+            composite += zScoreSlopeBonus;
+            composite = Math.Min(80, composite);
+            composite += baseAboveSignalBonus;
+            composite += buySignalBonus;
+            composite += sellSignalPenalty;
 
             composite = Math.Max(composite, 0); //limit MACD composite at 0, no negatives
             return Math.Min(composite, 115); //cap MACD composite at 115, extra weight
@@ -866,35 +748,63 @@ namespace PT.Middleware
         public static decimal GetAROONComposite(IEnumerable<AroonResult> resultSet, int daysToCalculate)
         {
             List<AroonResult> results = resultSet.ToList();
-            int daysCalulated = 0;
-            int numberOfResults = 0;
-            HashSet<string> dates = new HashSet<string>();
 
-            Stack<decimal> aroonUpYList = new Stack<decimal>();
-            Stack<decimal> aroonDownYList = new Stack<decimal>();
-            Stack<decimal> aroonOscillatorYList = new Stack<decimal>();
+            HashSet<string> dates = new HashSet<string>();
+            Queue<decimal> aroonUpYList = new Queue<decimal>();
+            Queue<decimal> aroonDownYList = new Queue<decimal>();
+            Queue<decimal> aroonOscillatorYList = new Queue<decimal>();
+
+            int daysCalculated = 0;
             decimal aroonUpTotal = 0;
             decimal aroonDownTotal = 0;
+            int daysSinceSignal = -1;
+            bool aroonHasBuySignal = false;
+            bool aroonHasSellSignal = false;
 
-            for (int i = results.Count - 1; i >= 0; i--)
+            for (int i = results.Count - daysToCalculate; i < results.Count; i++)
             {
-                if (daysCalulated < daysToCalculate)
+                if (daysCalculated < daysToCalculate)
                 {
                     AroonResult result = results[i];
-                    decimal aroonUpVal = result.AroonUp != null ? (decimal)result.AroonUp : 0.0M;
-                    decimal aroonDownVal = result.AroonDown != null ? (decimal)result.AroonDown : 0.0M;
-                    aroonUpYList.Push(aroonUpVal);
-                    aroonDownYList.Push(aroonDownVal);
-                    aroonOscillatorYList.Push(aroonUpVal - aroonDownVal);
-                    aroonUpTotal += aroonUpVal;
-                    aroonDownTotal += aroonDownVal;
-                    numberOfResults++;
+                    AroonResult prevResult = results[i - 1];
 
                     string aroonDate = result.Date.ToString("yyyy-MM-dd");
                     if (!dates.Contains(aroonDate))
                     {
+                        decimal curAroonUpVal = result.AroonUp != null ? (decimal)result.AroonUp : 0.0M;
+                        decimal curAroonDownVal = result.AroonDown != null ? (decimal)result.AroonDown : 0.0M;
+                        decimal curAroonOsc = curAroonUpVal - curAroonDownVal;
+
+                        aroonUpYList.Enqueue(curAroonUpVal);
+                        aroonDownYList.Enqueue(curAroonDownVal);
+                        aroonOscillatorYList.Enqueue(curAroonOsc);
+                        aroonUpTotal += curAroonUpVal;
+                        aroonDownTotal += curAroonDownVal;
+
+                        decimal prevAroonUpVal = prevResult.AroonUp != null ? (decimal)prevResult.AroonUp : 0.0M;
+                        decimal prevAroonDownVal = prevResult.AroonDown != null ? (decimal)prevResult.AroonDown : 0.0M;
+                        decimal prevAroonOsc = prevAroonUpVal - prevAroonDownVal;
+
+                        //Look for buy and sell signals
+                        bool aroonCurrentIsNegative = curAroonOsc < 0;
+                        bool aroonPrevIsNegative = prevAroonOsc < 0;
+                        if (!aroonCurrentIsNegative && aroonPrevIsNegative)
+                        {
+                            //Cancel the previous sell signal if buy signal is most recent
+                            aroonHasBuySignal = true;
+                            aroonHasSellSignal = false;
+                            daysSinceSignal = daysToCalculate - daysCalculated;
+                        }
+                        else if (aroonCurrentIsNegative && !aroonPrevIsNegative)
+                        {
+                            //Cancel the previous buy signal if sell signal is most recent
+                            aroonHasSellSignal = true;
+                            aroonHasBuySignal = false;
+                            daysSinceSignal = daysToCalculate - daysCalculated;
+                        }
+
                         dates.Add(aroonDate);
-                        daysCalulated++;
+                        daysCalculated++;
                     }
                 }
                 else
@@ -902,7 +812,7 @@ namespace PT.Middleware
             }
 
             List<decimal> aroonXList = new List<decimal>();
-            for (int i = 1; i <= numberOfResults; i++)
+            for (int i = 1; i <= daysCalculated; i++)
                 aroonXList.Add(i);
 
             List<decimal> upYList = aroonUpYList.ToList();
@@ -910,59 +820,57 @@ namespace PT.Middleware
             List<decimal> downYList = aroonDownYList.ToList();
             decimal downSlope = GetSlope(aroonXList, downYList);
             List<decimal> oscillatorYList = aroonOscillatorYList.ToList();
+            decimal oscillatorSlope = GetSlope(aroonXList, oscillatorYList);
 
             decimal upSlopeMultiplier = GetSlopeMultiplier(upSlope);
             decimal downSlopeMultiplier = GetSlopeMultiplier(downSlope);
+            decimal oscillatorSlopeMultiplier = GetSlopeMultiplier(oscillatorSlope);
 
-            //look for buy and sell signals
-            bool aroonHasBuySignal = false;
-            bool aroonHasSellSignal = false;
-            decimal previousOscillatorValue = oscillatorYList[0];
-            bool previousIsNegative = previousOscillatorValue <= 0;
-            for (int i = 1; i < oscillatorYList.Count(); i++)
-            {
-                decimal currentOscillatorValue = oscillatorYList[i];
-                bool currentIsNegative = currentOscillatorValue <= 0;
-                if (!currentIsNegative && previousIsNegative && (upYList[i] >= 30 && downYList[i] <= 70))
-                {
-                    aroonHasBuySignal = true;
-                }
-                else if (currentIsNegative && !previousIsNegative && (upYList[i] <= 30 && downYList[i] >= 70))
-                {
-                    aroonHasSellSignal = true;
-                }
-                previousOscillatorValue = currentOscillatorValue;
-                previousIsNegative = previousOscillatorValue <= 0;
-            }
+            decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
+            decimal bonus = Convert.ToDecimal(Math.PI);
 
-            decimal aroonAvgUp = Math.Max(aroonUpTotal / numberOfResults, 1.0M);
-            decimal aroonAvgDown = Math.Max(aroonDownTotal / numberOfResults, 1.0M);
+            //Use percent diffs to get aroon base value
+            decimal aroonAvgUp = Math.Max(aroonUpTotal / daysCalculated, 1.0M);
+            decimal aroonAvgDown = Math.Max(aroonDownTotal / daysCalculated, 1.0M);
             decimal percentDiffDown = (aroonAvgDown / aroonAvgUp) * 100;
             decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
 
-            decimal bullResult = Math.Min(100 - percentDiffDown, 50); //bull result caps at 50
-            decimal bearResult = Math.Min(percentDiffUp + 15, 20); //bear result caps at 20
+            //Whether aroonAvgUp or aroonAvgDown is higher, that one will be more than 100 percent of the other
+            decimal baseBullResult = Math.Min(100 - percentDiffDown, 50); //base bull result caps at 50
+            decimal baseBearResult = Math.Min(percentDiffUp, 20); //base bear result caps at 20
+            decimal baseValue = (aroonAvgUp > aroonAvgDown) ? baseBullResult : baseBearResult;
 
-            //Add bull bonus if last AROON UP >= 70 per investopedia recommendation
+            //Get slope modifiers
+            decimal oscilatorSlopeModifier = (oscillatorSlope > 0.05M) ? (oscillatorSlope * oscillatorSlopeMultiplier) + bonus : penalty * 2;
+            decimal downSlopeModifier = (downSlope < -0.05M) ? bonus * 3 : -(downSlope * downSlopeMultiplier) + penalty ;
+
+            //Get time-scaled buy and sell signal bonus and penalty
+            decimal buySignalBonus = GetTimeScaledBuySignalBonus(aroonHasBuySignal, bonus, daysSinceSignal);
+            decimal sellSignalPenalty = GetTimeScaledSellSignalPenalty(aroonHasSellSignal, bonus, daysSinceSignal);
+
+            //Get other bonuses
+            decimal lastOscValue = oscillatorYList[oscillatorYList.Count - 1];
+
+            //Add bull major bonus if last AROON UP >= 70 per investopedia recommendation
             //This is the same as when last AROON OSC >= 50
-            //Cap bullBonus at 15
-            decimal bullBonus = (aroonAvgUp > aroonAvgDown && previousOscillatorValue >= 50) ? Math.Min(previousOscillatorValue / 5, 15) : 0;
+            decimal bullMajorBonus = (aroonAvgUp > aroonAvgDown && lastOscValue >= 50) ? bonus * 3: 0;
 
-            //Add bear bonus if last AROON UP > last AROON DOWN per investopedia recommendation
+            //Add bull minor bonus if last AROON UP > last AROON DOWN per investopedia recommendation
             //This is the same as when last AROON OSC > 0
-            //Cap bearBonus at 10
-            decimal bearBonus = (aroonAvgDown > aroonAvgUp && previousOscillatorValue > 0) ? Math.Min(previousOscillatorValue / 5, 10) : 0;
+            decimal bullMinorBonus = (aroonAvgDown > aroonAvgUp && lastOscValue > 0) ? bonus : 0;
 
             //calculate composite score based on the following values and weighted multipliers
             //if AROON avg up > AROON avg down, start score with 100 - (down as % of up)
             //if AROON avg up < AROON avg down, start score with 100 - (up as % of down)
             decimal composite = 0;
-            composite += (aroonAvgUp > aroonAvgDown) ? bullResult : bearResult;
-            composite += (bullBonus > bearBonus) ? bullBonus : bearBonus;
-            composite += (upSlope > -0.05M) ? (upSlope * upSlopeMultiplier) + 5 : 0;
-            composite += (downSlope < 0.05M) ? (downSlope * downSlopeMultiplier) + 5 : -(downSlope * downSlopeMultiplier);
-            composite += (aroonHasBuySignal) ? 25 : 0;
-            composite += (aroonHasSellSignal) ? -25 : 0;
+            composite += baseValue;
+            composite += oscilatorSlopeModifier;
+            composite += downSlopeModifier;
+            composite = Math.Min(composite, 80);
+            composite += buySignalBonus;
+            composite += sellSignalPenalty;
+            composite += bullMajorBonus;
+            composite += bullMinorBonus;
 
             composite = Math.Max(composite, 0); //limit AROON composite at 0, no negatives
             return Math.Min(composite, 115); //cap AROON composite at 115, extra weight
@@ -980,7 +888,7 @@ namespace PT.Middleware
             Stack<decimal> upperBandYList = new Stack<decimal>();
             Stack<decimal> differenceValueYList = new Stack<decimal>();
 
-            for (int i = results.Count - 1; i >= 0; i--)
+            for (int i = results.Count - daysToCalculate; i >= 0; i--)
             {
                 BollingerBandsResult result = results[i];
                 if (daysCalulated < daysToCalculate)
@@ -1135,12 +1043,6 @@ namespace PT.Middleware
             decimal xbar = xList.Average();
             decimal ybar = yList.Average();
             decimal slope = xys.Sum(xy => (xy.x - xbar) * (xy.y - ybar)) / xList.Sum(x => (x - xbar) * (x - xbar));
-            string s = "";
-            bool success = Int32.TryParse(s, out int n);
-            string[] stuff = new string[5];
-            List<string> list = new List<string>();
-            Dictionary<string, int> pris = new Dictionary<string, int>();
-            var ordered = pris.OrderBy(x => x.Value);
             return slope;
         }
 
@@ -1457,6 +1359,72 @@ namespace PT.Middleware
                 }
             }
             return divBonus;
+        }
+
+        private static decimal GetTimeScaledBuySignalBonus(bool hasBuySignal, decimal bonus, int daysSinceSignal)
+        {
+            decimal timeScaledBonus = 0;
+            if (hasBuySignal)
+            {
+                if (daysSinceSignal == 1 || daysSinceSignal == 2)
+                {
+                    timeScaledBonus = bonus * 7;
+                }
+                else if (daysSinceSignal == 3)
+                {
+                    timeScaledBonus = bonus * 6;
+                }
+                else if (daysSinceSignal == 4)
+                {
+                    timeScaledBonus = bonus * 5;
+                }
+                else if (daysSinceSignal == 5)
+                {
+                    timeScaledBonus = bonus * 4;
+                }
+                else if (daysSinceSignal == 6)
+                {
+                    timeScaledBonus = bonus * 3;
+                }
+                else if (daysSinceSignal == 7)
+                {
+                    timeScaledBonus = bonus * 2;
+                }
+            }
+            return timeScaledBonus;
+        }
+
+        private static decimal GetTimeScaledSellSignalPenalty(bool hasSellSignal, decimal penalty, int daysSinceSignal)
+        {
+            decimal timeScaledPenalty = 0;
+            if (hasSellSignal)
+            {
+                if (daysSinceSignal == 1 || daysSinceSignal == 2)
+                {
+                    timeScaledPenalty = penalty * 7;
+                }
+                else if (daysSinceSignal == 3)
+                {
+                    timeScaledPenalty = penalty * 6;
+                }
+                else if (daysSinceSignal == 4)
+                {
+                    timeScaledPenalty = penalty * 5;
+                }
+                else if (daysSinceSignal == 5)
+                {
+                    timeScaledPenalty = penalty * 4;
+                }
+                else if (daysSinceSignal == 6)
+                {
+                    timeScaledPenalty = penalty * 3;
+                }
+                else if (daysSinceSignal == 7)
+                {
+                    timeScaledPenalty = penalty * 2;
+                }
+            }
+            return timeScaledPenalty;
         }
     }
 }
