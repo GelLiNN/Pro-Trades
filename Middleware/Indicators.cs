@@ -484,9 +484,9 @@ namespace PT.Middleware
             composite += pDmiSlopeBonus;
             composite += nDmiSlopeBonus;
             composite = Math.Min(composite, 75);
-            composite += buySignalBonus;
-            composite += sellSignalPenalty;
             composite += averageBuySignalBonus;
+            composite += buySignalBonus;
+            composite += composite > 50 ? sellSignalPenalty : 0;
 
             composite = Math.Max(composite, 0); //limit ADX composite to 0, no negatives
             return Math.Min(composite, 100); //cap ADX composite at 100, no extra weight
@@ -555,11 +555,11 @@ namespace PT.Middleware
             decimal obvSlope = GetSlope(obvXList, obvYList);
 
             List<decimal> zScores = GetZScores(obvYList);
-            decimal zScoreSlope = GetSlope(zScores, obvXList);
+            decimal zScoreSlope = GetSlope(obvXList, zScores);
             decimal zScoreSlopeMultiplier = GetSlopeMultiplier(zScoreSlope);
 
             List<decimal> normalizedScores = GetNormalizedData(obvYList);
-            decimal normalizedSlope = GetSlope(normalizedScores, obvXList);
+            decimal normalizedSlope = GetSlope(obvXList, normalizedScores);
             decimal normalizedSlopeMultiplier = GetSlopeMultiplier(normalizedSlope);
 
             decimal obvAverage = obvSum / daysCalculated;
@@ -567,21 +567,20 @@ namespace PT.Middleware
             decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
             decimal bonus = Convert.ToDecimal(Math.PI);
 
-            //Start with the average of the 2 most recent OBV Normalized Scores
-            //Only use the normalized scores if average OBV is greater than 0
-            decimal baseValue;
-            if (obvAverage > 0)
-                baseValue = ((normalizedScores[normalizedScores.Count - 1] + normalizedScores[normalizedScores.Count - 2]) / 2) * 100;
-            else
-            {
-                //ZScore bonus helps us score based on derivatives
-                //Only add ZScoreBonus if it is positive, divide by 4 instead of 2 (which would be classic mean)
-                decimal zScoreBonus = ((zScores[zScores.Count - 1] + zScores[zScores.Count - 2]) / 4) * 100;
-                if (zScoreBonus < 0)
-                    zScoreBonus = 15; //pity points
+            decimal baseValue = 0;
 
-                baseValue = zScoreBonus;
-            }
+            //Start with the average of the 2 most recent OBV Normalized Scores
+            //Only allow positive normalizedScoreBase, divide by 4 instead of 2 (which would be classic mean)
+            decimal normalizedScoreBase =
+                ((normalizedScores[normalizedScores.Count - 1] + normalizedScores[normalizedScores.Count - 2]) / 4) * 100;
+            normalizedScoreBase = normalizedScoreBase < 0 ? bonus * 5 : normalizedScoreBase;
+
+            //ZScore base helps us get the base value for composite from derivatives
+            //Only allow positive zScoreBase, divide by 4 instead of 2 (which would be classic mean)
+            decimal zScoreBase = ((zScores[zScores.Count - 1] + zScores[zScores.Count - 2]) / 4) * 100;
+            zScoreBase = zScoreBase < 0 ? bonus * 5 : zScoreBase;
+
+            baseValue = (normalizedScoreBase + zScoreBase) / 2.0M;
 
             //Cap base value at 42 obviously
             baseValue = Math.Min(baseValue, 42.0M);
@@ -590,7 +589,7 @@ namespace PT.Middleware
             decimal obvAverageBonus = obvAverage > 0 ? bonus * 2 : 0;
 
             //Add bonus if OBV slope positive
-            decimal obvSlopeBonus = obvSlope > 0 ? bonus * 2 : 0;
+            decimal obvSlopeBonus = obvSlope > 0 ? bonus * 3 : 0;
 
             //Add Zscore slope bonus
             decimal zScoreSlopeBonus = 0;
@@ -619,7 +618,8 @@ namespace PT.Middleware
             composite += normalizedSlopeBonus;
             composite = Math.Min(composite, 75);
             composite += buySignalBonus;
-            composite += sellSignalPenalty;
+            composite += composite > 50 ? sellSignalPenalty : 0;
+
             composite = Math.Max(composite, 0); //limit OBV composite at 0, no negatives
             return Math.Min(composite, 100); //cap OBV composite at 100, no extra weight
         }
@@ -635,6 +635,9 @@ namespace PT.Middleware
 
             int daysCalculated = 0;
             decimal macdTotalHist = 0;
+            decimal macdTotalBase = 0;
+            decimal macdTotalSignal = 0;
+            int positiveHistDays = 0;
             int daysSinceSignal = -1;
             bool macdHasBuySignal = false;
             bool macdHasSellSignal = false;
@@ -651,17 +654,22 @@ namespace PT.Middleware
                     {
                         decimal macdBaseValue = result.Macd != null ? (decimal)result.Macd : 0.0M;
                         decimal macdSignalValue = result.Signal != null ? (decimal)result.Signal : 0.0M;
-                        decimal curMacdHistogramValue = result.Histogram != null ? (decimal)result.Histogram : 0.0M;
+                        decimal macdHistogramValue = result.Histogram != null ? (decimal)result.Histogram : 0.0M;
+
+                        decimal prevMacdBaseValue = prevResult.Macd != null ? (decimal)prevResult.Macd : 0.0M;
+                        decimal prevMacdSignalValue = prevResult.Signal != null ? (decimal)prevResult.Signal : 0.0M;
                         decimal prevMacdHistogramValue = prevResult.Histogram != null ? (decimal)prevResult.Histogram : 0.0M;
 
-                        macdHistYList.Enqueue(curMacdHistogramValue);
+                        macdHistYList.Enqueue(macdHistogramValue);
                         macdBaseYList.Enqueue(macdBaseValue);
                         macdSignalYList.Enqueue(macdSignalValue);
-                        macdTotalHist += curMacdHistogramValue;
+                        macdTotalHist += macdHistogramValue;
+                        macdTotalBase += macdBaseValue;
+                        macdTotalSignal += macdSignalValue;
 
                         //Look for buy and sell signals
-                        bool macdCurrentIsNegative = curMacdHistogramValue < 0;
-                        bool macdPrevIsNegative = prevMacdHistogramValue < 0;
+                        bool macdCurrentIsNegative = macdBaseValue < macdSignalValue;
+                        bool macdPrevIsNegative = prevMacdBaseValue < prevMacdSignalValue;
                         if (!macdCurrentIsNegative && macdPrevIsNegative)
                         {
                             //Cancel the previous sell signal if buy signal is most recent
@@ -675,6 +683,12 @@ namespace PT.Middleware
                             macdHasSellSignal = true;
                             macdHasBuySignal = false;
                             daysSinceSignal = daysToCalculate - daysCalculated;
+                        }
+
+                        //Positive hist days
+                        if (!macdCurrentIsNegative)
+                        {
+                            positiveHistDays++;
                         }
 
                         dates.Add(macdDate);
@@ -697,28 +711,51 @@ namespace PT.Middleware
             decimal histSlope = GetSlope(macdXList, histYList);
 
             List<decimal> zScores = GetZScores(histYList);
-            decimal zScoreSlope = GetSlope(zScores, macdXList);
+            decimal zScoreSlope = GetSlope(macdXList, zScores);
             decimal zScoreSlopeMultiplier = GetSlopeMultiplier(zScoreSlope);
+
+            List<decimal> normalizedHist = GetNormalizedData(histYList);
+            decimal normalizedHistSlope = GetSlope(macdXList, normalizedHist);
+            decimal normalizedSlopeMultiplier = GetSlopeMultiplier(normalizedHistSlope);
 
             decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
             decimal bonus = Convert.ToDecimal(Math.PI);
 
-            //Create histBase multiplicative rewarding when macdTotalHist is positive,
-            //7 pity points otherwise, and cap histBase at 30
-            decimal histWeight = 2;
-            decimal histBase = (macdTotalHist > 0) ? (macdTotalHist * histWeight) + (histWeight * bonus) : 7;
-            histBase = Math.Min(30, histBase);
+            //Use total base and signal diffs, along with macd total hist to get macd base value
+            decimal baseValue = 0;
+            decimal macdBaseSignalDiff = macdTotalBase - macdTotalSignal;
+            if (macdBaseSignalDiff > 0)
+            {
+                baseValue = (macdBaseSignalDiff * bonus) + 5;
+            }
+            if (macdTotalHist > 0)
+            {
+                baseValue += (macdTotalHist * bonus) + 5;
+            }
+            if (baseValue == 0)
+            {
+                baseValue += (3 * bonus); //3-pi pity points
+            }
+            baseValue = Math.Min(30, baseValue);
+            baseValue += positiveHistDays;
 
-            decimal histSlopeBonus = (histSlope > 0) ? bonus : penalty;
-            decimal baseSlopeBonus = (baseSlope > 0) ? bonus * 2 : penalty;
-            decimal signalSlopeBonus = (histSlope > 0) ? bonus : penalty;
+            decimal histSlopeBonus = (histSlope > 0) ? histSlope + (bonus * 3) : 0;
+            decimal baseSlopeBonus = (baseSlope > 0) ? baseSlope + (bonus * 2) : 0;
+            decimal signalSlopeBonus = (signalSlope > 0) ? signalSlope + bonus : 0;
 
             //Add histogram zscore slope bonus
-            decimal zScoreSlopeBonus = 0;
+            decimal zScoreHistSlopeBonus = 0;
             if (zScoreSlope > 0.1m)
-                zScoreSlopeBonus += (zScoreSlope * zScoreSlopeMultiplier);
+                zScoreHistSlopeBonus += (zScoreSlope * zScoreSlopeMultiplier);
             if (zScoreSlope > 0)
-                zScoreSlopeBonus += bonus;
+                zScoreHistSlopeBonus += (2 * bonus);
+
+            //Add normalized histogram slope bonus
+            decimal normalizedHistSlopeBonus = 0;
+            if (normalizedHistSlope >= 0.5m)
+                normalizedHistSlopeBonus += normalizedHistSlope;
+            if (normalizedHistSlope > 0)
+                normalizedHistSlopeBonus += (2 * bonus);
 
             //Get previous 2 base above signal bonus
             bool prevTwoBaseAboveSignal = baseYList[baseYList.Count - 1] > signalYList[signalYList.Count - 1]
@@ -731,15 +768,16 @@ namespace PT.Middleware
 
             //Calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
-            composite += histBase;
+            composite += baseValue;
             composite += histSlopeBonus;
             composite += baseSlopeBonus;
             composite += signalSlopeBonus;
-            composite += zScoreSlopeBonus;
+            composite += zScoreHistSlopeBonus;
+            composite += normalizedHistSlopeBonus;
             composite = Math.Min(80, composite);
             composite += baseAboveSignalBonus;
             composite += buySignalBonus;
-            composite += sellSignalPenalty;
+            composite += composite > 50 ? sellSignalPenalty : 0;
 
             composite = Math.Max(composite, 0); //limit MACD composite at 0, no negatives
             return Math.Min(composite, 115); //cap MACD composite at 115, extra weight
@@ -841,8 +879,8 @@ namespace PT.Middleware
             decimal baseValue = (aroonAvgUp > aroonAvgDown) ? baseBullResult : baseBearResult;
 
             //Get slope modifiers
-            decimal oscilatorSlopeModifier = (oscillatorSlope > 0.05M) ? (oscillatorSlope * oscillatorSlopeMultiplier) + bonus : penalty * 2;
-            decimal downSlopeModifier = (downSlope < -0.05M) ? bonus * 3 : -(downSlope * downSlopeMultiplier) + penalty ;
+            decimal oscilatorSlopeModifier = (oscillatorSlope > 1.0M) ? oscillatorSlope + (2 * bonus) : penalty * 3;
+            decimal downSlopeModifier = (downSlope < 0) ? (-1 * downSlope) + (2 * bonus) : (-1 * downSlope) + (penalty * 2);
 
             //Get time-scaled buy and sell signal bonus and penalty
             decimal buySignalBonus = GetTimeScaledBuySignalBonus(aroonHasBuySignal, bonus, daysSinceSignal);
@@ -867,10 +905,10 @@ namespace PT.Middleware
             composite += oscilatorSlopeModifier;
             composite += downSlopeModifier;
             composite = Math.Min(composite, 80);
-            composite += buySignalBonus;
-            composite += sellSignalPenalty;
             composite += bullMajorBonus;
             composite += bullMinorBonus;
+            composite += buySignalBonus;
+            composite += composite > 50 ? sellSignalPenalty : 0;
 
             composite = Math.Max(composite, 0); //limit AROON composite at 0, no negatives
             return Math.Min(composite, 115); //cap AROON composite at 115, extra weight
@@ -1390,6 +1428,7 @@ namespace PT.Middleware
                 {
                     timeScaledBonus = bonus * 2;
                 }
+                timeScaledBonus += 3;
             }
             return timeScaledBonus;
         }
@@ -1423,8 +1462,9 @@ namespace PT.Middleware
                 {
                     timeScaledPenalty = penalty * 2;
                 }
+                timeScaledPenalty += 3;
             }
-            return timeScaledPenalty;
+            return (-1 * timeScaledPenalty);
         }
     }
 }
