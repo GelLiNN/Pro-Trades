@@ -10,6 +10,97 @@ namespace PT.Middleware
     //https://www.codeproject.com/Articles/15047/Creating-a-Mechanical-Trading-System-Part-1-Techni
     public static class Indicators
     {
+        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote, RequestManager rm)
+        {
+            Stopwatch sw = Stopwatch.StartNew();
+
+            // Alpaca API price history
+            AlpacaHistory alpacaHistory = Alpaca.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).Result;
+            IEnumerable<Skender.Stock.Indicators.Quote> history = alpacaHistory.PriceHistory;
+            IEnumerable<Skender.Stock.Indicators.Quote> obvHistory = alpacaHistory.PriceHistory.TakeLast(42);
+
+            // This was only used for the bbands composite
+            List<Skender.Stock.Indicators.Quote> supplement = alpacaHistory.PriceHistory.TakeLast(7).ToList();
+
+            // get fundamentals with Alpaca price history
+            FundamentalsResult fundResult = GetFundamentalsResult(symbol, quote, alpacaHistory);
+
+            decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
+            decimal obvCompositeScore = GetIndicatorComposite(symbol, "OBV", obvHistory, 7);
+            decimal macdCompositeScore = GetIndicatorComposite(symbol, "MACD", history, 7);
+            decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
+            decimal aroonCompositeScore = GetIndicatorComposite(symbol, "AROON", history, 7);
+
+            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7, rm);
+            HedgeFundsResult hfResult = TipRanks.GetTipRanksResult(symbol, rm);
+
+            decimal compositeScoreFinal = GetCompositeScoreFinalValue(fundResult, hfResult, shortResult,
+                adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
+
+            CompositeScoreResult scoreResult = new CompositeScoreResult
+            {
+                Symbol = symbol,
+                Name = quote.LongName,
+                Exchange = quote.FullExchangeName,
+                DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks",
+                PriceL = quote.RegularMarketPrice.HasValue ? quote.RegularMarketPrice.Value : 0,
+                PriceVW = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 1],
+                PriceHistoryDays = history.Count(),
+                ADXComposite = adxCompositeScore,
+                OBVComposite = obvCompositeScore,
+                AROONComposite = aroonCompositeScore,
+                MACDComposite = macdCompositeScore,
+                BBANDSComposite = bbandsCompositeScore,
+                RatingsComposite = hfResult.RatingsComposite,
+                ShortInterestComposite = shortResult.ShortInterestCompositeScore,
+                FundamentalsComposite = fundResult.FundamentalsComposite,
+                CompositeScoreValue = compositeScoreFinal,
+                ScoreTimeMS = sw.ElapsedMilliseconds,
+                ScoreDate = DateTime.Now,
+                ShortInterest = shortResult,
+                Fundamentals = fundResult,
+                HedgeFunds = hfResult
+            };
+
+            // This is where blacklisting happens, right now only from bad volume
+            string rank = string.Empty;
+            if (scoreResult.Fundamentals.IsBlacklisted)
+                rank = "DISQUALIFIED";
+            else if (scoreResult.CompositeScoreValue > 0 && scoreResult.CompositeScoreValue < 60)
+                rank = "BAD";
+            else if (scoreResult.CompositeScoreValue >= 60 && scoreResult.CompositeScoreValue < 70)
+                rank = "FAIR";
+            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < 84)
+                rank = "GOOD";
+            else if (scoreResult.CompositeScoreValue >= 84)
+                rank = "PRIME";
+            scoreResult.CompositeRank = rank;
+
+            return scoreResult;
+        }
+
+        private static decimal GetCompositeScoreFinalValue(FundamentalsResult fr, HedgeFundsResult hr, ShortInterestResult sr,
+            decimal adxComposite, decimal obvComposite, decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
+        {
+            decimal compositeScoreFinal = 0;
+            if (hr.RatingsComposite == Constants.INVALID_COMPOSITE)
+            {
+                compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
+                    bbandsComposite + sr.ShortInterestCompositeScore + fr.FundamentalsComposite) / 7;
+            }
+            else if (bbandsComposite > obvComposite)
+            {
+                compositeScoreFinal = (adxComposite + aroonComposite + bbandsComposite + macdComposite +
+                    sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+            }
+            else
+            {
+                compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
+                    sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+            }
+            return compositeScoreFinal;
+        }
+
         public static decimal GetIndicatorComposite(string symbol, string function, IEnumerable<Skender.Stock.Indicators.Quote> history, int daysToCalculate, object supplement = null)
         {
             decimal compositeScore = 0;
@@ -130,93 +221,6 @@ namespace PT.Middleware
             return compositeScore;
         }
 
-        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote, RequestManager rm)
-        {
-            Stopwatch sw = Stopwatch.StartNew();
-            
-            // Yahoo Finance price history
-            /*List<PriceTick> yahooHistory = YahooFinance.GetHistoryAsync(symbol, Constants.DEFAULT_HISTORY_DAYS).Result;
-            List<Skender.Stock.Indicators.Quote> historyList = new List<Skender.Stock.Indicators.Quote>();
-
-            foreach (PriceTick data in yahooHistory)
-            {
-                Skender.Stock.Indicators.Quote curData = new Skender.Stock.Indicators.Quote();
-                curData.Open = Convert.ToDecimal(data.Open);
-                curData.Close = Convert.ToDecimal(data.AdjustedClose);
-                curData.High = Convert.ToDecimal(data.High);
-                curData.Low = Convert.ToDecimal(data.Low);
-                curData.Volume = Convert.ToDecimal(data.Volume);
-                curData.Date = data.Date.ToDateTimeUnspecified();
-                historyList.Add(curData);
-            }
-            IEnumerable<Skender.Stock.Indicators.Quote> history = historyList.AsEnumerable();*/
-
-            // Alpaca API price history
-            AlpacaHistory alpacaHistory = Alpaca.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).Result;
-            IEnumerable<Skender.Stock.Indicators.Quote> history = alpacaHistory.PriceHistory;
-            IEnumerable<Skender.Stock.Indicators.Quote> obvHistory = alpacaHistory.PriceHistory.TakeLast(42);
-
-            // This was only used for the bbands composite
-            List<Skender.Stock.Indicators.Quote> supplement = alpacaHistory.PriceHistory.TakeLast(7).ToList();
-
-            // get fundamentals with YahooFinance price history
-            //FundamentalsResult fundResult = GetFundamentalsResultOld(symbol, quote);
-
-            // get fundamentals with Alpaca price history
-            FundamentalsResult fundResult = GetFundamentalsResult(symbol, quote, alpacaHistory);
-
-            decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
-            decimal obvCompositeScore = GetIndicatorComposite(symbol, "OBV", obvHistory, 7);
-            decimal macdCompositeScore = GetIndicatorComposite(symbol, "MACD", history, 7);
-            decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
-            decimal aroonCompositeScore = GetIndicatorComposite(symbol, "AROON", history, 7);
-
-            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7, rm);
-            HedgeFundsResult hfResult = TipRanks.GetTipRanksResult(symbol, rm);
-
-            CompositeScoreResult scoreResult = new CompositeScoreResult
-            {
-                Symbol = symbol,
-                Name = quote.LongName,
-                Exchange = quote.FullExchangeName,
-                DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks",
-                PriceL = quote.RegularMarketPrice.HasValue ? quote.RegularMarketPrice.Value : 0,
-                PriceVW = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 1],
-                PriceHistoryDays = history.Count(),
-                ADXComposite = adxCompositeScore,
-                OBVComposite = obvCompositeScore,
-                AROONComposite = aroonCompositeScore,
-                MACDComposite = macdCompositeScore,
-                BBANDSComposite = bbandsCompositeScore,
-                RatingsComposite = hfResult.RatingsComposite,
-                ShortInterestComposite = shortResult.ShortInterestCompositeScore,
-                FundamentalsComposite = fundResult.FundamentalsComposite,
-                CompositeScoreValue = (adxCompositeScore + aroonCompositeScore + obvCompositeScore + macdCompositeScore +
-                    shortResult.ShortInterestCompositeScore + fundResult.FundamentalsComposite + hfResult.RatingsComposite) / 7,
-                ScoreTimeMS = sw.ElapsedMilliseconds,
-                ScoreDate = DateTime.Now,
-                ShortInterest = shortResult,
-                Fundamentals = fundResult,
-                HedgeFunds = hfResult
-            };
-
-            // This is where blacklisting happens, right now only from bad volume
-            string rank = string.Empty;
-            if (scoreResult.Fundamentals.IsBlacklisted)
-                rank = "DISQUALIFIED";
-            else if (scoreResult.CompositeScoreValue > 0 && scoreResult.CompositeScoreValue < 60)
-                rank = "BAD";
-            else if (scoreResult.CompositeScoreValue >= 60 && scoreResult.CompositeScoreValue < 70)
-                rank = "FAIR";
-            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < 85)
-                rank = "GOOD";
-            else if (scoreResult.CompositeScoreValue >= 85)
-                rank = "PRIME";
-            scoreResult.CompositeRank = rank;
-
-            return scoreResult;
-        }
-
         // Fundamentals (advanced stats, volume, price, earnings and filings up-to-date)
         // RELIES completely on unofficial yahoo finance API for now
         public static FundamentalsResult GetFundamentalsResult(string symbol, Security quote, AlpacaHistory history)
@@ -224,17 +228,12 @@ namespace PT.Middleware
             try
             {
                 List<decimal> normalizedPrice = GetNormalizedData(history.PriceAvgYList);
-
                 decimal priceSlope = GetSlope(history.PriceAvgXList, history.PriceAvgYList);
-
                 decimal normalizedPriceSlope = GetSlope(history.PriceAvgXList, normalizedPrice);
                 decimal normalizedPriceSlopeMultiplier = GetSlopeMultiplier(normalizedPriceSlope);
 
-
                 List<decimal> normalizedVolume = GetNormalizedData(history.VolAvgYList);
-
                 decimal volumeSlope = GetSlope(history.VolAvgXList, history.VolAvgYList);
-
                 decimal normalizedVolumeSlope = GetSlope(history.VolAvgXList, normalizedVolume);
                 decimal normalizedVolumeSlopeMultiplier = GetSlopeMultiplier(normalizedVolumeSlope);
 
@@ -251,25 +250,82 @@ namespace PT.Middleware
                 try { epsTrailing = decimal.Parse(quote.EpsTrailingTwelveMonths.ToString()); }
                 catch (Exception e) { /*do nothing*/ }
 
+                decimal epsCurrentYear = 0.0M;
+                try { epsCurrentYear = decimal.Parse(quote.EpsCurrentYear.ToString()); }
+                catch (Exception e) { /*set to trailing*/ epsCurrentYear = epsTrailing; }
+
                 decimal epsForward = 0.0M;
                 try { epsForward = decimal.Parse(quote.EpsForward.ToString()); }
                 catch (Exception e) { /*set to trailing*/ epsForward = epsTrailing; }
 
+                decimal priceToBook = 1.0M;
+                try { priceToBook = decimal.Parse(quote.PriceToBook.ToString()); }
+                catch (Exception e) { /*do nothing*/ }
+
+                decimal netExpenseRatio = 1.0M;
+                try { netExpenseRatio = decimal.Parse(quote.NetExpenseRatio.ToString()); }
+                catch (Exception e) { /*do nothing*/ }
+
+                decimal netAssets = -1.0M;
+                try { netAssets = decimal.Parse(quote.NetAssets.ToString()); }
+                catch (Exception e) { /*do nothing*/ }
+
+                decimal sharesOutstanding = -1.0M;
+                try { sharesOutstanding = decimal.Parse(quote.SharesOutstanding.ToString()); }
+                catch (Exception e) { /*do nothing*/ }
+
                 decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
                 decimal bonus = Convert.ToDecimal(Math.PI);
-                decimal averageEPS = 0.0M, growthEPS = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
 
-                averageEPS = (epsForward + epsTrailing) / 2;
+                // Get base value as a function of price-to-book percentage
+                decimal baseValue = 100 - (priceToBook * 100);
+                if (baseValue >= 10)
+                {
+                    baseValue += (bonus * 2); // more than 10% undervalued bonus
+                }
+                else if (baseValue <= 0)
+                {
+                    baseValue = 2 * bonus; // 2-pi pity points
+                }
+                baseValue = Math.Min(baseValue, 30);
+
+                // Net expense ratio bonus
+                decimal netExpenseRatioBonus = 0;
+                if ( 0 <= netExpenseRatio && netExpenseRatio < 0.25M)
+                {
+                    netExpenseRatioBonus = 6 * bonus;
+                }
+                else if (0.25M <= netExpenseRatio && netExpenseRatio < 0.6M)
+                {
+                    netExpenseRatioBonus = 3 * bonus;
+                }
+
+                // Fair value price bonus
+                decimal fairValuePriceBonus = 0;
+                decimal fairValuePrice = 0;
+                if (netAssets > 0 && sharesOutstanding > 0)
+                {
+                    fairValuePrice = netAssets / sharesOutstanding;
+                    decimal lastPrice = history.PriceAvgYList[history.PriceAvgYList.Count - 1];
+                    if (lastPrice < fairValuePrice)
+                    {
+                        fairValuePriceBonus = 3 * bonus;
+                    }
+                }
+
+                // Calculate figures for EPS bonus and PE bonus
+                decimal averageEPS = 0.0M, growthEPS = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
+                averageEPS = (epsForward + epsTrailing + epsCurrentYear) / 3;
                 growthEPS = epsForward - epsTrailing;
 
                 averagePE = (peForward + peTrailing) / 2;
                 growthPE = peForward - peTrailing;
 
-                // Make base score based on EPS activity
-                decimal epsBase = GetEPSBase(averageEPS, growthEPS);
+                // Add EPS activity bonus
+                decimal epsBonus = GetEPSBonus(averageEPS, growthEPS, bonus);
 
                 // Add PE ratio activity bonus
-                decimal peBonus = GetPEBonus(averagePE, growthPE);
+                decimal peBonus = GetPEBonus(averagePE, growthPE, bonus);
 
                 // Add dividend bonus
                 decimal divBonus = GetDividendBonus(quote);
@@ -300,20 +356,27 @@ namespace PT.Middleware
                 // Get normalized price slope and volume slope bonuses
                 decimal normalizedPriceSlopeBonus = (normalizedPriceSlope > 0.05M) ?
                     normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
+                normalizedPriceSlopeBonus = Math.Min(normalizedPriceSlopeBonus, 10);
+
                 decimal normalizedVolumelopeBonus = (normalizedVolumeSlope > 0.05M) ?
                     normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : 0;
+                normalizedVolumelopeBonus = Math.Min(normalizedVolumelopeBonus, 10);
 
                 // calculate composite score based on the following values and weighted multipliers
                 // Base value should be calculated based on EPS and PE data
                 // Bonuses added for positive volume and price slopes, PE Growth, and dividends
                 decimal composite = 0;
-                composite += epsBase;
+                composite += baseValue;
                 composite += normalizedVolumelopeBonus;
                 composite += normalizedPriceSlopeBonus;
-                composite = Math.Min(60, composite);
+                composite += fairValuePriceBonus;
+                composite += netExpenseRatioBonus;
+                composite += epsBonus;
+                composite = Math.Min(70, composite);
                 composite += peBonus;
                 composite += divBonus;
-                composite += volumeTrendingModifier;
+                composite += composite >= 60 && volumeTrendingModifier < 0 ? volumeTrendingModifier : 0;
+                composite += volumeTrendingModifier > 0 ? volumeTrendingModifier : 0;
 
                 composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives
@@ -917,34 +980,34 @@ namespace PT.Middleware
         public static decimal GetBBANDSComposite(IEnumerable<BollingerBandsResult> resultSet, List<Skender.Stock.Indicators.Quote> supplement, int daysToCalculate)
         {
             List<BollingerBandsResult> results = resultSet.ToList();
-            int daysCalulated = 0;
-            int numberOfResults = 0;
+
             HashSet<string> dates = new HashSet<string>();
+            Queue<decimal> lowerBandYList = new Queue<decimal>();
+            Queue<decimal> middleBandYList = new Queue<decimal>();
+            Queue<decimal> upperBandYList = new Queue<decimal>();
+            Queue<decimal> differenceValueYList = new Queue<decimal>();
 
-            Stack<decimal> lowerBandYList = new Stack<decimal>();
-            Stack<decimal> middleBandYList = new Stack<decimal>();
-            Stack<decimal> upperBandYList = new Stack<decimal>();
-            Stack<decimal> differenceValueYList = new Stack<decimal>();
+            int daysCalulated = 0;
 
-            for (int i = results.Count - daysToCalculate; i >= 0; i--)
+            for (int i = results.Count - daysToCalculate; i < results.Count; i++)
             {
-                BollingerBandsResult result = results[i];
                 if (daysCalulated < daysToCalculate)
                 {
-                    decimal lowerBandValue = result.LowerBand != null ? (decimal)result.LowerBand : 0.0M;
-                    decimal middleBandValue = result.Sma != null ? (decimal)result.Sma : 0.0M;
-                    decimal upperBandValue = result.UpperBand != null ? (decimal)result.UpperBand : 0.0M;
-                    decimal difference = upperBandValue - lowerBandValue;
-
-                    lowerBandYList.Push(lowerBandValue);
-                    middleBandYList.Push(middleBandValue);
-                    upperBandYList.Push(upperBandValue);
-                    differenceValueYList.Push(difference);
-                    numberOfResults++;
+                    BollingerBandsResult result = results[i];
 
                     string bbandsDate = result.Date.ToString("yyyy-MM-dd");
                     if (!dates.Contains(bbandsDate))
                     {
+                        decimal lowerBandValue = result.LowerBand != null ? (decimal)result.LowerBand : 0.0M;
+                        decimal middleBandValue = result.Sma != null ? (decimal)result.Sma : 0.0M;
+                        decimal upperBandValue = result.UpperBand != null ? (decimal)result.UpperBand : 0.0M;
+                        decimal difference = upperBandValue - lowerBandValue;
+
+                        lowerBandYList.Enqueue(lowerBandValue);
+                        middleBandYList.Enqueue(middleBandValue);
+                        upperBandYList.Enqueue(upperBandValue);
+                        differenceValueYList.Enqueue(difference);
+
                         dates.Add(bbandsDate);
                         daysCalulated++;
                     }
@@ -954,7 +1017,7 @@ namespace PT.Middleware
             }
 
             List<decimal> bbandsXList = new List<decimal>();
-            for (int i = 1; i <= numberOfResults; i++)
+            for (int i = 1; i <= daysCalulated; i++)
                 bbandsXList.Add(i);
 
             List<decimal> lowerYList = lowerBandYList.ToList();
@@ -1026,44 +1089,55 @@ namespace PT.Middleware
             // Cross lower band and have positive breakout, buy signal, max weight
             if (crossLowerBand && recentPositivity && hasBreakout)
             {
-                bbandsBonus += (decimal)Math.PI * 6;
+                bbandsBonus += (decimal)Math.PI * 7;
                 bbandsHasMaxBuySignal = true;
             }
             // Cross middle band and have positive breakout, buy signal, medium weight
             else if (crossMiddleBand && recentPositivity && hasBreakout)
             {
-                bbandsBonus += (decimal)Math.PI * 3;
+                bbandsBonus += (decimal)Math.PI * 4;
                 bbandsHasMedBuySignal = true;
             }
 
             // Cross upper band and have positive breakout, sell signal, medium weight
             if (crossUpperBand && recentPositivity && hasBreakout)
             {
-                bbandsBonus -= (decimal)Math.PI * 3;
+                bbandsBonus -= (decimal)Math.PI * 4;
                 bbandsHasMedSellSignal = true;
             }
             // Cross upper band and have negative breakout, sell signal, max weight
             else if (crossUpperBand && !recentPositivity && hasBreakout)
             {
-                bbandsBonus -= (decimal)Math.PI * 6;
+                bbandsBonus -= (decimal)Math.PI * 7;
                 bbandsHasMaxSellSignal = true;
             }
 
-            //TODO: Need to rework this base value
+            // Base value from percentage diff from the lower band
+            decimal baseValue = 0;
             decimal percentageDiff = (prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100;
-            decimal baseValue = 40 - percentageDiff;
-            baseValue = baseValue < 0 ? 0 : baseValue;
-            baseValue = baseValue > 40 ? 40 : baseValue;
-            decimal priceSlopeBonus = priceSlope > 0.1M ? 10 : 0;
+            if (percentageDiff <= 50)
+            {
+                baseValue = (100 - percentageDiff) / 2 + (decimal)Math.PI;
+            }
+            else
+            {
+                baseValue = (decimal)Math.PI * 3;
+            }
+            baseValue = Math.Min(baseValue, 40);
+            baseValue += baseValue == 40 ? (decimal)Math.PI : 0;
+
+            decimal priceSlopeBonus = priceSlope > 0.1M ? (decimal)Math.PI * 3 : 0;
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
             composite += baseValue;
             composite += priceSlopeBonus;
-            composite += (lowerSlope > -0.05M) ? (lowerSlope * lowerSlopeMultiplier) + 10 : 0;
-            composite += (middleSlope > 0.0M) ? (middleSlope * middleSlopeMultiplier) + 5 : -10; // Penalty
-            composite += (upperSlope > -0.05M) ? (upperSlope * upperSlopeMultiplier) + 5 :-10; // Penalty
-            composite += bbandsBonus;
+            composite += (lowerSlope > 0) ? (lowerSlope * lowerSlopeMultiplier) + 10 : -10; //Penalty
+            composite += (middleSlope > 0) ? (middleSlope * middleSlopeMultiplier) + 5 : 0;
+            composite += (upperSlope > 0) ? (upperSlope * upperSlopeMultiplier) + 5 : 0;
+            composite = Math.Min(composite, 80);
+            composite += composite > 60 && bbandsBonus < 0 ? bbandsBonus : 0;
+            composite += bbandsBonus > 0 ? bbandsBonus : 0;
 
             composite = Math.Min(composite, 100); // cap BBANDS composite at 100, no extra weight
             return Math.Max(0, composite); // limit BBANDS composite at 0, no negatives
@@ -1242,63 +1316,66 @@ namespace PT.Middleware
             return current;
         }
 
-        public static decimal GetEPSBase(decimal averageEPS, decimal growthEPS)
+        public static decimal GetEPSBonus(decimal averageEPS, decimal growthEPS, decimal bonus)
         {
-            // EPS base has default of 7 since it starts the composite
-            decimal epsBase = 7;
+            decimal epsBonus = 0;
 
             //If everything is negative return base
             if (averageEPS <= 0 && growthEPS <= 0)
             {
-                return epsBase;
+                return epsBonus;
             }
 
             // averageEPS score formulation
             // Reward cases
             if (0 < averageEPS && averageEPS <= 0.5M)
             {
-                epsBase += averageEPS * 3 + 4;
+                epsBonus += averageEPS * 10 + bonus;
             }
             else if (0.5M < averageEPS && averageEPS <= 1)
             {
-                epsBase += averageEPS * 3 + 8;
+                epsBonus += averageEPS * 5 + (2 * bonus);
             }
             else if (1 < averageEPS && averageEPS <= 2)
             {
-                epsBase += averageEPS * 3 + 12;
+                epsBonus += averageEPS * 2 + (3 * bonus);
             }
             else if (2 < averageEPS && averageEPS <= 3)
             {
-                epsBase += averageEPS * 3 + 16;
+                epsBonus += averageEPS * 2 + (4 * bonus);
             }
             else if (3 < averageEPS)
             {
-                epsBase += averageEPS * 3 + 20;
+                epsBonus += averageEPS + (5 * bonus);
             }
 
             // growthEPS score formulation
             // Reward cases
             if (0 < growthEPS && growthEPS <= 1)
             {
-                epsBase += growthEPS * 3 + 3;
+                epsBonus += growthEPS * 5 + bonus;
             }
-            else if (growthEPS > 1)
+            else if (1 < growthEPS && growthEPS <= 2)
             {
-                epsBase += growthEPS * 3 + 6;
+                epsBonus += growthEPS * 3 + (2 * bonus);
             }
-            // Penalty cases
+            else if (2 < growthEPS)
+            {
+                epsBonus += growthEPS + (5 * bonus);
+            }
+            /* Penalty cases
             else if (-1 <= growthEPS && growthEPS <0)
             {
-                epsBase += growthEPS * 3 - 3;
+                epsBonus += growthEPS * 3 - 3;
             }
             else if (-1 >= growthEPS)
             {
-                epsBase += growthEPS * 3 - 6;
-            }
-            return epsBase;
+                epsBonus += growthEPS * 3 - 6;
+            }*/
+            return epsBonus;
         }
 
-        public static decimal GetPEBonus(decimal averagePE, decimal growthPE)
+        public static decimal GetPEBonus(decimal averagePE, decimal growthPE, decimal bonus)
         {
             decimal peBonus = 0;
 
@@ -1312,11 +1389,11 @@ namespace PT.Middleware
             // Reward cases
             if (0 < averagePE && averagePE <=25)
             {
-                peBonus += (averagePE / 5) + 7;
+                peBonus += (averagePE / 5) + (3 * bonus);
             }
             else if (25 < averagePE && averagePE <= 50)
             {
-                peBonus += (averagePE / 10);
+                peBonus += (averagePE / 10) + bonus;
             }
             else if (50 < averagePE && averagePE <= 100)
             {
@@ -1336,18 +1413,18 @@ namespace PT.Middleware
             }
             else if (-100 <= growthPE && growthPE < -50)
             {
-                peBonus += (-1 * (growthPE / 10)) + 3;
+                peBonus += (-1 * (growthPE / 10)) + bonus;
             }
             else if (-100 > growthPE)
             {
-                peBonus += (-1 * (growthPE / 100)) + 10;
+                peBonus += (-1 * (growthPE / 100)) + (bonus * 3);
             }
             else if (0 < growthPE && growthPE <= 50)
             {
                 peBonus += (-1 * (growthPE / 10));
             }
             // Penalty cases
-            else if (50 < growthPE && growthPE <= 100)
+            /*else if (50 < growthPE && growthPE <= 100)
             {
                 peBonus += (-1 * (growthPE / 10)) - 3;
             }
@@ -1355,7 +1432,8 @@ namespace PT.Middleware
             {
                 peBonus += (-1 * (growthPE / 100)) - 10;
             }
-            return Math.Max(-10, peBonus);
+            return Math.Max(-10, peBonus);*/
+            return peBonus;
         }
 
         private static decimal GetDividendBonus(Security quote)

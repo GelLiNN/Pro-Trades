@@ -127,7 +127,7 @@ namespace PT.Middleware
                 Debug.WriteLine("EXCEPTION CAUGHT: TipRanks.cs GetTipRanksResult for symbol " + symbol + ", message: " + e.Message);
                 return new HedgeFundsResult
                 {
-                    RatingsComposite = 33.0M, // Have pity on the peseants
+                    RatingsComposite = Constants.INVALID_COMPOSITE,
                     RatingsBase = 0,
                     InsiderBonus = 0,
                     HoldingBonus = 0,
