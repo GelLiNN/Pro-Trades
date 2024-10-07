@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using PT.Middleware;
 using PT.Models.RequestModels;
 using PT.Services;
@@ -82,6 +82,24 @@ namespace PT.Controllers
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
                 if (companyScore != null && companyScore.CompositeRank == "PRIME")
+                {
+                    cachedPrimes.Add(companyScore);
+                }
+            }
+            return cachedPrimes;
+        }
+
+        // Endpoint for getting goods
+        [HttpGet("api/search/GetCachedGoods")]
+        public List<CompositeScoreResult> GetCachedGoodsYF()
+        {
+            List<CompositeScoreResult> cachedPrimes = new List<CompositeScoreResult>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
+                if (companyScore != null && companyScore.CompositeRank == "GOOD")
                 {
                     cachedPrimes.Add(companyScore);
                 }

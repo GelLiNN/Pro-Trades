@@ -29,7 +29,8 @@ namespace PT
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly int DEFAULT_HISTORY_DAYS = 375;
         public static readonly decimal DEFAULT_VOLUME_USD_DISQUALIFYING_LIMIT = 1000000.0M;
-        public static readonly int INVALID_COMPOSITE = -1;
+        public static readonly int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
+        public static readonly int SIGNAL_CONSTANT = 5; // Min 1, Max 10 depending on overall market conditions (bullish 1, bearish 10)
 
         public static readonly string RECOVER_PASSWORD_EMAIL_TITLE = "Pro-Trades: Recover password";
         public static readonly string RECOVER_PASSWORD_EMAIL_BODY = "Hello {0}, here's your one time passcode: {1}";

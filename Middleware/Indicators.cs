@@ -1506,7 +1506,7 @@ namespace PT.Middleware
                 {
                     timeScaledBonus = bonus * 2;
                 }
-                timeScaledBonus += 3;
+                timeScaledBonus += Constants.SIGNAL_CONSTANT;
             }
             return timeScaledBonus;
         }
@@ -1540,7 +1540,7 @@ namespace PT.Middleware
                 {
                     timeScaledPenalty = penalty * 2;
                 }
-                timeScaledPenalty += 3;
+                timeScaledPenalty += Constants.SIGNAL_CONSTANT;
             }
             return (-1 * timeScaledPenalty);
         }
