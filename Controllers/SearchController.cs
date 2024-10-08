@@ -72,7 +72,7 @@ namespace PT.Controllers
         }
 
         // Endpoint for getting primes
-        [HttpGet("api/search/GetCachedPrimes")]
+        [HttpGet("api/search/GetPrimes")]
         public List<CompositeScoreResult> GetCachedPrimesYF()
         {
             List<CompositeScoreResult> cachedPrimes = new List<CompositeScoreResult>();
@@ -90,10 +90,10 @@ namespace PT.Controllers
         }
 
         // Endpoint for getting goods
-        [HttpGet("api/search/GetCachedGoods")]
+        [HttpGet("api/search/GetGoods")]
         public List<CompositeScoreResult> GetCachedGoodsYF()
         {
-            List<CompositeScoreResult> cachedPrimes = new List<CompositeScoreResult>();
+            List<CompositeScoreResult> cachedGoods = new List<CompositeScoreResult>();
 
             HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
             foreach (string cacheKey in cachedSymbols)
@@ -101,10 +101,101 @@ namespace PT.Controllers
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
                 if (companyScore != null && companyScore.CompositeRank == "GOOD")
                 {
-                    cachedPrimes.Add(companyScore);
+                    cachedGoods.Add(companyScore);
                 }
             }
-            return cachedPrimes;
+            return cachedGoods;
+        }
+
+        // Endpoint for getting top 20 predictions
+        [HttpGet("api/search/GetTopTwenty")]
+        public List<CompositeScoreResult> GetTopTwentyYF()
+        {
+            List<CompositeScoreResult> cachedTopTwenty = new List<CompositeScoreResult>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
+                if (companyScore != null && companyScore.CompositeRank == "PRIME")
+                {
+                    cachedTopTwenty.Add(companyScore);
+                }
+                else if (companyScore != null && companyScore.CompositeRank == "GOOD")
+                {
+                    cachedTopTwenty.Add(companyScore);
+                }
+            }
+            cachedTopTwenty = cachedTopTwenty.OrderByDescending(x => x.CompositeScoreValue).ToList();
+            cachedTopTwenty = cachedTopTwenty.Take(20).ToList();
+            return cachedTopTwenty;
+        }
+
+        // Endpoint for getting top 20 clean predictions without invalid hot swaps
+        [HttpGet("api/search/GetTopTwentyClean")]
+        public List<CompositeScoreResult> GetTopTwentyCleanYF()
+        {
+            List<CompositeScoreResult> cachedTopTwentyClean = new List<CompositeScoreResult>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
+                if (companyScore != null && companyScore.CompositeRank == "PRIME" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
+                    && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
+                {
+                    cachedTopTwentyClean.Add(companyScore);
+                }
+                else if (companyScore != null && companyScore.CompositeRank == "GOOD" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
+                    && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
+                {
+                    cachedTopTwentyClean.Add(companyScore);
+                }
+            }
+            cachedTopTwentyClean = cachedTopTwentyClean.OrderByDescending(x => x.CompositeScoreValue).ToList();
+            cachedTopTwentyClean = cachedTopTwentyClean.Take(20).ToList();
+            return cachedTopTwentyClean;
+        }
+
+        // Endpoint for getting bottom 20 predictions
+        [HttpGet("api/search/GetBottomTwenty")]
+        public List<CompositeScoreResult> GetBottomTwentyYF()
+        {
+            List<CompositeScoreResult> cachedBottomTwenty = new List<CompositeScoreResult>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
+                if (companyScore != null && companyScore.CompositeRank == "BAD")
+                {
+                    cachedBottomTwenty.Add(companyScore);
+                }
+            }
+            cachedBottomTwenty = cachedBottomTwenty.OrderBy(x => x.CompositeScoreValue).ToList();
+            cachedBottomTwenty = cachedBottomTwenty.Take(20).ToList();
+            return cachedBottomTwenty;
+        }
+
+        // Endpoint for getting bottom 20 clean predictions without invalid hot swaps
+        [HttpGet("api/search/GetBottomTwentyClean")]
+        public List<CompositeScoreResult> GetBottomTwentyCleanYF()
+        {
+            List<CompositeScoreResult> cachedBottomTwenty = new List<CompositeScoreResult>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
+                if (companyScore != null && companyScore.CompositeRank == "BAD" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
+                    && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
+                {
+                    cachedBottomTwenty.Add(companyScore);
+                }
+            }
+            cachedBottomTwenty = cachedBottomTwenty.OrderBy(x => x.CompositeScoreValue).ToList();
+            cachedBottomTwenty = cachedBottomTwenty.Take(20).ToList();
+            return cachedBottomTwenty;
         }
 
         /*

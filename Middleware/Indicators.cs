@@ -86,7 +86,12 @@ namespace PT.Middleware
             if (hr.RatingsComposite == Constants.INVALID_COMPOSITE)
             {
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
-                    bbandsComposite + sr.ShortInterestCompositeScore + fr.FundamentalsComposite) / 7;
+                    sr.ShortInterestCompositeScore + fr.FundamentalsComposite + bbandsComposite) / 7;
+            }
+            else if (fr.FundamentalsComposite == Constants.INVALID_COMPOSITE)
+            {
+                compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
+                    sr.ShortInterestCompositeScore + bbandsComposite + hr.RatingsComposite) / 7;
             }
             else if (bbandsComposite > obvComposite)
             {
@@ -404,10 +409,11 @@ namespace PT.Middleware
             }
             catch (Exception e)
             {
-                Debug.WriteLine("EXCEPTION CAUGHT: Indicators.cs GetFundamentals for symbol " + symbol + ", message: " + e.Message);
+                string msg = $"Indicators.cs GetFundamentals for symbol {symbol}, message: {e.Message}";
+                Debug.WriteLine($"EXCEPTION CAUGHT: {msg}");
                 return new FundamentalsResult
                 {
-                    FundamentalsComposite = 50.0M, //Pity Points for exceptions getting data
+                    FundamentalsComposite = Constants.INVALID_COMPOSITE,
                     VolumeUSD = 0.0M,
                     AverageVolumeUSD = 0.0M,
                     VolumeSlope = 0.0M,
@@ -418,7 +424,7 @@ namespace PT.Middleware
                     GrowthPE = 0.0M,
                     HasDividends = false,
                     IsBlacklisted = false,
-                    Message = e.Message
+                    Message = msg
                 };
             }
         }
@@ -856,11 +862,14 @@ namespace PT.Middleware
             Queue<decimal> aroonOscillatorYList = new Queue<decimal>();
 
             int daysCalculated = 0;
+            int aroonPositiveDays = 0;
             decimal aroonUpTotal = 0;
             decimal aroonDownTotal = 0;
             int daysSinceSignal = -1;
             bool aroonHasBuySignal = false;
             bool aroonHasSellSignal = false;
+            bool aroonHasRecentPositivityMinor = false;
+            bool aroonHasRecentPositivityMajor = false;
 
             for (int i = results.Count - daysToCalculate; i < results.Count; i++)
             {
@@ -868,6 +877,7 @@ namespace PT.Middleware
                 {
                     AroonResult result = results[i];
                     AroonResult prevResult = results[i - 1];
+                    AroonResult prevPrevResult = results[i - 2];
 
                     string aroonDate = result.Date.ToString("yyyy-MM-dd");
                     if (!dates.Contains(aroonDate))
@@ -886,9 +896,14 @@ namespace PT.Middleware
                         decimal prevAroonDownVal = prevResult.AroonDown != null ? (decimal)prevResult.AroonDown : 0.0M;
                         decimal prevAroonOsc = prevAroonUpVal - prevAroonDownVal;
 
+                        decimal prevPrevAroonUpVal = prevPrevResult.AroonUp != null ? (decimal)prevPrevResult.AroonUp : 0.0M;
+                        decimal prevPrevAroonDownVal = prevPrevResult.AroonDown != null ? (decimal)prevPrevResult.AroonDown : 0.0M;
+                        decimal prevPrevAroonOsc = prevPrevAroonUpVal - prevPrevAroonDownVal;
+
                         //Look for buy and sell signals
                         bool aroonCurrentIsNegative = curAroonOsc < 0;
                         bool aroonPrevIsNegative = prevAroonOsc < 0;
+                        bool aroonPrevPrevIsNegative = prevPrevAroonOsc < 0;
                         if (!aroonCurrentIsNegative && aroonPrevIsNegative)
                         {
                             //Cancel the previous sell signal if buy signal is most recent
@@ -902,6 +917,32 @@ namespace PT.Middleware
                             aroonHasSellSignal = true;
                             aroonHasBuySignal = false;
                             daysSinceSignal = daysToCalculate - daysCalculated;
+                        }
+
+                        //Look for recent positivity minor
+                        if (!aroonCurrentIsNegative && !aroonPrevIsNegative)
+                        {
+                            aroonHasRecentPositivityMinor = true;
+                        }
+                        else if (aroonCurrentIsNegative && aroonPrevIsNegative)
+                        {
+                            aroonHasRecentPositivityMinor = false;
+                        }
+
+                        //Look for recent positivity major
+                        if (!aroonCurrentIsNegative && !aroonPrevIsNegative && !aroonPrevPrevIsNegative)
+                        {
+                            aroonHasRecentPositivityMajor = true;
+                        }
+                        else if (aroonCurrentIsNegative && aroonPrevIsNegative && aroonPrevPrevIsNegative)
+                        {
+                            aroonHasRecentPositivityMajor = false;
+                        }
+
+                        //Count positive days
+                        if (!aroonCurrentIsNegative)
+                        {
+                            aroonPositiveDays++;
                         }
 
                         dates.Add(aroonDate);
@@ -937,13 +978,22 @@ namespace PT.Middleware
             decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
 
             //Whether aroonAvgUp or aroonAvgDown is higher, that one will be more than 100 percent of the other
-            decimal baseBullResult = Math.Min(100 - percentDiffDown, 50); //base bull result caps at 50
+            decimal baseBullResult = Math.Min(100 - percentDiffDown, 40); //base bull result caps at 40
             decimal baseBearResult = Math.Min(percentDiffUp, 20); //base bear result caps at 20
             decimal baseValue = (aroonAvgUp > aroonAvgDown) ? baseBullResult : baseBearResult;
+            baseValue += aroonPositiveDays + bonus;
+
+            //Get recent positivity modifiers
+            decimal recentPositivityMinorModifier = aroonHasRecentPositivityMinor ? 2 * bonus : penalty;
+            decimal recentPositivityMajorModifier = aroonHasRecentPositivityMajor ? 3 * bonus : 2 * penalty;
 
             //Get slope modifiers
             decimal oscilatorSlopeModifier = (oscillatorSlope > 1.0M) ? oscillatorSlope + (2 * bonus) : penalty * 3;
+            oscilatorSlopeModifier = oscilatorSlopeModifier > 20 ? Math.Max(20, oscilatorSlopeModifier) : oscilatorSlopeModifier;
+
             decimal downSlopeModifier = (downSlope < 0) ? (-1 * downSlope) + (2 * bonus) : (-1 * downSlope) + (penalty * 2);
+            downSlopeModifier = downSlopeModifier > 20 ? Math.Max(20, downSlopeModifier) : downSlopeModifier;
+            downSlopeModifier = downSlopeModifier < -20 ? Math.Max(-20, downSlopeModifier) : downSlopeModifier;
 
             //Get time-scaled buy and sell signal bonus and penalty
             decimal buySignalBonus = GetTimeScaledBuySignalBonus(aroonHasBuySignal, bonus, daysSinceSignal);
@@ -965,6 +1015,8 @@ namespace PT.Middleware
             //if AROON avg up < AROON avg down, start score with 100 - (up as % of down)
             decimal composite = 0;
             composite += baseValue;
+            composite += recentPositivityMinorModifier;
+            composite += recentPositivityMajorModifier;
             composite += oscilatorSlopeModifier;
             composite += downSlopeModifier;
             composite = Math.Min(composite, 80);
