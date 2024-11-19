@@ -70,9 +70,9 @@ namespace PT.Middleware
                 rank = "BAD";
             else if (scoreResult.CompositeScoreValue >= 60 && scoreResult.CompositeScoreValue < 70)
                 rank = "FAIR";
-            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < 84)
+            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < 83)
                 rank = "GOOD";
-            else if (scoreResult.CompositeScoreValue >= 84)
+            else if (scoreResult.CompositeScoreValue >= 83)
                 rank = "PRIME";
             scoreResult.CompositeRank = rank;
 
