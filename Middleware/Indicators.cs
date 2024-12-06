@@ -10,6 +10,7 @@ namespace PT.Middleware
     //https://www.codeproject.com/Articles/15047/Creating-a-Mechanical-Trading-System-Part-1-Techni
     public static class Indicators
     {
+        //TODO: add version numbers 1.0 in comments to each Indicator Composite Function
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote, RequestManager rm)
         {
             Stopwatch sw = Stopwatch.StartNew();
@@ -79,6 +80,7 @@ namespace PT.Middleware
             return scoreResult;
         }
 
+        //TODO: add hotswap type result, use constants/enums, and return a CompositeScoreWithHotSwaps object
         private static decimal GetCompositeScoreFinalValue(FundamentalsResult fr, HedgeFundsResult hr, ShortInterestResult sr,
             decimal adxComposite, decimal obvComposite, decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
         {
@@ -532,7 +534,7 @@ namespace PT.Middleware
 
             //Add time-scaled bonus and penalty for buy and sell signals
             decimal buySignalBonus = GetTimeScaledBuySignalBonus(hasBuySignal, bonus, daysSinceSignal);
-            decimal sellSignalPenalty = GetTimeScaledSellSignalPenalty(hasSellSignal, penalty, daysSinceSignal);
+            decimal sellSignalPenalty = GetTimeScaledSellSignalPenalty(hasSellSignal, bonus, daysSinceSignal);
 
             //Add bonus for ADX average above 25 per investopedia recommendation
             decimal averageBuySignalBonus = adxAvg > 25 && hasBuySignal ? bonus * 2 : 0;
@@ -904,14 +906,17 @@ namespace PT.Middleware
                         bool aroonCurrentIsNegative = curAroonOsc < 0;
                         bool aroonPrevIsNegative = prevAroonOsc < 0;
                         bool aroonPrevPrevIsNegative = prevPrevAroonOsc < 0;
-                        if (!aroonCurrentIsNegative && aroonPrevIsNegative)
+                        bool aroonWithinBounds = AroonUpDownWithinBounds(curAroonUpVal, prevAroonUpVal,
+                            curAroonDownVal, prevAroonDownVal);
+
+                        if (!aroonCurrentIsNegative && aroonPrevIsNegative && aroonWithinBounds)
                         {
                             //Cancel the previous sell signal if buy signal is most recent
                             aroonHasBuySignal = true;
                             aroonHasSellSignal = false;
                             daysSinceSignal = daysToCalculate - daysCalculated;
                         }
-                        else if (aroonCurrentIsNegative && !aroonPrevIsNegative)
+                        else if (aroonCurrentIsNegative && !aroonPrevIsNegative && aroonWithinBounds)
                         {
                             //Cancel the previous buy signal if sell signal is most recent
                             aroonHasSellSignal = true;
@@ -978,14 +983,17 @@ namespace PT.Middleware
             decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
 
             //Whether aroonAvgUp or aroonAvgDown is higher, that one will be more than 100 percent of the other
-            decimal baseBullResult = Math.Min(100 - percentDiffDown, 40); //base bull result caps at 40
-            decimal baseBearResult = Math.Min(percentDiffUp, 20); //base bear result caps at 20
+            decimal baseBullResult = Math.Min(100 - percentDiffDown, 45); //base bull result caps at 45
+            decimal baseBearResult = Math.Min(percentDiffUp, 30); //base bear result caps at 30
             decimal baseValue = (aroonAvgUp > aroonAvgDown) ? baseBullResult : baseBearResult;
             baseValue += aroonPositiveDays + bonus;
 
             //Get recent positivity modifiers
-            decimal recentPositivityMinorModifier = aroonHasRecentPositivityMinor ? 2 * bonus : penalty;
-            decimal recentPositivityMajorModifier = aroonHasRecentPositivityMajor ? 3 * bonus : 2 * penalty;
+            decimal recentPositivityMinorModifier = aroonHasRecentPositivityMinor ? bonus : 0;
+            decimal recentPositivityMajorModifier = aroonHasRecentPositivityMajor ? 2 * bonus : 0;
+
+            //Get aroon average modifier
+            decimal aroonAvgModifier = aroonAvgUp > aroonAvgDown ? bonus * 2 : penalty * 2;
 
             //Get slope modifiers
             decimal oscilatorSlopeModifier = (oscillatorSlope > 1.0M) ? oscillatorSlope + (2 * bonus) : penalty * 3;
@@ -1004,11 +1012,7 @@ namespace PT.Middleware
 
             //Add bull major bonus if last AROON UP >= 70 per investopedia recommendation
             //This is the same as when last AROON OSC >= 50
-            decimal bullMajorBonus = (aroonAvgUp > aroonAvgDown && lastOscValue >= 50) ? bonus * 3: 0;
-
-            //Add bull minor bonus if last AROON UP > last AROON DOWN per investopedia recommendation
-            //This is the same as when last AROON OSC > 0
-            decimal bullMinorBonus = (aroonAvgDown > aroonAvgUp && lastOscValue > 0) ? bonus : 0;
+            decimal bullMajorBonus = (lastOscValue >= 50) ? bonus * 2: 0;
 
             //calculate composite score based on the following values and weighted multipliers
             //if AROON avg up > AROON avg down, start score with 100 - (down as % of up)
@@ -1017,16 +1021,25 @@ namespace PT.Middleware
             composite += baseValue;
             composite += recentPositivityMinorModifier;
             composite += recentPositivityMajorModifier;
+            composite += aroonAvgModifier;
             composite += oscilatorSlopeModifier;
             composite += downSlopeModifier;
             composite = Math.Min(composite, 80);
             composite += bullMajorBonus;
-            composite += bullMinorBonus;
             composite += buySignalBonus;
             composite += composite > 50 ? sellSignalPenalty : 0;
 
             composite = Math.Max(composite, 0); //limit AROON composite at 0, no negatives
             return Math.Min(composite, 115); //cap AROON composite at 115, extra weight
+        }
+
+        private static bool AroonUpDownWithinBounds(decimal curAroonUpVal, decimal prevAroonUpVal, decimal curAroonDownVal, decimal prevAroonDownVal)
+        {
+            decimal aroonUpMidpoint = (curAroonUpVal + prevAroonUpVal) / 2.0M;
+            decimal aroonDownMidpoint = (curAroonDownVal + prevAroonDownVal) / 2.0M;
+            decimal aroonCrossingPoint = (aroonUpMidpoint + aroonDownMidpoint) / 2.0M;
+
+            return (aroonCrossingPoint >= 25 && aroonCrossingPoint <= 75);
         }
 
         public static decimal GetBBANDSComposite(IEnumerable<BollingerBandsResult> resultSet, List<Skender.Stock.Indicators.Quote> supplement, int daysToCalculate)
@@ -1536,29 +1549,28 @@ namespace PT.Middleware
             {
                 if (daysSinceSignal == 1 || daysSinceSignal == 2)
                 {
-                    timeScaledBonus = bonus * 7;
+                    timeScaledBonus = bonus * 8 + Constants.SIGNAL_CONSTANT;
                 }
                 else if (daysSinceSignal == 3)
                 {
-                    timeScaledBonus = bonus * 6;
+                    timeScaledBonus = bonus * 7 + Constants.SIGNAL_CONSTANT;
                 }
                 else if (daysSinceSignal == 4)
                 {
-                    timeScaledBonus = bonus * 5;
+                    timeScaledBonus = bonus * 5 + Constants.SIGNAL_CONSTANT;
                 }
                 else if (daysSinceSignal == 5)
                 {
-                    timeScaledBonus = bonus * 4;
+                    timeScaledBonus = bonus * 4 + Constants.SIGNAL_CONSTANT;
                 }
                 else if (daysSinceSignal == 6)
                 {
-                    timeScaledBonus = bonus * 3;
+                    timeScaledBonus = bonus * 3 + 1;
                 }
                 else if (daysSinceSignal == 7)
                 {
-                    timeScaledBonus = bonus * 2;
+                    timeScaledBonus = bonus * 2 + 1;
                 }
-                timeScaledBonus += Constants.SIGNAL_CONSTANT;
             }
             return timeScaledBonus;
         }
@@ -1570,29 +1582,28 @@ namespace PT.Middleware
             {
                 if (daysSinceSignal == 1 || daysSinceSignal == 2)
                 {
-                    timeScaledPenalty = penalty * 7;
+                    timeScaledPenalty = penalty * 7 + Constants.SIGNAL_CONSTANT;
                 }
                 else if (daysSinceSignal == 3)
                 {
-                    timeScaledPenalty = penalty * 6;
+                    timeScaledPenalty = penalty * 6 + Constants.SIGNAL_CONSTANT;
                 }
                 else if (daysSinceSignal == 4)
                 {
-                    timeScaledPenalty = penalty * 5;
+                    timeScaledPenalty = penalty * 5 + Constants.SIGNAL_CONSTANT;
                 }
                 else if (daysSinceSignal == 5)
                 {
-                    timeScaledPenalty = penalty * 4;
+                    timeScaledPenalty = penalty * 4 + Constants.SIGNAL_CONSTANT;
                 }
                 else if (daysSinceSignal == 6)
                 {
-                    timeScaledPenalty = penalty * 3;
+                    timeScaledPenalty = penalty * 3 + 1;
                 }
                 else if (daysSinceSignal == 7)
                 {
-                    timeScaledPenalty = penalty * 2;
+                    timeScaledPenalty = penalty * 2 + 1;
                 }
-                timeScaledPenalty += Constants.SIGNAL_CONSTANT;
             }
             return (-1 * timeScaledPenalty);
         }

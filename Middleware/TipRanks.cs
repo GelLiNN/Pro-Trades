@@ -14,9 +14,17 @@ namespace PT.Middleware
         // I obtained the context for these IDs by comparing the TipRanks API data to the listed insider trades on their site
         // Use them in the GetData method to decipher the insider buys and sells
         private static readonly int InsiderInformativeBuyTypeId = 2;
-        private static readonly int InsiderInformativeSellTypeId = 7;
         private static readonly int InsiderNonInformativeBuyTypeId = 4;
+        private static readonly int InsiderOtherBuyTypeId_1 = 50;
+        private static readonly int InsiderInformativeSellTypeId = 7;
         private static readonly int InsiderNonInformativeSellTypeId = 51;
+        private static readonly int InsiderOtherSellTypeId_1 = 3;
+        // Seems like there's way too many of those though and actions are better
+
+        // Found the meanings of these actions by visiting Insider.link URL from the HedgeFundsResult object
+        // i.e. https://www.sec.gov/Archives/edgar/data/1486056/000112760223026226/xslF345X03/form4.xml
+        public static HashSet<int> InsiderBuyActions = new HashSet<int> { 2, 3 };
+        public static HashSet<int> InsiderSellActions = new HashSet<int> { 1, 4 };
 
         public static HedgeFundsResult GetTipRanksResult(string symbol, RequestManager rm)
         {
@@ -47,7 +55,7 @@ namespace PT.Middleware
                     .Where(x => DateTime.Compare(x.date, startDate) > 0)
                     .ToList();
 
-                // Average hedge fun ratings will form score base
+                // Average hedge fund ratings will form score base
                 decimal averageRating = GetAverageRating(ratings, trResponse);
                 decimal ratingsBase = (averageRating / 6.5M) * 100; // Get score using the average rating as a percentage of (max rating + 1.5)
 
@@ -283,12 +291,6 @@ namespace PT.Middleware
 
         private static decimal GetInsiderBonus(List<Insider> insiders)
         {
-            // Found the meanings of these actions by visiting Insider.link URL
-            // i.e. https://www.sec.gov/Archives/edgar/data/1486056/000112760223026226/xslF345X03/form4.xml
-            HashSet<int> insiderBuyActions = new HashSet<int> { 2, 3 };
-            HashSet<int> insiderSellActions = new HashSet<int> { 1, 4 };
-
-
             // Add insider bonuses, 3 points per insider if more than 1mil holding
             // Add insider bonuses, 2 points per insider if more than 500k holding
             // Add insider bonuses, 1 points per insider if less than 500k holding
@@ -299,8 +301,8 @@ namespace PT.Middleware
                 decimal amount = Convert.ToDecimal(insider.amount);
 
                 int curAction = Convert.ToInt32(insider.action);
-                bool isBuy = insiderBuyActions.Contains(curAction);
-                bool isSell = insiderSellActions.Contains(curAction);
+                bool isBuy = InsiderBuyActions.Contains(curAction);
+                bool isSell = InsiderSellActions.Contains(curAction);
 
                 // Penalty cases
                 if (isSell && amount < 500000)
