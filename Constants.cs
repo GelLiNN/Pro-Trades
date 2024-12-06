@@ -30,7 +30,7 @@ namespace PT
         public static readonly int DEFAULT_HISTORY_DAYS = 375;
         public static readonly decimal DEFAULT_VOLUME_USD_DISQUALIFYING_LIMIT = 1000000.0M;
         public static readonly int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
-        public static readonly int SIGNAL_CONSTANT = 3; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
+        public static readonly decimal SIGNAL_CONSTANT = 3.5M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
 
         public static readonly string RECOVER_PASSWORD_EMAIL_TITLE = "Pro-Trades: Recover password";
         public static readonly string RECOVER_PASSWORD_EMAIL_BODY = "Hello {0}, here's your one time passcode: {1}";
