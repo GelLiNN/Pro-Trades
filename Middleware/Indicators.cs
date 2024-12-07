@@ -1098,27 +1098,24 @@ namespace PT.Middleware
             decimal middleSlopeMultiplier = GetSlopeMultiplier(middleSlope);
             decimal upperSlopeMultiplier = GetSlopeMultiplier(upperSlope);
 
+            //if there is more divergence than convergence in the last N days and there's positive price movement
+            //if the current price is approaching the lower band and there's positive prive volume action
+            //measure arbitrary base value as the percentage difference between the current price and the upper band
+
+            //if there's more convergence than divergence we have low volatility, we don't want to subtract from the score
+            //1 negative day when the price is approaching the upper band would probably generate a good enough sell signal
+            //measure arbitrary base value minus the percentage difference between the current price and the lower band
+            decimal breakoutSlopeCutoff = 0.15M;
+            bool hasBreakout = differenceSlope >= breakoutSlopeCutoff;
+
             // look for buy and sell signals
             bool bbandsHasMedBuySignal = false;
             bool bbandsHasMaxBuySignal = false;
             bool bbandsHasMedSellSignal = false;
             bool bbandsHasMaxSellSignal = false;
 
-            //if there is more divergence than convergence in the last N days and there's positive price movement
-            //if the current price is approaching the lower band and there's positive prive volume action
-            //measure arbitrary base value minus the percentage difference between the current price and the upper band
-
-            //if there's more convergence than divergence we have low volatility, we don't want to subtract from the score
-            //1 negative day when the price is approaching the upper band would probably generate a good enough sell signal
-            //measure arbitrary base value minus the percentage difference between the current price and the lower band
-
-            //New thoughts, if middle slope is positive and difference slope > cutoff, we have a buy signal?
-
             List<Skender.Stock.Indicators.Quote> ochlvList = supplement.ToList();
-            decimal breakoutSlopeCutoff = 0.15M;
             List<decimal> prices = new List<decimal>();
-            bool hasBreakout = differenceSlope >= breakoutSlopeCutoff;
-
             bool crossUpperBand = false;
             bool crossLowerBand = false;
             bool crossMiddleBand = false;
@@ -1149,6 +1146,8 @@ namespace PT.Middleware
             bool recentPositivity = prices[prices.Count - 1] > prices[prices.Count - 2]
                 && prices[prices.Count - 2] > prices[prices.Count - 3];
 
+            // Apply minor and major ranking to bbands sell sinals
+            // Different from the other time-scaled buy and sell signals
             decimal bbandsBonus = 0;
 
             // Cross lower band and have positive breakout, buy signal, max weight
@@ -1176,32 +1175,38 @@ namespace PT.Middleware
                 bbandsBonus -= (decimal)Math.PI * 7;
                 bbandsHasMaxSellSignal = true;
             }
+            decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
+            decimal bonus = Convert.ToDecimal(Math.PI);
 
-            // Base value from percentage diff from the lower band
+            // Base value from percentage diff from the lower band if below middle band (rebound conditions)
+            // Base value from percentage diff from the upper band if above middle band (bullish conditions)
             decimal baseValue = 0;
-            decimal percentageDiff = (prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100;
-            if (percentageDiff <= 50)
+            if (prices[prices.Count - 1] > middleYList[middleYList.Count - 1])
             {
-                baseValue = (100 - percentageDiff) / 2 + (decimal)Math.PI;
+                decimal percentageDiffBullish = (upperYList[upperYList.Count - 1] - prices[prices.Count - 1]) / prices[prices.Count - 1] * 100;
+                baseValue = percentageDiffBullish > 0 ? (100 - percentageDiffBullish) / 2 : 0;
             }
             else
             {
-                baseValue = (decimal)Math.PI * 3;
+                decimal percentageDiffRebound = (prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100;
+                baseValue = percentageDiffRebound > 0 ? (100 - percentageDiffRebound) / 2 + bonus : bonus * 5; // Reward for price being below 2.5 std devs
             }
-            baseValue = Math.Min(baseValue, 40);
-            baseValue += baseValue == 40 ? (decimal)Math.PI : 0;
+            // Cap base value at 42 with small bonus for max
+            baseValue = Math.Min(baseValue, 42);
+            baseValue += baseValue == 42 ? bonus : 0;
 
-            decimal priceSlopeBonus = priceSlope > 0.1M ? (decimal)Math.PI * 3 : 0;
+            // Bonus for bullish consolidation of the bands
+            decimal consolidationBonus = lowerSlope > 0 && upperSlope < 0 && priceSlope > 0.05M ? bonus * 3 : 0;
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
             composite += baseValue;
-            composite += priceSlopeBonus;
-            composite += (lowerSlope > 0) ? (lowerSlope * lowerSlopeMultiplier) + 10 : -10; //Penalty
-            composite += (middleSlope > 0) ? (middleSlope * middleSlopeMultiplier) + 5 : 0;
-            composite += (upperSlope > 0) ? (upperSlope * upperSlopeMultiplier) + 5 : 0;
+            composite += consolidationBonus;
+            composite += (lowerSlope > 0) ? (lowerSlope * lowerSlopeMultiplier) + (bonus * 3) : 0;
+            composite += (middleSlope > 0) ? (middleSlope * middleSlopeMultiplier) + (bonus * 4) : (penalty * 2);
+            composite += (upperSlope > 0 && recentPositivity) ? (bonus * 3) : 0;
             composite = Math.Min(composite, 80);
-            composite += composite > 60 && bbandsBonus < 0 ? bbandsBonus : 0;
+            composite += composite > 50 && bbandsBonus < 0 ? bbandsBonus : 0;
             composite += bbandsBonus > 0 ? bbandsBonus : 0;
 
             composite = Math.Min(composite, 100); // cap BBANDS composite at 100, no extra weight
