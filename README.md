@@ -1,6 +1,6 @@
 # Pro-Trades
 
-Microsoft ASP.NET CORE C# implementation of Pro-Trades Investment Guidance.
+Microsoft .NET 8.0 C# implementation of Pro-Trades Investment Guidance.
 
 ```bash
 # docker psql setup
