@@ -11,7 +11,7 @@ namespace PT.Middleware
     public static class Indicators
     {
         //TODO: add version numbers 1.0 in comments to each Indicator Composite Function
-        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Security quote, RequestManager rm)
+        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Snapshot quote, RequestManager rm)
         {
             Stopwatch sw = Stopwatch.StartNew();
 
@@ -44,7 +44,7 @@ namespace PT.Middleware
                 Name = quote.LongName,
                 Exchange = quote.FullExchangeName,
                 DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks",
-                PriceL = quote.RegularMarketPrice.HasValue ? quote.RegularMarketPrice.Value : 0,
+                PriceL = quote.RegularMarketPrice,
                 PriceVW = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 1],
                 PriceHistoryDays = history.Count(),
                 ADXComposite = adxCompositeScore,
@@ -230,7 +230,7 @@ namespace PT.Middleware
 
         // Fundamentals (advanced stats, volume, price, earnings and filings up-to-date)
         // RELIES completely on unofficial yahoo finance API for now
-        public static FundamentalsResult GetFundamentalsResult(string symbol, Security quote, AlpacaHistory history)
+        public static FundamentalsResult GetFundamentalsResult(string symbol, Snapshot quote, AlpacaHistory history)
         {
             try
             {
@@ -391,7 +391,7 @@ namespace PT.Middleware
                 // disqualify if less than USD volume multiplicative from constants
                 var disqualifyingLimit = Constants.DEFAULT_VOLUME_USD_DISQUALIFYING_LIMIT;
                 bool volumeDisqualified = (history.VolumeUSD < disqualifyingLimit || history.AverageVolumeUSD < disqualifyingLimit);
-                bool hasDivs = quote.DividendRate != null && quote.DividendYield != null;
+                bool hasDivs = quote.DividendRate > 0 && quote.DividendYield > 0;
 
                 return new FundamentalsResult
                 {
@@ -1506,11 +1506,11 @@ namespace PT.Middleware
             return peBonus;
         }
 
-        private static decimal GetDividendBonus(Security quote)
+        private static decimal GetDividendBonus(Snapshot quote)
         {
             decimal divBonus = 0;
-            bool hasDivs = quote.DividendRate != null;
-            bool hasYield = quote.DividendYield != null;
+            bool hasDivs = quote.DividendRate > 0;
+            bool hasYield = quote.DividendYield > 0;
             if (hasDivs)
             {
                 decimal divRate = (decimal)quote.DividendRate;

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Primitives;
@@ -96,7 +96,7 @@ namespace PT.Services
 
                 // Remove before updating and re-adding
                 RemoveCachedSymbol(cacheKey);
-                YahooQuotesApi.Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
+                YahooQuotesApi.Snapshot quote = YahooFinance.GetQuoteAsync(symbol).Result;
                 CompositeScoreResult result = Indicators.GetCompositeScoreResult(symbol, quote, _rm);
 
                 // Save score to cache

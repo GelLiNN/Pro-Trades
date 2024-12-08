@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using NodaTime;
 using PT.Models.RequestModels;
 using PT.Services;
@@ -19,7 +20,7 @@ namespace PT.Middleware
             try
             {
                 // Yahoo Quote
-                Security quote = GetQuoteAsync(symbol).Result;
+                Snapshot quote = GetQuoteAsync(symbol).Result;
                 if (quote != null)
                 {
                     // parse quote data into company stat
@@ -98,19 +99,19 @@ namespace PT.Middleware
         }
 
         // With YahooQuotesApi
-        public static async Task<Security> GetQuoteAsync(string symbol)
+        public static async Task<Snapshot> GetQuoteAsync(string symbol)
         {
             // You could query multiple symbols with multiple fields through the following steps:
             YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-            Dictionary<string, Security?> securities = await yahooQuotes.GetAsync(new[] { symbol });
+            Dictionary<string, Snapshot?> securities = await yahooQuotes.GetSnapshotAsync(new[] { symbol });
 
-            Security security = securities[symbol] ?? throw new ArgumentException("Unknown symbol");
+            Snapshot security = securities[symbol] ?? throw new ArgumentException("Unknown symbol");
             return security;
         }
 
         // With YahooQuotesApi
-        public static async Task<List<PriceTick>> GetHistoryAsync(string symbol, int days)
+        public static async Task<List<Tick>> GetHistoryAsync(string symbol, int days)
         {
             // You should be able to query data from various markets including US, HK, TW
             // The timezone here may or may not impact accuracy
@@ -123,11 +124,11 @@ namespace PT.Middleware
                 .WithHistoryStartDate(zonedTimeInstant)
                 .Build();
 
-            Security security = await yahooQuotes.GetAsync(symbol, Histories.PriceHistory)
-                ?? throw new ArgumentException("Unknown symbol.");
+            Result<History> result = await yahooQuotes.GetHistoryAsync(symbol);
+            History history = result.Value;
 
-            var history = security.PriceHistory.Value.ToList();
-            return history;
+            ImmutableArray<Tick> ticks = history.Ticks;
+            return ticks.ToList();
         }
 
         public static async Task<CompaniesListYF> GetScreenedCompaniesAsync(CompaniesListYF allCompanies, string screenId)
@@ -152,7 +153,7 @@ namespace PT.Middleware
         }
 
         // Used internally for cache loading
-        public static CompositeScoreResult GetCompositeScoreInternal(string symbol, Security quote, RequestManager rm)
+        public static CompositeScoreResult GetCompositeScoreInternal(string symbol, Snapshot quote, RequestManager rm)
         {
             return Indicators.GetCompositeScoreResult(symbol, quote, rm);
         }

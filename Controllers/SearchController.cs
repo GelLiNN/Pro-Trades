@@ -33,7 +33,7 @@ namespace PT.Controllers
         public CompositeScoreResult GetCompositeScore(string symbol)
         {
             symbol = symbol.ToUpper();
-            YahooQuotesApi.Security quote = YahooFinance.GetQuoteAsync(symbol).Result;
+            YahooQuotesApi.Snapshot quote = YahooFinance.GetQuoteAsync(symbol).Result;
             return Indicators.GetCompositeScoreResult(symbol, quote, _rm);
         }
 
@@ -224,7 +224,7 @@ namespace PT.Controllers
          * Yahoo Finance related endpoints
          */
         [HttpGet("api/search/GetQuoteYF/{symbol}")]
-        public YahooQuotesApi.Security GetQuoteYF(string symbol)
+        public YahooQuotesApi.Snapshot GetQuoteYF(string symbol)
         {
             return YahooFinance.GetQuoteAsync(symbol).Result;
         }
