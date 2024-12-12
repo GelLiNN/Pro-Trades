@@ -45,7 +45,7 @@ namespace PT.Middleware
                 Exchange = quote.FullExchangeName,
                 DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks",
                 PriceL = quote.RegularMarketPrice,
-                PriceVW = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 1],
+                PriceVW = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 3],
                 PriceHistoryDays = history.Count(),
                 ADXComposite = adxCompositeScore,
                 OBVComposite = obvCompositeScore,
@@ -87,21 +87,25 @@ namespace PT.Middleware
             decimal compositeScoreFinal = 0;
             if (hr.RatingsComposite == Constants.INVALID_COMPOSITE)
             {
+                //HS4 - HEDGES NOT FOUND
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestCompositeScore + fr.FundamentalsComposite + bbandsComposite) / 7;
             }
             else if (fr.FundamentalsComposite == Constants.INVALID_COMPOSITE)
             {
+                //HS3 - FUNDAMENTALS NOT FOUND
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestCompositeScore + bbandsComposite + hr.RatingsComposite) / 7;
             }
             else if (bbandsComposite > obvComposite)
             {
+                //HS2 - BBANDS SWAP
                 compositeScoreFinal = (adxComposite + aroonComposite + bbandsComposite + macdComposite +
                     sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
             }
             else
             {
+                //HS1 - PURE FORM
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
             }
