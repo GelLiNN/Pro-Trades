@@ -45,7 +45,7 @@ namespace PT.Middleware
                 Exchange = quote.FullExchangeName,
                 DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks",
                 PriceL = quote.RegularMarketPrice,
-                PriceVW = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 3],
+                PriceVW = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 1],
                 PriceHistoryDays = history.Count(),
                 ADXComposite = adxCompositeScore,
                 OBVComposite = obvCompositeScore,
@@ -1130,57 +1130,58 @@ namespace PT.Middleware
                 prices.Add(curPrice);
                 bool hasPrevPrice = i - 1 >= 0;
 
-                if (hasPrevPrice && curPrice <= lowerYList[i] && prices[i - 1] > lowerYList[i - 1])
+                if (hasPrevPrice && curPrice >= lowerYList[i] && prices[i - 1] < lowerYList[i - 1])
                 {
                     crossLowerBand = true;
+                    crossUpperBand = false;
                 }
 
                 if (hasPrevPrice && curPrice >= middleYList[i] && prices[i - 1] < middleYList[i - 1])
                 {
                     crossMiddleBand = true;
+                    crossUpperBand = false;
                 }
 
                 if (hasPrevPrice && curPrice >= upperYList[i] && prices[i - 1] < upperYList[i - 1])
                 {
                     crossUpperBand = true;
+                    crossLowerBand = false;
                 }
             }
-            decimal priceSlope = GetSlope(bbandsXList, prices);
+            decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
+            decimal bonus = Convert.ToDecimal(Math.PI);
 
-            bool recentPositivity = prices[prices.Count - 1] > prices[prices.Count - 2]
-                && prices[prices.Count - 2] > prices[prices.Count - 3];
+            decimal priceSlope = GetSlope(bbandsXList, prices);
+            bool recentPositivity = prices[prices.Count - 1] > prices[prices.Count - 3];
 
             // Apply minor and major ranking to bbands sell sinals
             // Different from the other time-scaled buy and sell signals
             decimal bbandsBonus = 0;
-
             // Cross lower band and have positive breakout, buy signal, max weight
             if (crossLowerBand && recentPositivity && hasBreakout)
             {
-                bbandsBonus += (decimal)Math.PI * 7;
+                bbandsBonus += bonus * 8;
                 bbandsHasMaxBuySignal = true;
             }
             // Cross middle band and have positive breakout, buy signal, medium weight
             else if (crossMiddleBand && recentPositivity && hasBreakout)
             {
-                bbandsBonus += (decimal)Math.PI * 4;
+                bbandsBonus += bonus * 4;
                 bbandsHasMedBuySignal = true;
             }
 
             // Cross upper band and have positive breakout, sell signal, medium weight
             if (crossUpperBand && recentPositivity && hasBreakout)
             {
-                bbandsBonus -= (decimal)Math.PI * 4;
+                bbandsBonus -= bonus * 4;
                 bbandsHasMedSellSignal = true;
             }
             // Cross upper band and have negative breakout, sell signal, max weight
             else if (crossUpperBand && !recentPositivity && hasBreakout)
             {
-                bbandsBonus -= (decimal)Math.PI * 7;
+                bbandsBonus -= bonus * 8;
                 bbandsHasMaxSellSignal = true;
             }
-            decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
-            decimal bonus = Convert.ToDecimal(Math.PI);
 
             // Base value from percentage diff from the lower band if below middle band (rebound conditions)
             // Base value from percentage diff from the upper band if above middle band (bullish conditions)
@@ -1195,9 +1196,9 @@ namespace PT.Middleware
                 decimal percentageDiffRebound = (prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100;
                 baseValue = percentageDiffRebound > 0 ? (100 - percentageDiffRebound) / 2 + bonus : bonus * 5; // Reward for price being below 2.5 std devs
             }
-            // Cap base value at 42 with small bonus for max
-            baseValue = Math.Min(baseValue, 42);
-            baseValue += baseValue == 42 ? bonus : 0;
+            // Cap base value at 40 with small bonus for max
+            baseValue = Math.Min(baseValue, 40);
+            baseValue += baseValue == 40 ? bonus : 0;
 
             // Bonus for bullish consolidation of the bands
             decimal consolidationBonus = lowerSlope > 0 && upperSlope < 0 && priceSlope > 0.05M ? bonus * 3 : 0;
@@ -1209,7 +1210,7 @@ namespace PT.Middleware
             composite += (lowerSlope > 0) ? (lowerSlope * lowerSlopeMultiplier) + (bonus * 3) : 0;
             composite += (middleSlope > 0) ? (middleSlope * middleSlopeMultiplier) + (bonus * 4) : (penalty * 2);
             composite += (upperSlope > 0 && recentPositivity) ? (bonus * 3) : 0;
-            composite = Math.Min(composite, 80);
+            composite = Math.Min(composite, 75);
             composite += composite > 50 && bbandsBonus < 0 ? bbandsBonus : 0;
             composite += bbandsBonus > 0 ? bbandsBonus : 0;
 
