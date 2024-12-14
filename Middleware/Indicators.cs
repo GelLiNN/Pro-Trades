@@ -90,16 +90,23 @@ namespace PT.Middleware
             decimal compositeScoreFinal = 0;
             if (hr.RatingsComposite == Constants.INVALID_COMPOSITE)
             {
-                //HS4 - HEDGES NOT FOUND
+                //HS5 - FINANCIAL INSTRUMENTS
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestCompositeScore + fr.FundamentalsComposite + bbandsComposite) / 7;
-                return (compositeScoreFinal, Constants.HS4);
+                return (compositeScoreFinal, Constants.HS5);
             }
             else if (fr.FundamentalsComposite == Constants.INVALID_COMPOSITE)
             {
-                //HS3 - FUNDAMENTALS NOT FOUND
+                //HS4 - FUNDAMENTALS NOT FOUND
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestCompositeScore + bbandsComposite + hr.RatingsComposite) / 7;
+                return (compositeScoreFinal, Constants.HS4);
+            }
+            else if (bbandsComposite > aroonComposite)
+            {
+                //HS3 - BBANDS AROON SWAP
+                compositeScoreFinal = (adxComposite + bbandsComposite + obvComposite + macdComposite +
+                    sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal, Constants.HS3);
             }
             else if (bbandsComposite > obvComposite)
@@ -159,6 +166,16 @@ namespace PT.Middleware
                     ShortDescription = Constants.HS4_SHORT_DESCRIPTION,
                     LongDescription = Constants.HS4_LONG_DESCRIPTION,
                     Set = Constants.HS4_SET
+                };
+            }
+            else if (typeName == Constants.HS5)
+            {
+                return new ParameterType
+                {
+                    Type = Constants.HS5,
+                    ShortDescription = Constants.HS5_SHORT_DESCRIPTION,
+                    LongDescription = Constants.HS5_LONG_DESCRIPTION,
+                    Set = Constants.HS5_SET
                 };
             }
             return null;
