@@ -65,22 +65,31 @@ namespace PT.Middleware
                 Fundamentals = fundResult,
                 HedgeFunds = hfResult
             };
+            scoreResult.CompositeRank = GetCompositeRank(scoreResult);
+            return scoreResult;
+        }
 
+        // Get Composite Rank for the prediction depending on boundary conditions
+        private static string GetCompositeRank(CompositeScoreResult scoreResult)
+        {
             // This is where blacklisting happens, right now only from bad volume
             string rank = string.Empty;
             if (scoreResult.Fundamentals.IsBlacklisted)
-                rank = "DISQUALIFIED";
-            else if (scoreResult.CompositeScoreValue > 0 && scoreResult.CompositeScoreValue < 60)
-                rank = "BAD";
+                rank = Constants.RANK_DISQUALIFIED;
+            else if (scoreResult.CompositeScoreValue < 40
+                && scoreResult.ShortInterestComposite <= 42 && scoreResult.FundamentalsComposite <= 42)
+                rank = Constants.RANK_SHORT;
+            else if (scoreResult.CompositeScoreValue < 50)
+                rank = Constants.RANK_BAD;
+            else if (scoreResult.CompositeScoreValue >= 50 && scoreResult.CompositeScoreValue < 60)
+                rank = Constants.RANK_NEUTRAL;
             else if (scoreResult.CompositeScoreValue >= 60 && scoreResult.CompositeScoreValue < 70)
-                rank = "FAIR";
+                rank = Constants.RANK_FAIR;
             else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < 83)
-                rank = "GOOD";
+                rank = Constants.RANK_GOOD;
             else if (scoreResult.CompositeScoreValue >= 83)
-                rank = "PRIME";
-            scoreResult.CompositeRank = rank;
-
-            return scoreResult;
+                rank = Constants.RANK_PRIME;
+            return rank;
         }
 
         // Get final prediction composite score decimal, and prediction parameter set HS type string

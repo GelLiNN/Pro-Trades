@@ -38,6 +38,15 @@ namespace PT
         public static readonly string TOKEN_EXPIRED = "Token has expired.";
         public static readonly string EMAIL_AUTH_ERROR = "Auth Error: Email not tied to an existing out.";
 
+        // Prediction rankings
+        public static readonly string RANK_DISQUALIFIED = "DISQUALIFIED";
+        public static readonly string RANK_SHORT = "SHORT";
+        public static readonly string RANK_BAD = "BAD";
+        public static readonly string RANK_NEUTRAL = "NEUTRAL";
+        public static readonly string RANK_FAIR = "FAIR";
+        public static readonly string RANK_GOOD = "GOOD";
+        public static readonly string RANK_PRIME = "PRIME";
+
         // HS Parameter Set Types
         public static readonly string HS1 = "HS1";
         public static readonly string HS1_SHORT_DESCRIPTION = "Pure Form";

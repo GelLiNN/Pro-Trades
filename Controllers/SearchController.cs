@@ -53,6 +53,19 @@ namespace PT.Controllers
             };
         }
 
+        [HttpGet("api/search/GetIncidenceView")]
+        public CacheViewResult GetIncidenceView()
+        {
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            return new CacheViewResult
+            {
+                CacheCount = cachedSymbols.Count,
+                ScrapeCount = _cache.ScrapedSymbols.Count,
+                ScrapeAttemptCount = _cache.ScrapedSymbolsAttempted,
+                CacheKeys = cachedSymbols
+            };
+        }
+
         // Main endpoint for getting all prediction scores in the entire set
         [HttpGet("api/search/DumpCache")]
         public List<CompositeScoreResult> DumpCache()
@@ -71,7 +84,7 @@ namespace PT.Controllers
             return cachedScores;
         }
 
-        // Endpoint for getting primes
+        // Endpoint for getting prime predictions ordered descending
         [HttpGet("api/search/GetPrimes")]
         public List<CompositeScoreResult> GetCachedPrimesYF()
         {
@@ -81,7 +94,7 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == "PRIME")
+                if (companyScore != null && companyScore.CompositeRank == Constants.RANK_PRIME)
                 {
                     cachedPrimes.Add(companyScore);
                 }
@@ -90,7 +103,7 @@ namespace PT.Controllers
             return cachedPrimes;
         }
 
-        // Endpoint for getting goods
+        // Endpoint for getting good predictions ordered descending
         [HttpGet("api/search/GetGoods")]
         public List<CompositeScoreResult> GetCachedGoodsYF()
         {
@@ -100,7 +113,7 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == "GOOD")
+                if (companyScore != null && companyScore.CompositeRank == Constants.RANK_GOOD)
                 {
                     cachedGoods.Add(companyScore);
                 }
@@ -109,31 +122,26 @@ namespace PT.Controllers
             return cachedGoods;
         }
 
-        // Endpoint for getting top 20 predictions
-        [HttpGet("api/search/GetTopTwenty")]
-        public List<CompositeScoreResult> GetTopTwentyYF()
+        // Endpoint for getting short predictions ordered ascending
+        [HttpGet("api/search/GetShorts")]
+        public List<CompositeScoreResult> GetShortsYF()
         {
-            List<CompositeScoreResult> cachedTopTwenty = new List<CompositeScoreResult>();
+            List<CompositeScoreResult> cachedShorts = new List<CompositeScoreResult>();
 
             HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == "PRIME")
+                if (companyScore != null && companyScore.CompositeRank == Constants.RANK_SHORT)
                 {
-                    cachedTopTwenty.Add(companyScore);
-                }
-                else if (companyScore != null && companyScore.CompositeRank == "GOOD")
-                {
-                    cachedTopTwenty.Add(companyScore);
+                    cachedShorts.Add(companyScore);
                 }
             }
-            cachedTopTwenty = cachedTopTwenty.OrderByDescending(x => x.CompositeScoreValue).ToList();
-            cachedTopTwenty = cachedTopTwenty.Take(20).ToList();
-            return cachedTopTwenty;
+            cachedShorts = cachedShorts.OrderBy(x => x.CompositeScoreValue).ToList();
+            return cachedShorts;
         }
 
-        // Endpoint for getting top 20 HS1 predictions
+        // Endpoint for getting top 20 HS1 predictions ordered descending
         [HttpGet("api/search/GetTopTwentyHS1")]
         public List<CompositeScoreResult> GetTopTwentyHS1YF()
         {
