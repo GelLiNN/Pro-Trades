@@ -43,6 +43,26 @@ namespace PT.Models.RequestModels
         public HashSet<string> CacheKeys { get; set; }
     }
 
+    public class IncidenceViewResult
+    {
+        public int ScoreCount { get; set; }
+        public int ScoreAttemptCount { get; set; }
+        public int DisqualifiedCount { get; set; }
+        public decimal DisqualifiedIncidenceRate { get; set; }
+        public int ShortCount { get; set; }
+        public decimal ShortIncidenceRate { get; set; }
+        public int BadCount { get; set; }
+        public decimal BadIncidenceRate { get; set; }
+        public int NeutralCount { get; set; }
+        public decimal NeutralIncidenceRate { get; set; }
+        public int FairCount { get; set; }
+        public decimal FairIncidenceRate { get; set; }
+        public int GoodCount { get; set; }
+        public decimal GoodIncidenceRate { get; set; }
+        public int PrimeCount { get; set; }
+        public decimal PrimeIncidenceRate { get; set; }
+    }
+
     public class ShortInterestResult
     {
         public decimal TotalVolume { get; set; }

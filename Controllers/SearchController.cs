@@ -54,16 +54,72 @@ namespace PT.Controllers
         }
 
         [HttpGet("api/search/GetIncidenceView")]
-        public CacheViewResult GetIncidenceView()
+        public IncidenceViewResult GetIncidenceView()
         {
             HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
-            return new CacheViewResult
+            int scoreCount = cachedSymbols.Count;
+            if (scoreCount > 0)
             {
-                CacheCount = cachedSymbols.Count,
-                ScrapeCount = _cache.ScrapedSymbols.Count,
-                ScrapeAttemptCount = _cache.ScrapedSymbolsAttempted,
-                CacheKeys = cachedSymbols
-            };
+                int disqualifiedCount = 0;
+                int shortCount = 0;
+                int badCount = 0;
+                int neutralCount = 0;
+                int fairCount = 0;
+                int goodCount = 0;
+                int primeCount = 0;
+                foreach (string cacheKey in cachedSymbols)
+                {
+                    CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
+                    if (companyScore != null && companyScore.CompositeRank == Constants.RANK_DISQUALIFIED)
+                    {
+                        disqualifiedCount++;
+                    }
+                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_SHORT)
+                    {
+                        shortCount++;
+                    }
+                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_BAD)
+                    {
+                        badCount++;
+                    }
+                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_NEUTRAL)
+                    {
+                        neutralCount++;
+                    }
+                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_FAIR)
+                    {
+                        fairCount++;
+                    }
+                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_GOOD)
+                    {
+                        goodCount++;
+                    }
+                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_PRIME)
+                    {
+                        primeCount++;
+                    }
+                }
+                return new IncidenceViewResult
+                {
+                    ScoreCount = scoreCount,
+                    ScoreAttemptCount = _cache.ScrapedSymbolsAttempted,
+                    DisqualifiedCount = disqualifiedCount,
+                    DisqualifiedIncidenceRate = ((decimal)disqualifiedCount / (decimal)scoreCount) * 100,
+                    ShortCount = shortCount,
+                    ShortIncidenceRate = ((decimal)shortCount / (decimal)scoreCount) * 100,
+                    BadCount = badCount,
+                    BadIncidenceRate = ((decimal)badCount / (decimal)scoreCount) * 100,
+                    NeutralCount = neutralCount,
+                    NeutralIncidenceRate = ((decimal)neutralCount / (decimal)scoreCount) * 100,
+                    FairCount = fairCount,
+                    FairIncidenceRate = ((decimal)fairCount / (decimal)scoreCount) * 100,
+                    GoodCount = goodCount,
+                    GoodIncidenceRate = ((decimal)goodCount / (decimal)scoreCount) * 100,
+                    PrimeCount = primeCount,
+                    PrimeIncidenceRate = ((decimal)primeCount / (decimal)scoreCount) * 100,
+                };
+            }
+            return new IncidenceViewResult();
         }
 
         // Main endpoint for getting all prediction scores in the entire set
