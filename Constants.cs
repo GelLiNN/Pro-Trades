@@ -37,5 +37,26 @@ namespace PT
         public static readonly string INVALID_VERIFICATION_TOKEN = "Auth Error: invalid verification token.";
         public static readonly string TOKEN_EXPIRED = "Token has expired.";
         public static readonly string EMAIL_AUTH_ERROR = "Auth Error: Email not tied to an existing out.";
+
+        // HS Parameter Set Types
+        public static readonly string HS1 = "HS1";
+        public static readonly string HS1_SHORT_DESCRIPTION = "Pure Form";
+        public static readonly string HS1_LONG_DESCRIPTION = "The oldest original prediction parameter set with the best recorded accuracy";
+        public static readonly string HS1_SET = "adx_aroon_obv_macd_short_fund_hedge";
+
+        public static readonly string HS2 = "HS2";
+        public static readonly string HS2_SHORT_DESCRIPTION = "Bollinger Bands Swap";
+        public static readonly string HS2_LONG_DESCRIPTION = "2nd generation expanded parameter set for Bollinger Bands signal plays";
+        public static readonly string HS2_SET = "adx_aroon_bbands_macd_short_fund_hedge";
+
+        public static readonly string HS3 = "HS3";
+        public static readonly string HS3_SHORT_DESCRIPTION = "Fundamentals Not Found";
+        public static readonly string HS3_LONG_DESCRIPTION = "2nd generation parameter set for defensive case, not well studied";
+        public static readonly string HS3_SET = "adx_aroon_obv_bbands_macd_short_hedge";
+
+        public static readonly string HS4 = "HS4";
+        public static readonly string HS4_SHORT_DESCRIPTION = "Financial Instruments";
+        public static readonly string HS4_LONG_DESCRIPTION = "2nd generation parameter set usually for financial instruments like index funds or other defensive cases";
+        public static readonly string HS4_SET = "adx_aroon_obv_bbands_macd_short_fund";
     }
 }

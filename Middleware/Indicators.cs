@@ -35,8 +35,10 @@ namespace PT.Middleware
             ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7, rm);
             HedgeFundsResult hfResult = TipRanks.GetTipRanksResult(symbol, rm);
 
-            decimal compositeScoreFinal = GetCompositeScoreFinalValue(fundResult, hfResult, shortResult,
+            var finalResult = GetCompositeScoreFinalValue(fundResult, hfResult, shortResult,
                 adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
+
+            var paramType = GetParameterType(finalResult.hs);
 
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
@@ -55,9 +57,10 @@ namespace PT.Middleware
                 RatingsComposite = hfResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
-                CompositeScoreValue = compositeScoreFinal,
+                CompositeScoreValue = finalResult.cs,
                 ScoreTimeMS = sw.ElapsedMilliseconds,
                 ScoreDate = DateTime.Now,
+                Parameters = paramType,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
                 HedgeFunds = hfResult
@@ -80,8 +83,8 @@ namespace PT.Middleware
             return scoreResult;
         }
 
-        //TODO: add hotswap type result, use constants/enums, and return a CompositeScoreWithHotSwaps object
-        private static decimal GetCompositeScoreFinalValue(FundamentalsResult fr, HedgeFundsResult hr, ShortInterestResult sr,
+        // Get final prediction composite score decimal, and prediction parameter set HS type string
+        private static (decimal cs, string hs) GetCompositeScoreFinalValue(FundamentalsResult fr, HedgeFundsResult hr, ShortInterestResult sr,
             decimal adxComposite, decimal obvComposite, decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
         {
             decimal compositeScoreFinal = 0;
@@ -90,28 +93,78 @@ namespace PT.Middleware
                 //HS4 - HEDGES NOT FOUND
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestCompositeScore + fr.FundamentalsComposite + bbandsComposite) / 7;
+                return (compositeScoreFinal, Constants.HS4);
             }
             else if (fr.FundamentalsComposite == Constants.INVALID_COMPOSITE)
             {
                 //HS3 - FUNDAMENTALS NOT FOUND
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestCompositeScore + bbandsComposite + hr.RatingsComposite) / 7;
+                return (compositeScoreFinal, Constants.HS3);
             }
             else if (bbandsComposite > obvComposite)
             {
-                //HS2 - BBANDS SWAP
+                //HS2 - BBANDS OBV SWAP
                 compositeScoreFinal = (adxComposite + aroonComposite + bbandsComposite + macdComposite +
                     sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+                return (compositeScoreFinal, Constants.HS2);
             }
             else
             {
                 //HS1 - PURE FORM
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+                return (compositeScoreFinal, Constants.HS1);
             }
-            return compositeScoreFinal;
         }
 
+        // Get ParameterType object using HS Type name constant as identifier
+        public static ParameterType GetParameterType(string typeName)
+        {
+            if (typeName == Constants.HS1)
+            {
+                return new ParameterType
+                {
+                    Type = Constants.HS1,
+                    ShortDescription = Constants.HS1_SHORT_DESCRIPTION,
+                    LongDescription = Constants.HS1_LONG_DESCRIPTION,
+                    Set = Constants.HS1_SET
+                };
+            }
+            else if (typeName == Constants.HS2)
+            {
+                return new ParameterType
+                {
+                    Type = Constants.HS2,
+                    ShortDescription = Constants.HS2_SHORT_DESCRIPTION,
+                    LongDescription = Constants.HS2_LONG_DESCRIPTION,
+                    Set = Constants.HS2_SET
+                };
+            }
+            else if (typeName == Constants.HS3)
+            {
+                return new ParameterType
+                {
+                    Type = Constants.HS3,
+                    ShortDescription = Constants.HS3_SHORT_DESCRIPTION,
+                    LongDescription = Constants.HS3_LONG_DESCRIPTION,
+                    Set = Constants.HS3_SET
+                };
+            }
+            else if (typeName == Constants.HS4)
+            {
+                return new ParameterType
+                {
+                    Type = Constants.HS4,
+                    ShortDescription = Constants.HS4_SHORT_DESCRIPTION,
+                    LongDescription = Constants.HS4_LONG_DESCRIPTION,
+                    Set = Constants.HS4_SET
+                };
+            }
+            return null;
+        }
+
+        // Main composite function to separate and organize the AI model's composites
         public static decimal GetIndicatorComposite(string symbol, string function, IEnumerable<Skender.Stock.Indicators.Quote> history, int daysToCalculate, object supplement = null)
         {
             decimal compositeScore = 0;
