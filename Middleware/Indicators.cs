@@ -72,12 +72,12 @@ namespace PT.Middleware
         // Get Composite Rank for the prediction depending on boundary conditions
         private static string GetCompositeRank(CompositeScoreResult scoreResult)
         {
-            // This is where blacklisting happens, right now only from bad volume
+            // This is where blacklisting happens, right now only from bad dollar volume throughput
             string rank = string.Empty;
             if (scoreResult.Fundamentals.IsBlacklisted)
                 rank = Constants.RANK_DISQUALIFIED;
             else if (scoreResult.CompositeScoreValue < 40
-                && scoreResult.ShortInterestComposite <= 42 && scoreResult.FundamentalsComposite <= 42)
+                && scoreResult.ShortInterestComposite <= 60 && scoreResult.FundamentalsComposite <= 60)
                 rank = Constants.RANK_SHORT;
             else if (scoreResult.CompositeScoreValue < 50)
                 rank = Constants.RANK_BAD;

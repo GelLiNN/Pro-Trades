@@ -29,7 +29,7 @@ namespace PT.Middleware
             string response = rm.GetFromUri(uri, headers);
 
             // Convert into AlpacaHistory with Stock.Indicators.Quote inside
-            Models.RequestModels.AlpacaHistory alpacaHistory = new Models.RequestModels.AlpacaHistory();
+            Models.RequestModels.AlpacaHistory alpacaHistory = new();
             List<Quote> historyList = new List<Quote>();
             JObject responseObj = JObject.Parse(response);
             JToken pathResult = responseObj.SelectToken($"bars.{symbol}");
@@ -101,4 +101,7 @@ namespace PT.Middleware
             return alpacaHistory;
         }
     }
+
+    // TODO: https://docs.alpaca.markets/docs/historical-option-data
+    // Implement functions for accessing options data
 }
