@@ -60,7 +60,7 @@ namespace PT.Middleware
                 CompositeScoreValue = finalResult.cs,
                 ScoreTimeMS = sw.ElapsedMilliseconds,
                 ScoreDate = DateTime.Now,
-                Parameters = paramType,
+                ParameterSet = paramType,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
                 HedgeFunds = hfResult
@@ -74,10 +74,9 @@ namespace PT.Middleware
         {
             // This is where blacklisting happens, right now only from bad dollar volume throughput
             string rank = string.Empty;
-            if (scoreResult.Fundamentals.IsBlacklisted)
+            if (IsDisqualifiedPrediction(scoreResult))
                 rank = Constants.RANK_DISQUALIFIED;
-            else if (scoreResult.CompositeScoreValue < 40
-                && scoreResult.ShortInterestComposite <= 60 && scoreResult.FundamentalsComposite <= 60)
+            else if (IsShortPrediction(scoreResult))
                 rank = Constants.RANK_SHORT;
             else if (scoreResult.CompositeScoreValue < 50)
                 rank = Constants.RANK_BAD;
@@ -90,6 +89,21 @@ namespace PT.Middleware
             else if (scoreResult.CompositeScoreValue >= 83)
                 rank = Constants.RANK_PRIME;
             return rank;
+        }
+
+        private static bool IsDisqualifiedPrediction(CompositeScoreResult scoreResult)
+        {
+            return
+                (scoreResult.Fundamentals.IsBlacklisted ||
+                (scoreResult.PriceL < Constants.DEFAULT_PENNY_PRICE_D_LIMIT || scoreResult.PriceVW < Constants.DEFAULT_PENNY_PRICE_D_LIMIT));
+        }
+
+        private static bool IsShortPrediction(CompositeScoreResult scoreResult)
+        {
+            return
+                (scoreResult.CompositeScoreValue < 40 &&
+                (scoreResult.ShortInterestComposite <= 60 && scoreResult.FundamentalsComposite <= 60) &&
+                !(scoreResult.RatingsComposite == Constants.INVALID_COMPOSITE && scoreResult.FundamentalsComposite == Constants.INVALID_COMPOSITE));
         }
 
         // Get final prediction composite score decimal, and prediction parameter set HS type string
@@ -135,11 +149,11 @@ namespace PT.Middleware
         }
 
         // Get ParameterType object using HS Type name constant as identifier
-        public static ParameterType GetParameterType(string typeName)
+        public static ParameterSetType GetParameterType(string typeName)
         {
             if (typeName == Constants.HS1)
             {
-                return new ParameterType
+                return new ParameterSetType
                 {
                     Type = Constants.HS1,
                     ShortDescription = Constants.HS1_SHORT_DESCRIPTION,
@@ -149,7 +163,7 @@ namespace PT.Middleware
             }
             else if (typeName == Constants.HS2)
             {
-                return new ParameterType
+                return new ParameterSetType
                 {
                     Type = Constants.HS2,
                     ShortDescription = Constants.HS2_SHORT_DESCRIPTION,
@@ -159,7 +173,7 @@ namespace PT.Middleware
             }
             else if (typeName == Constants.HS3)
             {
-                return new ParameterType
+                return new ParameterSetType
                 {
                     Type = Constants.HS3,
                     ShortDescription = Constants.HS3_SHORT_DESCRIPTION,
@@ -169,7 +183,7 @@ namespace PT.Middleware
             }
             else if (typeName == Constants.HS4)
             {
-                return new ParameterType
+                return new ParameterSetType
                 {
                     Type = Constants.HS4,
                     ShortDescription = Constants.HS4_SHORT_DESCRIPTION,
@@ -179,7 +193,7 @@ namespace PT.Middleware
             }
             else if (typeName == Constants.HS5)
             {
-                return new ParameterType
+                return new ParameterSetType
                 {
                     Type = Constants.HS5,
                     ShortDescription = Constants.HS5_SHORT_DESCRIPTION,
@@ -472,7 +486,7 @@ namespace PT.Middleware
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives
 
                 // disqualify if less than USD volume multiplicative from constants
-                var disqualifyingLimit = Constants.DEFAULT_VOLUME_USD_DISQUALIFYING_LIMIT;
+                var disqualifyingLimit = Constants.DEFAULT_VOLUME_USD_D_LIMIT;
                 bool volumeDisqualified = (history.VolumeUSD < disqualifyingLimit || history.AverageVolumeUSD < disqualifyingLimit);
                 bool hasDivs = quote.DividendRate > 0 && quote.DividendYield > 0;
 

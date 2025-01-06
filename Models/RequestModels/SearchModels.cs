@@ -20,14 +20,14 @@ namespace PT.Models.RequestModels
         public decimal CompositeScoreValue { get; set; }
         public long ScoreTimeMS { get; set; }
         public DateTime ScoreDate { get; set; }
-        public ParameterType Parameters { get; set; }
+        public ParameterSetType ParameterSet { get; set; }
         public ShortInterestResult ShortInterest { get; set; }
         public FundamentalsResult Fundamentals { get; set; }
         public HedgeFundsResult HedgeFunds { get; set; }
         public string DataProviders { get; set; }
     }
 
-    public class ParameterType
+    public class ParameterSetType
     {
         public string? Type { get; set; }
         public string? ShortDescription { get; set; }

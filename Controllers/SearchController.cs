@@ -207,12 +207,12 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == "PRIME" && companyScore.Parameters.Type == Constants.HS1
+                if (companyScore != null && companyScore.CompositeRank == "PRIME" && companyScore.ParameterSet.Type == Constants.HS1
                     && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
                 {
                     cachedTopTwentyClean.Add(companyScore);
                 }
-                else if (companyScore != null && companyScore.CompositeRank == "GOOD" && companyScore.Parameters.Type == Constants.HS1
+                else if (companyScore != null && companyScore.CompositeRank == "GOOD" && companyScore.ParameterSet.Type == Constants.HS1
                     && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
                 {
                     cachedTopTwentyClean.Add(companyScore);
