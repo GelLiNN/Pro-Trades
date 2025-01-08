@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using PT.Models.RequestModels;
 using PT.Services;
 using Skender.Stock.Indicators;
 using System.Xml;
@@ -9,7 +10,7 @@ namespace PT.Middleware
     {
         // TODO: get price history from alpaca API https://docs.alpaca.markets/reference/stockbars
         // It has volume weighted prices for each day which is useful
-        public static async Task<Models.RequestModels.AlpacaHistory> GetHistoryAsync(RequestManager rm, string symbol, int days)
+        public static async Task<AlpacaHistory> GetHistoryAsync(RequestManager rm, string symbol, int days)
         {
             // You should be able to query data from various markets including US, HK, TW
             // The timezone here may or may not impact accuracy
@@ -29,8 +30,8 @@ namespace PT.Middleware
             string response = rm.GetFromUri(uri, headers);
 
             // Convert into AlpacaHistory with Stock.Indicators.Quote inside
-            Models.RequestModels.AlpacaHistory alpacaHistory = new();
-            List<Quote> historyList = new List<Quote>();
+            AlpacaHistory alpacaHistory = new();
+            List<Skender.Stock.Indicators.Quote> historyList = new();
             JObject responseObj = JObject.Parse(response);
             JToken pathResult = responseObj.SelectToken($"bars.{symbol}");
             JArray historyArr = pathResult as JArray;
@@ -43,10 +44,30 @@ namespace PT.Middleware
             decimal avgVol10d = 0;
             decimal lastVol = 0;
 
+            // This is where volume USD throughput filtering happens now
+            List<bool> usdVolumeQualified30d = new List<bool>();
+            List<bool> usdVolumeQualified10d = new List<bool>();
+            bool usdVolumeQualified1d = false;
+
             for (int i = 0; i < historyArr.Count; i++)
             {
-                Quote curHistoryObj = new Quote();
+                // Make history object for processing indicators with Skender's lib
+                Skender.Stock.Indicators.Quote curHistoryObj = new();
                 var curData = historyArr[i];
+
+                curHistoryObj.Open = Convert.ToDecimal(curData["o"].ToString());
+                // Can swap this with VWAP for Pro-Trades: Experimental Mode
+                curHistoryObj.Close = Convert.ToDecimal(curData["c"].ToString());
+                curHistoryObj.High = Convert.ToDecimal(curData["h"].ToString());
+                curHistoryObj.Low = Convert.ToDecimal(curData["l"].ToString());
+                curHistoryObj.Volume = Convert.ToDecimal(curData["v"].ToString());
+                curHistoryObj.Date = DateTime.Parse(curData["t"].ToString());
+                historyList.Add(curHistoryObj);
+
+                // History object added, the rest is custom
+                var curVwap = Convert.ToDecimal(curData["vw"].ToString());
+                var curVol = Convert.ToDecimal(curData["v"].ToString());
+                var curVolUsd = curVwap * curVol;
 
                 bool isLast30 = (historyArr.Count - (i + 1) <= 30);
                 bool isLast10 = (historyArr.Count - (i + 1) <= 10);
@@ -54,35 +75,39 @@ namespace PT.Middleware
 
                 if (isLast30)
                 {
-                    avgPrice30d += Convert.ToDecimal(curData["vw"].ToString());
-                    avgVol30d += Convert.ToDecimal(curData["v"].ToString());
+                    avgPrice30d += curVwap;
+                    avgVol30d += curVol;
+                    bool result30d = curVolUsd >= Constants.DEFAULT_VOLUME_USD_30D_LIMIT;
+                    usdVolumeQualified30d.Add(result30d);
                 }
                 if (isLast10)
                 {
-                    avgPrice10d += Convert.ToDecimal(curData["vw"].ToString());
-                    avgVol10d += Convert.ToDecimal(curData["v"].ToString());
+                    avgPrice10d += curVwap;
+                    avgVol10d += curVol;
+                    bool result10d = curVolUsd >= Constants.DEFAULT_VOLUME_USD_10D_LIMIT;
+                    usdVolumeQualified10d.Add(result10d);
                 }
                 if (isLast)
                 {
-                    lastPriceVw += Convert.ToDecimal(curData["vw"].ToString());
-                    lastVol += Convert.ToDecimal(curData["v"].ToString());
+                    lastPriceVw += curVwap;
+                    lastVol += curVol;
+                    usdVolumeQualified1d = curVolUsd >= Constants.DEFAULT_VOLUME_USD_1D_LIMIT;
                 }
-
-                curHistoryObj.Open = Convert.ToDecimal(curData["o"].ToString());
-                curHistoryObj.Close = Convert.ToDecimal(curData["c"].ToString());
-                curHistoryObj.High = Convert.ToDecimal(curData["h"].ToString());
-                curHistoryObj.Low = Convert.ToDecimal(curData["l"].ToString());
-                curHistoryObj.Volume = Convert.ToDecimal(curData["v"].ToString());
-                curHistoryObj.Date = DateTime.Parse(curData["t"].ToString());
-                historyList.Add(curHistoryObj);
             }
+
+            // Get Volume USD qualifying results
+            alpacaHistory.Has30DayQualifiedVolume = !usdVolumeQualified30d.Contains(false);
+            alpacaHistory.Has10DayQualifiedVolume = !usdVolumeQualified10d.Contains(false);
+            alpacaHistory.Has1DayQualifiedVolume = usdVolumeQualified1d;
+
             // Compute final averages
             avgPrice30d = avgPrice30d / 30.0M;
             avgVol30d = avgVol30d / 30.0M;
             avgPrice10d = avgPrice10d / 10.0M;
             avgVol10d = avgVol10d / 10.0M;
-            alpacaHistory.VolumeUSD = lastPriceVw * lastVol;
-            alpacaHistory.AverageVolumeUSD = avgPrice30d * avgVol30d;
+            alpacaHistory.DollarVolumeToday = lastPriceVw * lastVol;
+            alpacaHistory.DollarVolume10Day = avgPrice10d * avgVol10d;
+            alpacaHistory.DollarVolume30Day = avgPrice30d * avgVol30d;
 
             // Make X and Y Lists
             alpacaHistory.PriceAvgYList.Add(avgPrice30d);

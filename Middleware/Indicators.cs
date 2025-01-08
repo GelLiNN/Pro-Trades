@@ -45,9 +45,10 @@ namespace PT.Middleware
                 Symbol = symbol,
                 Name = quote.LongName,
                 Exchange = quote.FullExchangeName,
-                DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks",
-                PriceL = quote.RegularMarketPrice,
-                PriceVW = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 1],
+                CompositeScoreValue = finalResult.cs,
+                PriceOpen = quote.RegularMarketOpen,
+                PriceLast = quote.RegularMarketPrice,
+                PriceVwap = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 1],
                 PriceHistoryDays = history.Count(),
                 ADXComposite = adxCompositeScore,
                 OBVComposite = obvCompositeScore,
@@ -57,14 +58,17 @@ namespace PT.Middleware
                 RatingsComposite = hfResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
-                CompositeScoreValue = finalResult.cs,
                 ScoreTimeMS = sw.ElapsedMilliseconds,
                 ScoreDate = DateTime.Now,
                 ParameterSet = paramType,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
-                HedgeFunds = hfResult
+                HedgeFunds = hfResult,
+                DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks"
             };
+            scoreResult.PriceRedGreen = scoreResult.PriceLast >= scoreResult.PriceOpen ?
+                Constants.DEFAULT_GREEN : Constants.DEFAULT_RED;
+
             scoreResult.CompositeRank = GetCompositeRank(scoreResult);
             return scoreResult;
         }
@@ -95,7 +99,7 @@ namespace PT.Middleware
         {
             return
                 (scoreResult.Fundamentals.IsBlacklisted ||
-                (scoreResult.PriceL < Constants.DEFAULT_PENNY_PRICE_D_LIMIT || scoreResult.PriceVW < Constants.DEFAULT_PENNY_PRICE_D_LIMIT));
+                (scoreResult.PriceLast < Constants.DEFAULT_PENNY_PRICE_D_LIMIT || scoreResult.PriceVwap < Constants.DEFAULT_PENNY_PRICE_D_LIMIT));
         }
 
         private static bool IsShortPrediction(CompositeScoreResult scoreResult)
@@ -434,11 +438,16 @@ namespace PT.Middleware
                 // Add dividend bonus
                 decimal divBonus = GetDividendBonus(quote);
 
-                // Add positive fractional bonus if current volume is greater than average volume, negative otherwise
-                decimal diff = history.VolumeUSD - history.AverageVolumeUSD;
-                decimal percentChange = (diff / Math.Abs(history.AverageVolumeUSD)) * 100;
+                // Add positive fractional bonus if current dullar volume is greater than 30 average dollar volume, negative otherwise
+                decimal diff = history.DollarVolumeToday - history.DollarVolume30Day;
+                decimal percentChange = (diff / history.DollarVolume30Day) * 100;
                 decimal volumeTrendingModifier = 0;
                 // Reward cases
+                if (history.DollarVolumeToday > history.DollarVolume10Day + 50000 &&
+                    history.DollarVolume10Day > history.DollarVolume30Day + 50000)
+                {
+                    volumeTrendingModifier += bonus * 3;
+                }
                 if (0 < percentChange && percentChange <= 100)
                 {
                     volumeTrendingModifier += (percentChange / 20) + bonus;
@@ -454,8 +463,14 @@ namespace PT.Middleware
                 }
                 else if (-100 > percentChange)
                 {
-                    volumeTrendingModifier += penalty * 4;
+                    volumeTrendingModifier += penalty * 3;
                 }
+                if (history.DollarVolumeToday < history.DollarVolume10Day - 100000 &&
+                    history.DollarVolume10Day < history.DollarVolume30Day - 100000)
+                {
+                    volumeTrendingModifier += penalty * 3;
+                }
+
 
                 // Get normalized price slope and volume slope bonuses
                 decimal normalizedPriceSlopeBonus = (normalizedPriceSlope > 0.05M) ?
@@ -486,15 +501,21 @@ namespace PT.Middleware
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives
 
                 // disqualify if less than USD volume multiplicative from constants
-                var disqualifyingLimit = Constants.DEFAULT_VOLUME_USD_D_LIMIT;
-                bool volumeDisqualified = (history.VolumeUSD < disqualifyingLimit || history.AverageVolumeUSD < disqualifyingLimit);
+                var disqualifyingLimit = Constants.DEFAULT_VOLUME_USD_1D_LIMIT;
+
+                //bool volumeDisqualified = (history.VolumeUSD < disqualifyingLimit || history.AverageVolumeUSD < disqualifyingLimit);
+                bool volumeDisqualified = !(history.Has1DayQualifiedVolume && history.Has10DayQualifiedVolume && history.Has1DayQualifiedVolume);
+                decimal volUsdAvg = (history.DollarVolumeToday + history.DollarVolume10Day + history.DollarVolume30Day) / 3.0M;
+
                 bool hasDivs = quote.DividendRate > 0 && quote.DividendYield > 0;
 
                 return new FundamentalsResult
                 {
                     FundamentalsComposite = composite,
-                    VolumeUSD = history.VolumeUSD,
-                    AverageVolumeUSD = history.AverageVolumeUSD,
+                    DollarVolumeToday = history.DollarVolumeToday,
+                    DollarVolume10Day = history.DollarVolume10Day,
+                    DollarVolume30Day = history.DollarVolume30Day,
+                    DollarVolumeAverage = volUsdAvg,
                     VolumeSlope = volumeSlope,
                     PriceSlope = priceSlope,
                     AverageEPS = averageEPS,
@@ -513,8 +534,10 @@ namespace PT.Middleware
                 return new FundamentalsResult
                 {
                     FundamentalsComposite = Constants.INVALID_COMPOSITE,
-                    VolumeUSD = 0.0M,
-                    AverageVolumeUSD = 0.0M,
+                    DollarVolumeToday = 0.0M,
+                    DollarVolume10Day = 0.0M,
+                    DollarVolume30Day = 0.0M,
+                    DollarVolumeAverage = 0.0M,
                     VolumeSlope = 0.0M,
                     PriceSlope = 0.0M,
                     AverageEPS = 0.0M,

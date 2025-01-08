@@ -5,8 +5,12 @@ namespace PT.Models.RequestModels
         public string? Symbol { get; set; }
         public string? Name { get; set; }
         public string? Exchange { get; set; }
-        public decimal PriceL { get; set; }
-        public decimal PriceVW { get; set; }
+        public string CompositeRank { get; set; }
+        public decimal CompositeScoreValue { get; set; }
+        public decimal PriceOpen { get; set; }
+        public decimal PriceLast { get; set; }
+        public decimal PriceVwap { get; set; }
+        public string PriceRedGreen { get; set; }
         public int PriceHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
         public decimal OBVComposite { get; set; }
@@ -16,8 +20,6 @@ namespace PT.Models.RequestModels
         public decimal RatingsComposite { get; set; }
         public decimal ShortInterestComposite { get; set; }
         public decimal FundamentalsComposite { get; set; }
-        public string CompositeRank { get; set; }
-        public decimal CompositeScoreValue { get; set; }
         public long ScoreTimeMS { get; set; }
         public DateTime ScoreDate { get; set; }
         public ParameterSetType ParameterSet { get; set; }
@@ -76,8 +78,10 @@ namespace PT.Models.RequestModels
     public class FundamentalsResult
     {
         public decimal FundamentalsComposite { get; set; }
-        public decimal VolumeUSD { get; set; }
-        public decimal AverageVolumeUSD { get; set; }
+        public decimal DollarVolumeToday { get; set; }
+        public decimal DollarVolume10Day { get; set; }
+        public decimal DollarVolume30Day { get; set; }
+        public decimal DollarVolumeAverage { get; set; }
         public decimal VolumeSlope { get; set; }
         public decimal PriceSlope { get; set; }
         public decimal AverageEPS { get; set; }

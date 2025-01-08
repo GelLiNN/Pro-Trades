@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Text;
 using Newtonsoft.Json;
 
@@ -25,16 +25,7 @@ namespace PT.Services
             _client.Timeout = TimeSpan.FromMinutes(timeoutMins);
         }
 
-        // Helper to get response string via normal http "GET" request
-        /*public string GetFromUri(string uri)
-        {
-            using HttpResponseMessage response = _client.GetAsync(uri).GetAwaiter().GetResult();
-            response.EnsureSuccessStatusCode();
-            string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-            return responseBody;
-        }*/
-
-        // Helper to get response string via normal http "GET" request with optional headers
+        //Helper to get response string via normal http "GET" request with optional headers
         public string GetFromUri(string uri, Dictionary<string, string>? headers = null)
         {
             var request = new HttpRequestMessage()

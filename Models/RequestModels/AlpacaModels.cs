@@ -1,4 +1,4 @@
-﻿namespace PT.Models.RequestModels
+namespace PT.Models.RequestModels
 {
     /*
      * Alpaca Models
@@ -11,11 +11,15 @@
         public List<decimal> VolAvgXList { get; set; }
         public List<decimal> VolAvgYList { get; set; }
 
-        // 30 day average volume in USD
-        public decimal AverageVolumeUSD { get; set; }
+        // Average shares traded volume USD for different periods
+        public decimal DollarVolume30Day { get; set; }
+        public decimal DollarVolume10Day { get; set; }
+        public decimal DollarVolumeToday { get; set; }
 
-        // Volume today in USD
-        public decimal VolumeUSD { get; set; }
+        // Track specific counts of volume USD going below threshold
+        public bool Has30DayQualifiedVolume { get; set; }
+        public bool Has10DayQualifiedVolume { get; set; }
+        public bool Has1DayQualifiedVolume { get; set; }
 
         // Price history object for internal indicators library
         public IEnumerable<Skender.Stock.Indicators.Quote> PriceHistory;
@@ -30,7 +34,6 @@
             VolAvgYList = new List<decimal>();
         }
     }
-
 
     public class CompanyStatsA
     {
