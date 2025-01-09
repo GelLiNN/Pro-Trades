@@ -11,6 +11,7 @@ namespace PT.Middleware
     public static class Indicators
     {
         //TODO: add version numbers 1.0 in comments to each Indicator Composite Function
+        //TODO: move to Core/Predictor.cs and Core/Maths.cs
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, Snapshot quote, RequestManager rm)
         {
             Stopwatch sw = Stopwatch.StartNew();

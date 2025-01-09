@@ -10,7 +10,6 @@ namespace PT.Services
         //Settings
         private static readonly int MaxConcurrentRequests = 10;
         private static readonly int SleepInterval = 100; //MS
-        private static readonly string InRiverUrl = @"https://apiuse.productmarketingcloud.com/api/v1.0.0/";
 
         //Globals
         public HashSet<Guid> _concurrentRequests;
@@ -49,7 +48,8 @@ namespace PT.Services
         }
 
         //Helper to complete web request and return response as string with appropriate throttling
-        public string CompletePimRequest(string path, string method, object content = null)
+        //Will require migrating HttpWebRequest to HttpClient
+        public string CompleteThrottledRequest(string uri, string method, object content = null)
         {
             string responseString = "";
             try
@@ -64,7 +64,7 @@ namespace PT.Services
                 lock (_concurrentRequests) { _concurrentRequests.Add(requestId); }
 
                 string key = Program.Config.GetValue<string>("InRiverApiKey");
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(InRiverUrl + path);
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
                 request.Accept = "application/json";
                 request.ContentType = "application/json";
                 method = method.ToUpper();

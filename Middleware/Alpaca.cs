@@ -103,11 +103,11 @@ namespace PT.Middleware
             }
 
             // Get Volume USD qualifying results
-            alpacaHistory.Has30DayQualifiedVolume = last10PassCount >= 8;
-            alpacaHistory.Has10DayQualifiedVolume = last30PassCount >= 24;
+            alpacaHistory.Has30DayQualifiedVolume = last10PassCount >= Constants.DEFAULT_MIN_PASS_10D_LIMIT;
+            alpacaHistory.Has10DayQualifiedVolume = last30PassCount >= Constants.DEFAULT_MIN_PASS_30D_LIMIT;
             alpacaHistory.Has1DayQualifiedVolume = usdVolumeQualified1d;
 
-            // Compute final averages
+            // Compute final averages for 30d and 10d
             avgPrice30d = avgPrice30d / 30.0M;
             avgVol30d = avgVol30d / 30.0M;
             avgPrice10d = avgPrice10d / 10.0M;

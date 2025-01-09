@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using NLog.Config;
 using NLog.Targets;
 using System.Diagnostics;
@@ -14,17 +14,18 @@ namespace PT.Middleware
         public static TimerHelper LogTimer { get; set; } = new();
 
         public static string LogFilePath { get; set; } =
-            Path.Combine(Program.ExecutingPath, Constants.PT_LOG);
+            Path.Combine(Program.ExecutingPath, Constants.PT_LOG_FILE);
 
         /// <summary>
         /// Initialize the Logger target to a local file and to the syslog system / server based on the config settings
         /// </summary>
         /// <exception cref="ArgumentException">Argument from method is not valid.</exception>
+        /// <param name="config"></param>
         public static void InitializeLogger(IConfiguration config)
         {
             LogTimer.StartTimer();
             var loggingConfig = new LoggingConfiguration();
-            LogFilePath = Path.Combine(Program.ExecutingPath, Constants.PT_LOG);
+            LogFilePath = Path.Combine(Program.ExecutingPath, Constants.PT_LOG_FILE);
             try
             {
                 FileLoggingLevel = LogLevel.FromString(config.GetValue<string>("FileLoggingLevel"));
@@ -62,6 +63,7 @@ namespace PT.Middleware
         /// </summary>
         /// <param name="logLevel"></param>
         /// <param name="message"></param>
+        /// <param name="stdOut"></param>
         public static void Log(LogLevel logLevel, string message, bool stdOut = true)
         {
             message = string.Format(Constants.LOG_TIMESTAMP, LogTimer.GetTime(), message);

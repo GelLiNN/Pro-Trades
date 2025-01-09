@@ -3,7 +3,7 @@ namespace PT
     public static class Constants
     {
         // Logging
-        public const string PT_LOG = "Pro-Trades.log";
+        public const string PT_LOG_FILE = "Pro-Trades.log";
         public const string ROOT_LINUX_DIR = "/root";
         public const string LOCAL_LOGGER_NAME = "localLog";
         public const string LOGGER_BASIC_TARGET_LAYOUT = "${longdate} | ${level:uppercase=true:padding=5} | ${callsite} | ${message} | ${exception:format=type,tostring}";
@@ -28,15 +28,20 @@ namespace PT
         public const string ALPACA_KEY_ID = "APCA-API-KEY-ID";
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly int DEFAULT_HISTORY_DAYS = 375;
-        public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 800000.0M;
-        public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 500000.0M;
-        public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 250000.0M;
-        public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
         public static readonly int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
         public static readonly decimal SIGNAL_CONSTANT = 3.8M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
         public static readonly string DEFAULT_RED = "Red";
         public static readonly string DEFAULT_GREEN = "Green";
 
+        // Dollar volume and price disqualification limits
+        public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 800000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 500000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 250000.0M;
+        public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
+        public static readonly int DEFAULT_MIN_PASS_30D_LIMIT = 24;
+        public static readonly int DEFAULT_MIN_PASS_10D_LIMIT = 8;
+
+        // Long messages
         public static readonly string RECOVER_PASSWORD_EMAIL_TITLE = "Pro-Trades: Recover password";
         public static readonly string RECOVER_PASSWORD_EMAIL_BODY = "Hello {0}, here's your one time passcode: {1}";
         public static readonly string INVALID_VERIFICATION_TOKEN = "Auth Error: invalid verification token.";
