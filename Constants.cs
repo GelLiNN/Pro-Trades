@@ -28,9 +28,9 @@ namespace PT
         public const string ALPACA_KEY_ID = "APCA-API-KEY-ID";
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly int DEFAULT_HISTORY_DAYS = 375;
-        public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 1000000.0M;
-        public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 750000.0M;
-        public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 500000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 800000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 500000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 250000.0M;
         public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
         public static readonly int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
         public static readonly decimal SIGNAL_CONSTANT = 3.8M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)

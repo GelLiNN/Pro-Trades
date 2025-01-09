@@ -45,9 +45,9 @@ namespace PT.Middleware
             decimal lastVol = 0;
 
             // This is where volume USD throughput filtering happens now
-            List<bool> usdVolumeQualified30d = new List<bool>();
-            List<bool> usdVolumeQualified10d = new List<bool>();
             bool usdVolumeQualified1d = false;
+            int last10PassCount = 0;
+            int last30PassCount = 0;
 
             for (int i = 0; i < historyArr.Count; i++)
             {
@@ -69,8 +69,8 @@ namespace PT.Middleware
                 var curVol = Convert.ToDecimal(curData["v"].ToString());
                 var curVolUsd = curVwap * curVol;
 
-                bool isLast30 = (historyArr.Count - (i + 1) <= 30);
-                bool isLast10 = (historyArr.Count - (i + 1) <= 10);
+                bool isLast30 = (historyArr.Count - (i + 1) < 30);
+                bool isLast10 = (historyArr.Count - (i + 1) < 10);
                 bool isLast = (historyArr.Count - (i + 1) == 0);
 
                 if (isLast30)
@@ -78,14 +78,21 @@ namespace PT.Middleware
                     avgPrice30d += curVwap;
                     avgVol30d += curVol;
                     bool result30d = curVolUsd >= Constants.DEFAULT_VOLUME_USD_30D_LIMIT;
-                    usdVolumeQualified30d.Add(result30d);
+
+                    if (result30d)
+                    {
+                        last30PassCount++;
+                    }
                 }
                 if (isLast10)
                 {
                     avgPrice10d += curVwap;
                     avgVol10d += curVol;
                     bool result10d = curVolUsd >= Constants.DEFAULT_VOLUME_USD_10D_LIMIT;
-                    usdVolumeQualified10d.Add(result10d);
+                    if (result10d)
+                    {
+                        last10PassCount++;
+                    }
                 }
                 if (isLast)
                 {
@@ -96,8 +103,8 @@ namespace PT.Middleware
             }
 
             // Get Volume USD qualifying results
-            alpacaHistory.Has30DayQualifiedVolume = !usdVolumeQualified30d.Contains(false);
-            alpacaHistory.Has10DayQualifiedVolume = !usdVolumeQualified10d.Contains(false);
+            alpacaHistory.Has30DayQualifiedVolume = last10PassCount >= 8;
+            alpacaHistory.Has10DayQualifiedVolume = last30PassCount >= 24;
             alpacaHistory.Has1DayQualifiedVolume = usdVolumeQualified1d;
 
             // Compute final averages

@@ -504,7 +504,7 @@ namespace PT.Middleware
                 var disqualifyingLimit = Constants.DEFAULT_VOLUME_USD_1D_LIMIT;
 
                 //bool volumeDisqualified = (history.VolumeUSD < disqualifyingLimit || history.AverageVolumeUSD < disqualifyingLimit);
-                bool volumeDisqualified = !(history.Has1DayQualifiedVolume && history.Has10DayQualifiedVolume && history.Has1DayQualifiedVolume);
+                bool volumeDisqualified = !(history.Has1DayQualifiedVolume && history.Has10DayQualifiedVolume && history.Has30DayQualifiedVolume);
                 decimal volUsdAvg = (history.DollarVolumeToday + history.DollarVolume10Day + history.DollarVolume30Day) / 3.0M;
 
                 bool hasDivs = quote.DividendRate > 0 && quote.DividendYield > 0;
