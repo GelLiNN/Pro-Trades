@@ -34,9 +34,9 @@ namespace PT
         public static readonly string DEFAULT_GREEN = "Green";
 
         // Dollar volume and price disqualification limits
-        public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 800000.0M;
-        public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 500000.0M;
-        public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 250000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 900000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 600000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 300000.0M;
         public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
         public static readonly int DEFAULT_MIN_PASS_30D_LIMIT = 24;
         public static readonly int DEFAULT_MIN_PASS_10D_LIMIT = 8;
