@@ -37,6 +37,15 @@ namespace PT.Controllers
             return Indicators.GetCompositeScoreResult(symbol, quote, _rm);
         }
 
+        // For getting backtesting data for single composite
+        [HttpGet("api/search/BacktestComposite/{composite}/{days}")]
+        public object GetBacktestingData(string composite, int days)
+        {
+            composite = composite.ToUpper();
+            var result = BacktestingHelper.BacktestSingleComposite(composite, days, _rm);
+            return result;
+        }
+
         /*
          * Cache related endpoints
          */
