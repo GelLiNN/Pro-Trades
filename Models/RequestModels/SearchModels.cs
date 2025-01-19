@@ -12,10 +12,10 @@ namespace PT.Models.RequestModels
         public decimal PriceOpen { get; set; }
         public decimal PriceLast { get; set; }
         public decimal PriceVwap { get; set; }
-        public decimal PriceBuyTargetPro { get; set; }
-        public decimal PriceSellTargetPro { get; set; }
-        public decimal PriceSellTargetProShort { get; set; }
-        public decimal PriceSellTargetHedges { get; set; }
+        public decimal PriceBuyTarget { get; set; }
+        public decimal PriceSellTarget { get; set; }
+        public decimal PriceSellTargetShort { get; set; }
+        public decimal PriceTargetHedgeFunds { get; set; }
         public string PriceRedGreen { get; set; }
         public int PriceHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
@@ -92,7 +92,6 @@ namespace PT.Models.RequestModels
         public decimal DollarVolumeAverage { get; set; }
         public decimal VolumeSlope { get; set; }
         public decimal PriceSlope { get; set; }
-        public decimal NormalizedPriceSlope { get; set; }
         public decimal VwapSlope { get; set; }
         public decimal FairValuePrice { get; set; }
         public decimal BookValuePrice { get; set; }
@@ -105,6 +104,8 @@ namespace PT.Models.RequestModels
         public decimal DivRate { get; set; }
         public decimal DivYield { get; set; }
         public bool IsBlacklisted { get; set; }
+        public DateTime NextEarningsDate { get; set; }
+        public DateTime PrevEarningsDate { get; set; }
         public string? Message { get; set; }
     }
 
