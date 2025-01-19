@@ -5,10 +5,21 @@ namespace PT.Models.RequestModels
      */
     public class AlpacaHistory
     {
-        // Data for 30d, 10d, today
+        /// <summary>
+        /// List with day unit count (1 == today) looking back
+        /// </summary>
         public List<decimal> PriceAvgXList { get; set; }
+        /// <summary>
+        /// List with 30d average price (0), 10d average price (1), 1d average price (2)
+        /// </summary>
         public List<decimal> PriceAvgYList { get; set; }
+        /// <summary>
+        /// List with day unit count (1 == today) looking back
+        /// </summary>
         public List<decimal> VolAvgXList { get; set; }
+        /// <summary>
+        /// List with 30d average volume (0), 10d average volume (1), 1d volume (2)
+        /// </summary>
         public List<decimal> VolAvgYList { get; set; }
 
         // Average shares traded volume USD for different periods

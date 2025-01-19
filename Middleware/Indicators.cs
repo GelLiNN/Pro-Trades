@@ -1,12 +1,15 @@
+using PT.Models.CoreModels;
 using PT.Models.RequestModels;
 using PT.Services;
 using Skender.Stock.Indicators;
 using System.Diagnostics;
+using System.Linq;
 using YahooQuotesApi;
 
 namespace PT.Middleware
 {
     //https://github.com/DaveSkender/Stock.Indicators
+    //https://dotnet.stockindicators.dev/examples/#content
     //https://www.codeproject.com/Articles/15047/Creating-a-Mechanical-Trading-System-Part-1-Techni
     public static class Indicators
     {
@@ -17,15 +20,16 @@ namespace PT.Middleware
             Stopwatch sw = Stopwatch.StartNew();
 
             // Alpaca API price history
-            AlpacaHistory alpacaHistory = Alpaca.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).Result;
-            IEnumerable<Skender.Stock.Indicators.Quote> history = alpacaHistory.PriceHistory;
-            IEnumerable<Skender.Stock.Indicators.Quote> obvHistory = alpacaHistory.PriceHistory.TakeLast(42);
+            PTHistory ptHistory = HistoryHelper.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).GetAwaiter().GetResult();
+            //AlpacaHistory alpacaHistory = Alpaca.GetHistoryAsyncOld(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).GetAwaiter().GetResult();
+            List<Skender.Stock.Indicators.Quote> history = ptHistory.SkenderHistory.ToList();
+            List<Skender.Stock.Indicators.Quote> obvHistory = ptHistory.SkenderHistory.TakeLast(42).ToList();
 
             // This was only used for the bbands composite
-            List<Skender.Stock.Indicators.Quote> supplement = alpacaHistory.PriceHistory.TakeLast(7).ToList();
+            List<Skender.Stock.Indicators.Quote> supplement = ptHistory.SkenderHistory.TakeLast(7).ToList();
 
-            // get fundamentals with Alpaca price history
-            FundamentalsResult fundResult = GetFundamentalsResult(symbol, quote, alpacaHistory);
+            // get fundamentals with Alpaca price history (should update to PTHistory
+            FundamentalsResult fundResult = GetFundamentalsResult(symbol, quote, ptHistory);
 
             decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
             decimal obvCompositeScore = GetIndicatorComposite(symbol, "OBV", obvHistory, 7);
@@ -41,6 +45,10 @@ namespace PT.Middleware
 
             var paramType = GetParameterType(finalResult.hs);
 
+            // Price targets for buy, sell, and short
+            decimal buyTarget = HistoryHelper.GetPriceBuyTarget(ptHistory);
+            HistoryHelper.ComputePriceSellTargets(fundResult, ptHistory);
+
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
                 Symbol = symbol,
@@ -49,7 +57,11 @@ namespace PT.Middleware
                 CompositeScoreValue = finalResult.cs,
                 PriceOpen = quote.RegularMarketOpen,
                 PriceLast = quote.RegularMarketPrice,
-                PriceVwap = alpacaHistory.PriceAvgYList[alpacaHistory.PriceAvgYList.Count - 1],
+                PriceVwap = ptHistory.PriceHistory[0].PriceVwap,
+                PriceBuyTargetPro = buyTarget,
+                PriceSellTargetPro = ptHistory.PriceTargetProLong,
+                PriceSellTargetProShort = ptHistory.PriceTargetProShort,
+                PriceSellTargetHedges = hfResult.PriceTarget,
                 PriceHistoryDays = history.Count(),
                 ADXComposite = adxCompositeScore,
                 OBVComposite = obvCompositeScore,
@@ -62,6 +74,7 @@ namespace PT.Middleware
                 ScoreTimeMS = sw.ElapsedMilliseconds,
                 ScoreDate = DateTime.Now,
                 ParameterSet = paramType,
+                PriceTargets = ptHistory.PriceTargets,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
                 HedgeFunds = hfResult,
@@ -69,8 +82,9 @@ namespace PT.Middleware
             };
             scoreResult.PriceRedGreen = scoreResult.PriceLast >= scoreResult.PriceOpen ?
                 Constants.DEFAULT_GREEN : Constants.DEFAULT_RED;
-
             scoreResult.CompositeRank = GetCompositeRank(scoreResult);
+
+            sw.Reset();
             return scoreResult;
         }
 
@@ -210,7 +224,7 @@ namespace PT.Middleware
         }
 
         // Main composite function to separate and organize the AI model's composites
-        public static decimal GetIndicatorComposite(string symbol, string function, IEnumerable<Skender.Stock.Indicators.Quote> history, int daysToCalculate, object supplement = null)
+        public static decimal GetIndicatorComposite(string symbol, string function, List<Skender.Stock.Indicators.Quote> history, int daysToCalculate, object supplement = null)
         {
             decimal compositeScore = 0;
             function = function.ToLower();
@@ -225,7 +239,7 @@ namespace PT.Middleware
                         //When the -DMI is above the +DMI, prices are moving down, and ADX measures the strength of the downtrend.
                         //Many traders will use ADX readings above 25 to suggest that the trend is strong enough for trend-trading strategies.
                         //Conversely, when ADX is below 25, many will avoid trend-trading strategies.
-                        int adxPeriod = 14;
+                        int adxPeriod = 15;
                         IEnumerable<AdxResult> adxResults = Indicator.GetAdx(history, adxPeriod);
                         compositeScore = GetADXComposite(adxResults, daysToCalculate);
                         break;
@@ -240,7 +254,7 @@ namespace PT.Middleware
                         //The two Aroon indicators(bullish and bearish) can also be made into a single oscillator by
                         //making the bullish indicator 100 to 0 and the bearish indicator 0 to - 100 and finding the
                         //difference between the two values. This oscillator then varies between 100 and - 100, with 0 indicating no trend.
-                        int aroonPeriod = 14;
+                        int aroonPeriod = 15;
                         IEnumerable<AroonResult> aroonResults = Indicator.GetAroon(history, aroonPeriod);
                         compositeScore = GetAROONComposite(aroonResults, daysToCalculate);
                         break;
@@ -332,19 +346,25 @@ namespace PT.Middleware
 
         // Fundamentals (advanced stats, volume, price, earnings and filings up-to-date)
         // RELIES completely on unofficial yahoo finance API for now
-        public static FundamentalsResult GetFundamentalsResult(string symbol, Snapshot quote, AlpacaHistory history)
+        public static FundamentalsResult GetFundamentalsResult(string symbol, Snapshot quote, PTHistory history)
         {
             try
             {
-                List<decimal> normalizedPrice = GetNormalizedData(history.PriceAvgYList);
-                decimal priceSlope = GetSlope(history.PriceAvgXList, history.PriceAvgYList);
-                decimal normalizedPriceSlope = GetSlope(history.PriceAvgXList, normalizedPrice);
+                //Get last 10 VWAPs, Volume, and Date data from PTHistory
+                List<decimal> normalizedPrice = GetNormalizedData(history.Price10YList);
+                decimal priceSlope = GetSlope(history.Price10XList, history.Price10YList);
+
+                decimal normalizedPriceSlope = GetSlope(history.Price10XList, normalizedPrice);
                 decimal normalizedPriceSlopeMultiplier = GetSlopeMultiplier(normalizedPriceSlope);
 
-                List<decimal> normalizedVolume = GetNormalizedData(history.VolAvgYList);
-                decimal volumeSlope = GetSlope(history.VolAvgXList, history.VolAvgYList);
-                decimal normalizedVolumeSlope = GetSlope(history.VolAvgXList, normalizedVolume);
+                List<decimal> normalizedVolume = GetNormalizedData(history.Volume10YList);
+                decimal volumeSlope = GetSlope(history.Volume10XList, history.Volume10YList);
+                decimal normalizedVolumeSlope = GetSlope(history.Volume10XList, normalizedVolume);
                 decimal normalizedVolumeSlopeMultiplier = GetSlopeMultiplier(normalizedVolumeSlope);
+
+                //Get avg vwap slope for price target projection
+                decimal vwapSlope = GetSlope(history.HistoricalVwapXList, history.HistoricalVwapYList);
+                decimal avgVolumeSlope = GetSlope(history.HistoricalVolAvgXList, history.HistoricalVolAvgYList);
 
                 // Do stuff with PE and EPS data
                 decimal peTrailing = 0.0M;
@@ -387,26 +407,37 @@ namespace PT.Middleware
                 decimal bonus = Convert.ToDecimal(Math.PI);
 
                 // Get base value as a function of price-to-book percentage
-                decimal baseValue = 100 - (priceToBook * 100);
-                if (baseValue >= 10)
+                decimal baseValue = 0;
+                decimal bookValuePrice = 0;
+                if (priceToBook > 0 && history.VwapToday > 0)
                 {
-                    baseValue += (bonus * 2); // more than 10% undervalued bonus
+                    bookValuePrice = history.VwapToday * (1 / priceToBook);
+                    decimal bookValuePriceDiffPercent = (bookValuePrice - history.VwapToday) / history.VwapToday;
+                    baseValue = bookValuePriceDiffPercent * 100;
+                    if (baseValue >= 10)
+                    {
+                        baseValue += (bonus * 2); // more than 10% undervalued bonus
+                    }
+                    else if (baseValue <= 0)
+                    {
+                        baseValue = bonus; //pi pity points
+                    }
+                    baseValue = Math.Min(baseValue, 30);
                 }
-                else if (baseValue <= 0)
+                else
                 {
-                    baseValue = 2 * bonus; // 2-pi pity points
+                    baseValue = bonus;
                 }
-                baseValue = Math.Min(baseValue, 30);
 
                 // Net expense ratio bonus
                 decimal netExpenseRatioBonus = 0;
-                if ( 0 <= netExpenseRatio && netExpenseRatio < 0.25M)
+                if (0 < netExpenseRatio && netExpenseRatio < 0.25M)
                 {
-                    netExpenseRatioBonus = 6 * bonus;
+                    netExpenseRatioBonus = 5 * bonus;
                 }
                 else if (0.25M <= netExpenseRatio && netExpenseRatio < 0.6M)
                 {
-                    netExpenseRatioBonus = 3 * bonus;
+                    netExpenseRatioBonus = 2 * bonus;
                 }
 
                 // Fair value price bonus
@@ -415,7 +446,7 @@ namespace PT.Middleware
                 if (netAssets > 0 && sharesOutstanding > 0)
                 {
                     fairValuePrice = netAssets / sharesOutstanding;
-                    decimal lastPrice = history.PriceAvgYList[history.PriceAvgYList.Count - 1];
+                    decimal lastPrice = history.HistoricalVwapYList[history.HistoricalVwapYList.Count - 1];
                     if (lastPrice < fairValuePrice)
                     {
                         fairValuePriceBonus = 3 * bonus;
@@ -472,6 +503,13 @@ namespace PT.Middleware
                     volumeTrendingModifier += penalty * 3;
                 }
 
+                //Get golden path modifier if avg vwap slope and ang vol slope positive
+                decimal goldenPathBonus = 0;
+                bool hasGoldenPath = (vwapSlope >= 0.01M && avgVolumeSlope >= 0.01M);
+                if (vwapSlope >= 0.05M && avgVolumeSlope >= 0.05M)
+                {
+                    goldenPathBonus += bonus * 2;
+                }
 
                 // Get normalized price slope and volume slope bonuses
                 decimal normalizedPriceSlopeBonus = (normalizedPriceSlope > 0.05M) ?
@@ -491,9 +529,10 @@ namespace PT.Middleware
                 composite += normalizedPriceSlopeBonus;
                 composite += fairValuePriceBonus;
                 composite += netExpenseRatioBonus;
-                composite += epsBonus;
-                composite = Math.Min(70, composite);
+                composite += goldenPathBonus;
                 composite += peBonus;
+                composite = Math.Min(70, composite);
+                composite += epsBonus;
                 composite += divBonus;
                 composite += composite >= 60 && volumeTrendingModifier < 0 ? volumeTrendingModifier : 0;
                 composite += volumeTrendingModifier > 0 ? volumeTrendingModifier : 0;
@@ -504,7 +543,6 @@ namespace PT.Middleware
                 // disqualify if less than USD volume multiplicative from constants
                 var disqualifyingLimit = Constants.DEFAULT_VOLUME_USD_1D_LIMIT;
 
-                //bool volumeDisqualified = (history.VolumeUSD < disqualifyingLimit || history.AverageVolumeUSD < disqualifyingLimit);
                 bool volumeDisqualified = !(history.Has1DayQualifiedVolume && history.Has10DayQualifiedVolume && history.Has30DayQualifiedVolume);
                 decimal volUsdAvg = (history.DollarVolumeToday + history.DollarVolume10Day + history.DollarVolume30Day) / 3.0M;
 
@@ -519,11 +557,18 @@ namespace PT.Middleware
                     DollarVolumeAverage = volUsdAvg,
                     VolumeSlope = volumeSlope,
                     PriceSlope = priceSlope,
+                    NormalizedPriceSlope = normalizedPriceSlope,
+                    VwapSlope = vwapSlope,
+                    FairValuePrice = fairValuePrice,
+                    BookValuePrice = bookValuePrice,
                     AverageEPS = averageEPS,
                     AveragePE = averagePE,
                     GrowthEPS = growthEPS,
                     GrowthPE = growthPE,
                     HasDividends = hasDivs,
+                    HasGoldenPath = hasGoldenPath,
+                    DivRate = hasDivs ? quote.DividendRate : 0,
+                    DivYield = hasDivs ? Convert.ToDecimal(quote.DividendYield) : 0,
                     IsBlacklisted = volumeDisqualified,
                     Message = string.Empty
                 };
@@ -1160,7 +1205,7 @@ namespace PT.Middleware
             decimal aroonDownMidpoint = (curAroonDownVal + prevAroonDownVal) / 2.0M;
             decimal aroonCrossingPoint = (aroonUpMidpoint + aroonDownMidpoint) / 2.0M;
 
-            return (aroonCrossingPoint >= 25 && aroonCrossingPoint <= 75);
+            return (aroonCrossingPoint >= 30 && aroonCrossingPoint <= 70);
         }
 
         public static decimal GetBBANDSComposite(IEnumerable<BollingerBandsResult> resultSet, List<Skender.Stock.Indicators.Quote> supplement, int daysToCalculate)
@@ -1340,6 +1385,8 @@ namespace PT.Middleware
             return source.Skip(Math.Max(0, source.Count() - N));
         }
 
+
+
         public static decimal GetSlope(List<decimal> xList, List<decimal> yList)
         {
             //"zip" xs and ys to make the sum of products easier
@@ -1390,6 +1437,10 @@ namespace PT.Middleware
         // Transform input data into normalized (or scaled) data
         public static List<decimal> GetNormalizedData(List<decimal> input)
         {
+            // Protect against divide by 0 errors
+            if (input.Count == 0)
+                return new List<decimal>();
+
             // Estimate min and max from the input values using standard deviation
             decimal mean = input.Sum() / input.Count;
 

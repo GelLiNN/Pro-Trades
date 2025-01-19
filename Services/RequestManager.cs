@@ -13,18 +13,25 @@ namespace PT.Services
 
         //Globals
         public HashSet<Guid> _concurrentRequests;
+        public Dictionary<int, string> _errors;
         public HttpClient _client { get; private set; }
 
         public RequestManager()
         {
+            _errors = new Dictionary<int, string>();
             _concurrentRequests = new HashSet<Guid>();
             _client = new HttpClient();
-
+            
             int timeoutMins = Program.Config.GetValue<int>("Custom:WebRequestTimeoutMinutes");
             _client.Timeout = TimeSpan.FromMinutes(timeoutMins);
         }
 
-        //Helper to get response string via normal http "GET" request with optional headers
+        /// <summary>
+        /// Helper to get response string via normal http "GET" request with optional headers
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="headers"></param>
+        /// <returns></returns>
         public string GetFromUri(string uri, Dictionary<string, string>? headers = null)
         {
             var request = new HttpRequestMessage()
@@ -41,9 +48,57 @@ namespace PT.Services
             }
             using (var response = _client.SendAsync(request).GetAwaiter().GetResult())
             {
-                response.EnsureSuccessStatusCode();
-                string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                return responseBody;
+                try
+                {
+                    response.EnsureSuccessStatusCode();
+                    string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    return responseBody;
+                }
+                catch (Exception ex)
+                {
+                    string err = ex.Message;
+                    _errors.Add(_errors.Count, err);
+                    //_client.Dispose();
+                    return string.Empty;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Helper to get HTTP response string via normal http "GET" request, with optional headers.
+        /// </summary>
+        /// <param name="uri">Formatted URL string with any query parameters</param>
+        /// <param name="headers">Header key/value pairs</param>
+        /// <returns>response body string</returns>
+        public async Task<string> GetFromUriAsync(string uri, Dictionary<string, string>? headers = null)
+        {
+            var request = new HttpRequestMessage()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = new Uri(uri)
+            };
+            if (headers != null)
+            {
+                foreach (var key in headers.Keys)
+                {
+                    request.Headers.Add(key, headers[key]);
+                }
+            }
+            using (var response = await _client.SendAsync(request))
+            {
+                try
+                {
+                    response.EnsureSuccessStatusCode();
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    return responseBody;
+                }
+                catch (Exception ex)
+                {
+                    string err = ex.Message;
+                    _errors.Add(_errors.Count, err);
+                    _client.Dispose();
+                    return string.Empty;
+                }
             }
         }
 

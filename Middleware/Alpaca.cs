@@ -1,7 +1,6 @@
 using Newtonsoft.Json.Linq;
 using PT.Models.RequestModels;
 using PT.Services;
-using Skender.Stock.Indicators;
 using System.Xml;
 
 namespace PT.Middleware
@@ -10,7 +9,7 @@ namespace PT.Middleware
     {
         // TODO: get price history from alpaca API https://docs.alpaca.markets/reference/stockbars
         // It has volume weighted prices for each day which is useful
-        public static async Task<AlpacaHistory> GetHistoryAsync(RequestManager rm, string symbol, int days)
+        public static async Task<AlpacaHistory> GetHistoryAsyncOld(RequestManager rm, string symbol, int days)
         {
             // You should be able to query data from various markets including US, HK, TW
             // The timezone here may or may not impact accuracy
@@ -27,14 +26,16 @@ namespace PT.Middleware
             // Format and make Alpaca history request
             string formattedStartDate = XmlConvert.ToString(historyStartTime, XmlDateTimeSerializationMode.Local);
             string uri = $"https://data.alpaca.markets/v2/stocks/bars?symbols={symbol}&timeframe=1Day&start={formattedStartDate}&limit=1000&adjustment=raw&feed=sip&sort=asc";
-            string response = rm.GetFromUri(uri, headers);
+            string response = await rm.GetFromUriAsync(uri, headers);
+
+            // Parse Alpaca response
+            JObject responseObj = JObject.Parse(response);
+            JToken pathResult = responseObj.SelectToken($"bars.{symbol}");
+            JArray historyArr = pathResult as JArray;
 
             // Convert into AlpacaHistory with Stock.Indicators.Quote inside
             AlpacaHistory alpacaHistory = new();
             List<Skender.Stock.Indicators.Quote> historyList = new();
-            JObject responseObj = JObject.Parse(response);
-            JToken pathResult = responseObj.SelectToken($"bars.{symbol}");
-            JArray historyArr = pathResult as JArray;
 
             // Averages we must compute
             decimal avgPrice30d = 0;
@@ -132,8 +133,35 @@ namespace PT.Middleware
             alpacaHistory.PriceHistory = historyList.AsEnumerable();
             return alpacaHistory;
         }
-    }
 
-    // TODO: https://docs.alpaca.markets/docs/historical-option-data
-    // Implement functions for accessing options data
+        public static async Task<JArray?> GetAlpacaPriceHistory(RequestManager rm, string symbol, int days)
+        {
+            // You should be able to query data from various markets including US, HK, TW
+            // The timezone here may or may not impact accuracy
+            days *= -1;
+            var historyStartTime = DateTime.Now.AddDays(days);
+
+            Dictionary<string, string> headers = new Dictionary<string, string>
+            {
+                { "accept", "application/json" },
+                { Constants.ALPACA_KEY_ID, Program.Config.GetValue<string>(Constants.ALPACA_KEY_ID) },
+                { Constants.ALPACA_SECRET_KEY, Program.Config.GetValue<string>(Constants.ALPACA_SECRET_KEY) },
+            };
+
+            // Format and make Alpaca history request
+            string formattedStartDate = XmlConvert.ToString(historyStartTime, XmlDateTimeSerializationMode.Local);
+            string uri = $"https://data.alpaca.markets/v2/stocks/bars?symbols={symbol}&timeframe=1Day&start="
+                + $"{formattedStartDate}&limit=1000&adjustment=raw&feed=sip&sort=asc";
+            string response = await rm.GetFromUriAsync(uri, headers);
+
+            // Parse Alpaca response
+            JObject responseObj = JObject.Parse(response);
+            JToken? pathResult = responseObj.SelectToken($"bars.{symbol}");
+            JArray? historyArr = pathResult as JArray;
+            return historyArr;
+        }
+
+        // TODO: https://docs.alpaca.markets/docs/historical-option-data
+        // Implement functions for accessing options data
+    }
 }

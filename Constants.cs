@@ -29,7 +29,15 @@ namespace PT
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly int DEFAULT_HISTORY_DAYS = 375;
         public static readonly int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
-        public static readonly decimal SIGNAL_CONSTANT = 3.8M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
+        public static readonly decimal SIGNAL_CONSTANT = 3.7M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
+        public static readonly int THIRTY_DAYS = 30;
+        public static readonly int TEN_DAYS = 10;
+        public static readonly decimal HUNDRED = 100.0M;
+        public static readonly decimal THIRTY = 30.0M;
+        public static readonly decimal TEN = 10.0M;
+        public static readonly decimal FIVE = 5.0M;
+        public static readonly decimal FIB = 0.618M;
+        public static readonly decimal BT_AVG_WEEK_DIFF_PERCENT = 0.03M;
         public static readonly string DEFAULT_RED = "Red";
         public static readonly string DEFAULT_GREEN = "Green";
 

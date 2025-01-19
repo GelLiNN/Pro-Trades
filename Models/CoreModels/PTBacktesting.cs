@@ -19,6 +19,7 @@ namespace PT.Models.CoreModels
     {
         public DateTime HitDate { get; set; }
         public DateTime TurnoutDate { get; set; }
+        public string HitSymbol { get; set; }
         public decimal HitScore { get; set; }
         public decimal HitPrice { get; set; }
         public decimal TurnoutPrice { get; set; }

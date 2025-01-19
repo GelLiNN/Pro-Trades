@@ -1,3 +1,5 @@
+using PT.Models.CoreModels;
+
 namespace PT.Models.RequestModels
 {
     public class CompositeScoreResult
@@ -10,6 +12,10 @@ namespace PT.Models.RequestModels
         public decimal PriceOpen { get; set; }
         public decimal PriceLast { get; set; }
         public decimal PriceVwap { get; set; }
+        public decimal PriceBuyTargetPro { get; set; }
+        public decimal PriceSellTargetPro { get; set; }
+        public decimal PriceSellTargetProShort { get; set; }
+        public decimal PriceSellTargetHedges { get; set; }
         public string PriceRedGreen { get; set; }
         public int PriceHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
@@ -23,6 +29,8 @@ namespace PT.Models.RequestModels
         public long ScoreTimeMS { get; set; }
         public DateTime ScoreDate { get; set; }
         public ParameterSetType ParameterSet { get; set; }
+
+        public List<PTPriceTarget> PriceTargets { get; set; }
         public ShortInterestResult ShortInterest { get; set; }
         public FundamentalsResult Fundamentals { get; set; }
         public HedgeFundsResult HedgeFunds { get; set; }
@@ -84,13 +92,20 @@ namespace PT.Models.RequestModels
         public decimal DollarVolumeAverage { get; set; }
         public decimal VolumeSlope { get; set; }
         public decimal PriceSlope { get; set; }
+        public decimal NormalizedPriceSlope { get; set; }
+        public decimal VwapSlope { get; set; }
+        public decimal FairValuePrice { get; set; }
+        public decimal BookValuePrice { get; set; }
         public decimal AverageEPS { get; set; }
         public decimal AveragePE { get; set; }
         public decimal GrowthEPS { get; set; }
         public decimal GrowthPE { get; set; }
+        public bool HasGoldenPath { get; set; }
         public bool HasDividends { get; set; }
+        public decimal DivRate { get; set; }
+        public decimal DivYield { get; set; }
         public bool IsBlacklisted { get; set; }
-        public string Message { get; set; }
+        public string? Message { get; set; }
     }
 
     /*
