@@ -28,6 +28,7 @@ namespace PT
         public const string ALPACA_KEY_ID = "APCA-API-KEY-ID";
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly int DEFAULT_HISTORY_DAYS = 375;
+        public const int DEFAULT_LOOKBACK_DAYS = 7;
         public static readonly int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
         public static readonly decimal SIGNAL_CONSTANT = 3.7M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
         public static readonly int THIRTY_DAYS = 30;
@@ -90,5 +91,12 @@ namespace PT
         public static readonly string HS5_SHORT_DESCRIPTION = "Financial Instruments";
         public static readonly string HS5_LONG_DESCRIPTION = "2nd generation parameter set usually for financial instruments like index funds or other defensive cases";
         public static readonly string HS5_SET = "adx_aroon_obv_bbands_macd_short_fund";
+
+        // Indicator Composites
+        public const string COMPOSITE_ADX = "ADX";
+        public const string COMPOSITE_AROON = "AROON";
+        public const string COMPOSITE_BBANDS = "BBANDS";
+        public const string COMPOSITE_OBV = "OBV";
+        public const string COMPOSITE_MACD = "MACD";
     }
 }

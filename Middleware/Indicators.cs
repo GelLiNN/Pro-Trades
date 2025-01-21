@@ -3,7 +3,6 @@ using PT.Models.RequestModels;
 using PT.Services;
 using Skender.Stock.Indicators;
 using System.Diagnostics;
-using System.Linq;
 using YahooQuotesApi;
 
 namespace PT.Middleware
@@ -23,19 +22,21 @@ namespace PT.Middleware
             PTHistory ptHistory = HistoryHelper.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).GetAwaiter().GetResult();
             //AlpacaHistory alpacaHistory = Alpaca.GetHistoryAsyncOld(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).GetAwaiter().GetResult();
             List<Skender.Stock.Indicators.Quote> history = ptHistory.SkenderHistory.ToList();
+
+            // Only used for the obv composite
             List<Skender.Stock.Indicators.Quote> obvHistory = ptHistory.SkenderHistory.TakeLast(42).ToList();
 
-            // This was only used for the bbands composite
+            // Only used for the bbands composite
             List<Skender.Stock.Indicators.Quote> supplement = ptHistory.SkenderHistory.TakeLast(7).ToList();
 
             // get fundamentals with Alpaca price history (should update to PTHistory
             FundamentalsResult fundResult = GetFundamentalsResult(symbol, quote, ptHistory);
 
-            decimal adxCompositeScore = GetIndicatorComposite(symbol, "ADX", history, 7);
-            decimal obvCompositeScore = GetIndicatorComposite(symbol, "OBV", obvHistory, 7);
-            decimal macdCompositeScore = GetIndicatorComposite(symbol, "MACD", history, 7);
-            decimal bbandsCompositeScore = GetIndicatorComposite(symbol, "BBANDS", history, 7, supplement);
-            decimal aroonCompositeScore = GetIndicatorComposite(symbol, "AROON", history, 7);
+            decimal adxCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_ADX, history, Constants.DEFAULT_LOOKBACK_DAYS);
+            decimal obvCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_OBV, obvHistory, Constants.DEFAULT_LOOKBACK_DAYS);
+            decimal macdCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_MACD, history, Constants.DEFAULT_LOOKBACK_DAYS);
+            decimal bbandsCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_BBANDS, history, Constants.DEFAULT_LOOKBACK_DAYS, supplement);
+            decimal aroonCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_AROON, history, Constants.DEFAULT_LOOKBACK_DAYS);
 
             ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7, rm);
             HedgeFundsResult hfResult = TipRanks.GetTipRanksResult(symbol, rm);
@@ -224,17 +225,15 @@ namespace PT.Middleware
         }
 
         // Main composite function to separate and organize the AI model's composites
-        public static decimal GetIndicatorComposite(string symbol, string function, List<Skender.Stock.Indicators.Quote> history, int daysToCalculate, object supplement = null)
+        public static decimal GetIndicatorComposite(string symbol, string comp, List<Skender.Stock.Indicators.Quote> history, int daysToCalculate, object supplement = null)
         {
             decimal compositeScore = 0;
-            function = function.ToLower();
-
             try
             {
                 //different processing for each indicator
-                switch (function)
+                switch (comp)
                 {
-                    case "adx":
+                    case Constants.COMPOSITE_ADX:
                         //When the +DMI is above the -DMI, prices are moving up, and ADX measures the strength of the uptrend.
                         //When the -DMI is above the +DMI, prices are moving down, and ADX measures the strength of the downtrend.
                         //Many traders will use ADX readings above 25 to suggest that the trend is strong enough for trend-trading strategies.
@@ -244,7 +243,7 @@ namespace PT.Middleware
                         compositeScore = GetADXComposite(adxResults, daysToCalculate);
                         break;
 
-                    case "aroon":
+                    case Constants.COMPOSITE_AROON:
                         //Indicator Movements Around the Key Levels, 30 and 70 - Movements above 70 indicate a strong trend,
                         //while movements below 30 indicate low trend strength. Movements between 30 and 70 indicate indecision.
                         //For example, if the bullish indicator remains above 70 while the bearish indicator remains below 30,
@@ -259,7 +258,7 @@ namespace PT.Middleware
                         compositeScore = GetAROONComposite(aroonResults, daysToCalculate);
                         break;
 
-                    case "macd":
+                    case Constants.COMPOSITE_MACD:
                         //Positive rate-of-change for the MACD Histogram values indicate bullish movement
                         //Recent Buy signal measured by MACD base value crossing (becoming greater than) the MACD signal value
                         //Recent Sell signal measured by MACD signal value crossing (becoming greater than) the MACD base value
@@ -270,7 +269,7 @@ namespace PT.Middleware
                         compositeScore = GetMACDComposite(macdResults, daysToCalculate);
                         break;
 
-                    case "obv":
+                    case Constants.COMPOSITE_OBV:
                         //The On Balance Volume (OBV) is a cumulative total of the up and down volume.
                         //When the close is higher than the previous close, the volume is added to the running total,
                         //and when the close is lower than the previous close, the volume is subtracted from the running total.
@@ -286,7 +285,7 @@ namespace PT.Middleware
                         break;
 
                     //Below cases need to be migrated to use TD's conventions
-                    case "bbands":
+                    case Constants.COMPOSITE_BBANDS:
                         //Bollinger Bands consist of three lines. The middle band is a simple moving average (generally 20 periods)
                         //of the typical price (TP). The upper and lower bands are F standard deviations (generally 2) above and below the middle band.
                         //The bands widen and narrow when the volatility of the price is higher or lower, respectively.
@@ -339,7 +338,7 @@ namespace PT.Middleware
             }
             catch (Exception e)
             {
-                Debug.WriteLine("EXCEPTION CAUGHT: Indicators.cs GetCompositeScore for symbol " + symbol + ", function " + function + ", message: " + e.Message);
+                Debug.WriteLine("EXCEPTION CAUGHT: Indicators.cs GetCompositeScore for symbol " + symbol + ", comosite " + comp + ", message: " + e.Message);
             }
             return compositeScore;
         }
@@ -1516,7 +1515,7 @@ namespace PT.Middleware
         public static decimal GetStdDevScalar(decimal range, decimal stdDev)
         {
             //how many stdDevs do you need to cover the entire range?
-            return range / stdDev;
+            return stdDev == 0 ? 0 : range / stdDev;
         }
 
         // Return the standard deviation of an array of decimals

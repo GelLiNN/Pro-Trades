@@ -96,7 +96,6 @@ namespace PT.Services
                 {
                     string err = ex.Message;
                     _errors.Add(_errors.Count, err);
-                    _client.Dispose();
                     return string.Empty;
                 }
             }

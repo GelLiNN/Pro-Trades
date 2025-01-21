@@ -147,18 +147,24 @@ namespace PT.Middleware
                 { Constants.ALPACA_KEY_ID, Program.Config.GetValue<string>(Constants.ALPACA_KEY_ID) },
                 { Constants.ALPACA_SECRET_KEY, Program.Config.GetValue<string>(Constants.ALPACA_SECRET_KEY) },
             };
+            try
+            {
+                // Format and make Alpaca history request
+                string formattedStartDate = XmlConvert.ToString(historyStartTime, XmlDateTimeSerializationMode.Local);
+                string uri = $"https://data.alpaca.markets/v2/stocks/bars?symbols={symbol}&timeframe=1Day&start="
+                    + $"{formattedStartDate}&limit=1000&adjustment=raw&feed=sip&sort=asc";
+                string response = await rm.GetFromUriAsync(uri, headers);
 
-            // Format and make Alpaca history request
-            string formattedStartDate = XmlConvert.ToString(historyStartTime, XmlDateTimeSerializationMode.Local);
-            string uri = $"https://data.alpaca.markets/v2/stocks/bars?symbols={symbol}&timeframe=1Day&start="
-                + $"{formattedStartDate}&limit=1000&adjustment=raw&feed=sip&sort=asc";
-            string response = await rm.GetFromUriAsync(uri, headers);
-
-            // Parse Alpaca response
-            JObject responseObj = JObject.Parse(response);
-            JToken? pathResult = responseObj.SelectToken($"bars.{symbol}");
-            JArray? historyArr = pathResult as JArray;
-            return historyArr;
+                // Parse Alpaca response
+                JObject responseObj = JObject.Parse(response);
+                JToken? pathResult = responseObj.SelectToken($"bars.{symbol}");
+                JArray? historyArr = pathResult as JArray;
+                return historyArr;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
 
         // TODO: https://docs.alpaca.markets/docs/historical-option-data

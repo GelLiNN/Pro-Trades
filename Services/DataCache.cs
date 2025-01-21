@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Primitives;
 using PT.Middleware;
 using PT.Models.RequestModels;
+using YahooQuotesApi;
 
 namespace PT.Services
 {
@@ -89,19 +90,17 @@ namespace PT.Services
         {
             try
             {
-                //Stopwatch sw = new Stopwatch(); sw.Start();
                 string cacheKey = (string)key;
                 string channel = cacheKey.Split('-')[0];
                 string symbol = cacheKey.Split('-')[2];
 
                 // Remove before updating and re-adding
                 RemoveCachedSymbol(cacheKey);
-                YahooQuotesApi.Snapshot quote = YahooFinance.GetQuoteAsync(symbol).Result;
+                Snapshot quote = YahooFinance.GetQuoteAsync(symbol).GetAwaiter().GetResult();
                 CompositeScoreResult result = Indicators.GetCompositeScoreResult(symbol, quote, _rm);
 
                 // Save score to cache
                 Add(result, cacheKey);
-                //string perf = sw.ElapsedMilliseconds.ToString();
             }
             catch (Exception e)
             {
@@ -229,8 +228,28 @@ namespace PT.Services
         {
             await Task.Run(() =>
             {
+                // Use DefaultCacheLimit from custom config
+                int limit = Program.Config.GetValue<int>("Custom:DefaultCacheLimit");
+                ScrapedSymbols = Companies.GetRandomizedCompanySymbols(_rm, limit);
+
+                foreach (var scrapedSymbol in ScrapedSymbols)
+                {
+                    if (!CachedSymbols[cacheId].Contains(scrapedSymbol))
+                    {
+                        if (CachedSymbols["yf-companies"].Count < limit)
+                        {
+                            string cacheKey = string.Format("{0}-{1}", cacheId, scrapedSymbol);
+                            Get(cacheKey);
+                        }
+                        else
+                        {
+                            break; // Quick stop cache loading
+                        }
+                    }
+                }
+
                 // Get Nasdaq symbols
-                string nasdaqData = _rm.GetFromUri(Companies.NasdaqSymbolsUri);
+                /*string nasdaqData = _rm.GetFromUri(Companies.NasdaqSymbolsUri);
                 string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
 
                 for (int i = 1; i < nasdaqDataLines.Length - 1; i++) // trim first and last row
@@ -269,9 +288,6 @@ namespace PT.Services
                     }
                 }
 
-                // Use DefaultCacheLimit from custom config
-                int limit = Program.Config.GetValue<int>("Custom:DefaultCacheLimit");
-
                 // Ensure combined set is randomized, then start loading cache with Get function
                 Random r = new Random();
                 string[] randomizedSymbols = ScrapedSymbols.OrderBy(x => r.Next()).ToArray();
@@ -287,8 +303,7 @@ namespace PT.Services
                     {
                         break; // Quick stop cache loading
                     }
-
-                }
+                }*/
 
                 /*Parallel Edition
                 Parallel.ForEach(ids, Common.ParallelOptions, (entityId) =>

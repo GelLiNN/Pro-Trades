@@ -1,4 +1,4 @@
-﻿using PT.Models.RequestModels;
+using PT.Models.RequestModels;
 using PT.Services;
 
 namespace PT.Middleware
@@ -17,7 +17,7 @@ namespace PT.Middleware
                 SymbolsToCompanies = new Dictionary<string, CompanyYF>()
             };
 
-            string nasdaqData = rm.GetFromUri(NasdaqSymbolsUri);
+            string nasdaqData = await rm.GetFromUriAsync(NasdaqSymbolsUri);
             string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
             {
@@ -46,7 +46,7 @@ namespace PT.Middleware
                 }
             }
 
-            string otcMarketsData = rm.GetFromUri(OtcMarketsUri);
+            string otcMarketsData = await rm.GetFromUriAsync(OtcMarketsUri);
             string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             for (int k = 1; k < otcMarketsDataLines.Length; k++) //trim first row
             {
@@ -71,6 +71,62 @@ namespace PT.Middleware
                 }
             }
             return await Task.FromResult(companies);
+        }
+
+        /// <summary>
+        /// Get a randomized HashSet of active company symbols from Nasdaq and OTC master lists
+        /// </summary>
+        /// <param name="rm"></param>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        public static HashSet<string> GetRandomizedCompanySymbols(RequestManager rm, int limit)
+        {
+            HashSet<string> symbols = new HashSet<string>();
+
+            // Get Nasdaq symbols
+            string nasdaqData = rm.GetFromUri(Companies.NasdaqSymbolsUri);
+            string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+
+            for (int i = 1; i < nasdaqDataLines.Length - 1; i++) // trim first and last row
+            {
+                string line = nasdaqDataLines[i];
+                string[] data = line.Split('|');
+                if (data.Count() > 3)
+                {
+                    string symbol = data[1];
+                    if (!string.IsNullOrEmpty(symbol) && !symbols.Contains(symbol))
+                    {
+                        bool isNasdaq = data[0] == "Y";
+                        if (isNasdaq)
+                        {
+                            symbols.Add(symbol);
+                        }
+                    }
+                }
+            }
+
+            // Get OTC Markets symbols
+            string otcMarketsData = rm.GetFromUri(Companies.OtcMarketsUri);
+            string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+
+            for (int j = 1; j < otcMarketsDataLines.Length; j++) // trim first row
+            {
+                string line = otcMarketsDataLines[j];
+                string[] data = line.Split(',');
+                if (data.Length > 3)
+                {
+                    string symbol = data[0];
+                    if (!string.IsNullOrEmpty(symbol) && !symbols.Contains(symbol))
+                    {
+                        symbols.Add(symbol);
+                    }
+                }
+            }
+
+            // Ensure combined set is randomized, then start loading cache with Get function
+            Random r = new Random();
+            var randomizedSymbols = symbols.OrderBy(x => r.Next());
+            return randomizedSymbols.Take(limit).ToHashSet();
         }
     }
 }
