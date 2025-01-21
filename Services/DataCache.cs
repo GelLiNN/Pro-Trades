@@ -248,63 +248,6 @@ namespace PT.Services
                     }
                 }
 
-                // Get Nasdaq symbols
-                /*string nasdaqData = _rm.GetFromUri(Companies.NasdaqSymbolsUri);
-                string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-                for (int i = 1; i < nasdaqDataLines.Length - 1; i++) // trim first and last row
-                {
-                    string line = nasdaqDataLines[i];
-                    string[] data = line.Split('|');
-                    if (data.Count() > 3)
-                    {
-                        string symbol = data[1];
-                        if (!string.IsNullOrEmpty(symbol) && !CachedSymbols[cacheId].Contains(symbol))
-                        {
-                            bool isNasdaq = data[0] == "Y";
-                            if (isNasdaq)
-                            {
-                                ScrapedSymbols.Add(symbol);
-                            }
-                        }
-                    }
-                }
-
-                // Get OTC Markets symbols
-                string otcMarketsData = _rm.GetFromUri(Companies.OtcMarketsUri);
-                string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-                for (int j = 1; j < otcMarketsDataLines.Length; j++) // trim first row
-                {
-                    string line = otcMarketsDataLines[j];
-                    string[] data = line.Split(',');
-                    if (data.Length > 3)
-                    {
-                        string symbol = data[0];
-                        if (!string.IsNullOrEmpty(symbol) && !CachedSymbols[cacheId].Contains(symbol))
-                        {
-                            ScrapedSymbols.Add(symbol);
-                        }
-                    }
-                }
-
-                // Ensure combined set is randomized, then start loading cache with Get function
-                Random r = new Random();
-                string[] randomizedSymbols = ScrapedSymbols.OrderBy(x => r.Next()).ToArray();
-                for (int k = 0; k < randomizedSymbols.Length; k++) // do not trim
-                {
-                    if (CachedSymbols["yf-companies"].Count < limit)
-                    {
-                        string symbol = randomizedSymbols[k];
-                        string cacheKey = string.Format("{0}-{1}", cacheId, symbol);
-                        Get(cacheKey);
-                    }
-                    else
-                    {
-                        break; // Quick stop cache loading
-                    }
-                }*/
-
                 /*Parallel Edition
                 Parallel.ForEach(ids, Common.ParallelOptions, (entityId) =>
                 {
