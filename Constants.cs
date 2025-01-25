@@ -30,6 +30,7 @@ namespace PT
         public static readonly string DEFAULT_RED = "Red";
         public static readonly string DEFAULT_GREEN = "Green";
         public const int PRIME_GATE = 84;
+        public const int HEALTHY_SHORT_INTEREST_PCT = 15;
         public const int DEFAULT_HISTORY_DAYS = 375;
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Globalization;
 using PT.Models.RequestModels;
 using PT.Services;
@@ -68,6 +68,9 @@ namespace PT.Middleware
             decimal shortSlopeMultiplier = Indicators.GetSlopeMultiplier(shortSlope);
             decimal shortInterestAverage = totalVolume > 0 ? (totalVolumeShort / totalVolume) * 100 : 30.0M; //set to 30 if not found
 
+            decimal penalty = -1.0m * Convert.ToDecimal(Math.PI);
+            decimal bonus = Convert.ToDecimal(Math.PI);
+
             //Add these bonuses to account for normal short interest fluctuations
             //The slope cannot be in both ranges if the ranges do not overlap
             //This prevents adding both bonuses
@@ -75,10 +78,13 @@ namespace PT.Middleware
             bool moderatelyBearish = (ModeratelyBearishLowerBound <= shortSlope && shortSlope <= ModeratelyBearishUpperBound);
 
             //calculate composite score based on the following values and weighted multipliers
-            compositeScore += 100 - shortInterestAverage; //get base score as 100 - short interest
-            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + 10 : -15;
-            compositeScore += (shortSlope > 0 && slightlyBearish) ? 10 : 0;
-            compositeScore += (shortSlope > 0 && moderatelyBearish) ? 5 : 0;
+            compositeScore += Constants.PRIME_GATE - shortInterestAverage; //get base score as Prime Gate - short interest avg
+            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + (bonus * 3) : 0;
+            compositeScore += (shortSlope < -0.5M) ? bonus : 0;
+            compositeScore += (shortSlope > 0.1M) ? penalty * 4 : 0;
+            compositeScore += (shortSlope > 0 && slightlyBearish) ? bonus * 3 : 0;
+            compositeScore += (shortSlope > 0 && moderatelyBearish) ? bonus * 2 : 0;
+            compositeScore += shortInterestAverage < Constants.HEALTHY_SHORT_INTEREST_PCT ? bonus * 4 : 0;
 
             //Cap this compositeScore at 100 because we should not give it extra weight
             compositeScore = Math.Min(compositeScore, 100);

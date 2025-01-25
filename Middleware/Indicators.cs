@@ -122,7 +122,7 @@ namespace PT.Middleware
         {
             return
                 (scoreResult.CompositeScoreValue < 40 &&
-                (scoreResult.ShortInterestComposite <= 60 && scoreResult.FundamentalsComposite <= 60) &&
+                (scoreResult.ShortInterestComposite <= 50 && scoreResult.FundamentalsComposite <= 60) &&
                 !(scoreResult.RatingsComposite == Constants.INVALID_COMPOSITE && scoreResult.FundamentalsComposite == Constants.INVALID_COMPOSITE));
         }
 
@@ -1401,15 +1401,15 @@ namespace PT.Middleware
         {
             //Positive cases
             if (slope > 0 && slope < 0.25M)
-                return 40.0M;
-            else if (slope >= 0.25M && slope < 0.5M)
                 return 30.0M;
-            else if (slope >= 0.5M && slope < 1)
+            else if (slope >= 0.25M && slope < 0.5M)
                 return 20.0M;
+            else if (slope >= 0.5M && slope < 1)
+                return 10.0M;
             else if (slope >= 1 && slope < 5)
-                return 2.0M;
+                return 4.0M;
             else if (slope >= 5 && slope < 10)
-                return 1.5M;
+                return 1.7M;
             else if (slope >= 10 && slope < 20)
                 return 1.0M;
             else if (slope >= 20)
@@ -1417,15 +1417,15 @@ namespace PT.Middleware
 
             //Negative cases
             else if (slope < 0 && slope > -0.25M)
-                return -40.0M;
-            else if (slope <= -0.25M && slope > -0.5M)
                 return -30.0M;
-            else if (slope <= -0.5M && slope > -1)
+            else if (slope <= -0.25M && slope > -0.5M)
                 return -20.0M;
+            else if (slope <= -0.5M && slope > -1)
+                return -10.0M;
             else if (slope <= -1 && slope > -5)
-                return -2.0M;
+                return -4.0M;
             else if (slope <= -5 && slope > -10)
-                return -1.5M;
+                return -1.7M;
             else if (slope <= -10 && slope > -20)
                 return -1.0M;
             else if (slope <= -20)
