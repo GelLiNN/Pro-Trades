@@ -104,9 +104,9 @@ namespace PT.Middleware
                 rank = Constants.RANK_NEUTRAL;
             else if (scoreResult.CompositeScoreValue >= 60 && scoreResult.CompositeScoreValue < 70)
                 rank = Constants.RANK_FAIR;
-            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < 83)
+            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < Constants.PRIME_GATE)
                 rank = Constants.RANK_GOOD;
-            else if (scoreResult.CompositeScoreValue >= 83)
+            else if (scoreResult.CompositeScoreValue >= Constants.PRIME_GATE)
                 rank = Constants.RANK_PRIME;
             return rank;
         }
