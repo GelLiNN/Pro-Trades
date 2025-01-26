@@ -237,8 +237,7 @@ namespace PT.Middleware
 
         public static void ComputePriceSellTargets(FundamentalsResult fundResult, PTHistory history)
         {
-            // Long sell targets
-            if (fundResult.FairValuePrice != 0)
+            /*if (fundResult.FairValuePrice != 0)
             {
                 history.AddPriceTarget("Fair value price target (net assets / shares outstanding)", fundResult.FairValuePrice);
             }
@@ -246,8 +245,9 @@ namespace PT.Middleware
             if (fundResult.BookValuePrice != history.VwapToday)
             {
                 history.AddPriceTarget("Book value price target", fundResult.BookValuePrice);
-            }
+            }*/
 
+            // Long sell targets
             decimal priceSlopeProjection5d = history.VwapToday + (fundResult.PriceSlope * Constants.FIVE);
             history.AddPriceTarget("Standard price slope projection target", priceSlopeProjection5d);
 
@@ -287,9 +287,9 @@ namespace PT.Middleware
 
             int len = history.PriceTargets.Count;
             history.PriceTargetProLong =
-                (history.PriceTargets[0].TargetPrice + history.PriceTargets[1].TargetPrice) / 2.0M;
+                (history.PriceTargets[0].TargetPrice + history.PriceTargets[1].TargetPrice + history.PriceTargets[2].TargetPrice) / 3.0M;
             history.PriceTargetProShort =
-                (history.PriceTargets[len - 1].TargetPrice + history.PriceTargets[len - 2].TargetPrice) / 2.0M;
+                (history.PriceTargets[len - 1].TargetPrice + history.PriceTargets[len - 2].TargetPrice + history.PriceTargets[len - 3].TargetPrice) / 3.0M;
         }
     }
 }

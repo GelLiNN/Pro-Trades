@@ -415,17 +415,19 @@ namespace PT.Middleware
                     baseValue = bookValuePriceDiffPercent * 100;
                     if (baseValue >= 10)
                     {
-                        baseValue += (bonus * 2); // more than 10% undervalued bonus
+                        baseValue += (bonus * 2); //more than 10% undervalued bonus
                     }
                     else if (baseValue <= 0)
                     {
-                        baseValue = bonus; //pi pity points
+                        //pi pity points with vwap slope bonus
+                        baseValue = bonus + (vwapSlope > 0.5M ? bonus * 2 : 0);
                     }
                     baseValue = Math.Min(baseValue, 30);
                 }
                 else
                 {
-                    baseValue = bonus;
+                    //pi pity points with vwap slope bonus
+                    baseValue = bonus + (vwapSlope > 0.5M ? bonus * 2 : 0);
                 }
 
                 // Net expense ratio bonus
@@ -514,6 +516,7 @@ namespace PT.Middleware
                 decimal normalizedPriceSlopeBonus = (normalizedPriceSlope > 0.05M) ?
                     normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
                 normalizedPriceSlopeBonus = Math.Min(normalizedPriceSlopeBonus, 10);
+                normalizedPriceSlopeBonus += (normalizedPriceSlope > 0) ? bonus : 0;
 
                 decimal normalizedVolumelopeBonus = (normalizedVolumeSlope > 0.05M) ?
                     normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : 0;
