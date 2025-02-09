@@ -59,6 +59,8 @@ namespace PT.Models.RequestModels
         public int ScoreAttemptCount { get; set; }
         public int DisqualifiedCount { get; set; }
         public decimal DisqualifiedIncidenceRate { get; set; }
+        public int EarningsCount { get; set; }
+        public decimal EarningsIncidenceRate { get; set; }
         public int ShortCount { get; set; }
         public decimal ShortIncidenceRate { get; set; }
         public int BadCount { get; set; }

@@ -76,12 +76,17 @@ namespace PT.Controllers
                 int fairCount = 0;
                 int goodCount = 0;
                 int primeCount = 0;
+                int earningsCount = 0;
                 foreach (string cacheKey in cachedSymbols)
                 {
                     CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                    if (companyScore != null && companyScore.CompositeRank == Constants.RANK_DISQUALIFIED)
+                    if (companyScore != null && companyScore.CompositeRank.StartsWith(Constants.RANK_DISQUALIFIED))
                     {
                         disqualifiedCount++;
+                    }
+                    else if (companyScore != null && companyScore.CompositeRank.EndsWith(Constants.RANK_E))
+                    {
+                        earningsCount++;
                     }
                     else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_SHORT)
                     {
@@ -114,6 +119,8 @@ namespace PT.Controllers
                     ScoreAttemptCount = _cache.ScrapedSymbolsAttempted,
                     DisqualifiedCount = disqualifiedCount,
                     DisqualifiedIncidenceRate = ((decimal)disqualifiedCount / (decimal)scoreCount) * 100,
+                    EarningsCount = earningsCount,
+                    EarningsIncidenceRate = ((decimal)earningsCount / (decimal)scoreCount) * 100,
                     ShortCount = shortCount,
                     ShortIncidenceRate = ((decimal)shortCount / (decimal)scoreCount) * 100,
                     BadCount = badCount,
@@ -204,6 +211,26 @@ namespace PT.Controllers
             }
             cachedShorts = cachedShorts.OrderBy(x => x.CompositeScoreValue).ToList();
             return cachedShorts;
+        }
+
+        // Endpoint for getting all predictions with earnings during attrition
+        [HttpGet("api/search/GetEarnings")]
+        public List<CompositeScoreResult> GetEarnings()
+        {
+            List<CompositeScoreResult> cachedEarnings = new List<CompositeScoreResult>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
+                if (companyScore != null && !companyScore.CompositeRank.StartsWith(Constants.RANK_DISQUALIFIED)
+                    && companyScore.CompositeRank.EndsWith(Constants.RANK_E))
+                {
+                    cachedEarnings.Add(companyScore);
+                }
+            }
+            cachedEarnings = cachedEarnings.OrderByDescending(x => x.CompositeScoreValue).ToList();
+            return cachedEarnings;
         }
 
         // Endpoint for getting top 20 HS1 predictions ordered descending

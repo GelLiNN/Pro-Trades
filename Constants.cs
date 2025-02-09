@@ -29,7 +29,7 @@ namespace PT
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly string DEFAULT_RED = "Red";
         public static readonly string DEFAULT_GREEN = "Green";
-        public const int PRIME_GATE = 84;
+        public const int PRIME_GATE = 83;
         public const int HEALTHY_SHORT_INTEREST_PCT = 17;
         public const int DEFAULT_HISTORY_DAYS = 375;
         public const int DEFAULT_LOOKBACK_DAYS = 7;
@@ -68,6 +68,7 @@ namespace PT
         public static readonly string RANK_FAIR = "FAIR";
         public static readonly string RANK_GOOD = "GOOD";
         public static readonly string RANK_PRIME = "PRIME";
+        public static readonly string RANK_E = "-E";
 
         // HS Parameter Set Types
         public static readonly string HS1 = "HS1";

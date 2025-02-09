@@ -92,6 +92,14 @@ namespace PT.Middleware
         // Get Composite Rank for the prediction depending on boundary conditions
         private static string GetCompositeRank(CompositeScoreResult scoreResult)
         {
+            DateTime today = DateTime.Today;
+            DateTime nextFriday = Enumerable.Range(1, 7)
+                .Select(days => today.AddDays(days))
+                .First(date => date.DayOfWeek == DayOfWeek.Friday);
+
+            bool earningsDuringAttrition = scoreResult.Fundamentals.NextEarningsDate > today &&
+                scoreResult.Fundamentals.NextEarningsDate < nextFriday;
+
             // This is where blacklisting happens, right now only from bad dollar volume throughput
             string rank = string.Empty;
             if (IsDisqualifiedPrediction(scoreResult))
@@ -108,6 +116,8 @@ namespace PT.Middleware
                 rank = Constants.RANK_GOOD;
             else if (scoreResult.CompositeScoreValue >= Constants.PRIME_GATE)
                 rank = Constants.RANK_PRIME;
+
+            rank += earningsDuringAttrition ? Constants.RANK_E : string.Empty;
             return rank;
         }
 
