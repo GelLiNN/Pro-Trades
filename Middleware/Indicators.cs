@@ -441,7 +441,7 @@ namespace PT.Middleware
                 }
 
                 // Calculate net asset value if unavailable
-                if (netAssets < 0)
+                if (netAssets < 0 || netAssets == 0)
                 {
                     netAssets = bookValuePrice * sharesOutstanding;
                 }
