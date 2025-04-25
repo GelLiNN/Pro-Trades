@@ -106,7 +106,7 @@ namespace PT.Middleware
 
             Dictionary<string, Snapshot?> securities = await yahooQuotes.GetSnapshotAsync(new[] { symbol });
 
-            Snapshot security = securities[symbol] ?? throw new ArgumentException("Unknown symbol");
+            Snapshot security = securities[symbol] ?? throw new ArgumentException($"YahooQuotesApi GetSnapshotAsync: Unknown symbol {symbol}");
             return security;
         }
 

@@ -440,7 +440,13 @@ namespace PT.Middleware
                     baseValue = bonus + (vwapSlope > 0.5M ? bonus * 2 : 0);
                 }
 
-                // Net expense ratio bonus
+                // Calculate net asset value if unavailable
+                if (netAssets < 0)
+                {
+                    netAssets = bookValuePrice * sharesOutstanding;
+                }
+
+                /* Net expense ratio bonus
                 decimal netExpenseRatioBonus = 0;
                 if (0 < netExpenseRatio && netExpenseRatio < 0.25M)
                 {
@@ -449,7 +455,7 @@ namespace PT.Middleware
                 else if (0.25M <= netExpenseRatio && netExpenseRatio < 0.6M)
                 {
                     netExpenseRatioBonus = 2 * bonus;
-                }
+                }*/
 
                 // Fair value price bonus
                 decimal fairValuePriceBonus = 0;
@@ -457,10 +463,18 @@ namespace PT.Middleware
                 if (netAssets > 0 && sharesOutstanding > 0)
                 {
                     fairValuePrice = netAssets / sharesOutstanding;
-                    decimal lastPrice = history.HistoricalVwapYList[history.HistoricalVwapYList.Count - 1];
-                    if (lastPrice < fairValuePrice)
+                    decimal avgPrice30d = history.HistoricalVwapYList[0];
+                    if (avgPrice30d < fairValuePrice)
                     {
                         fairValuePriceBonus = 3 * bonus;
+                    }
+                    else if (avgPrice30d / fairValuePrice <= 5)
+                    {
+                        fairValuePriceBonus = 2 * bonus;
+                    }
+                    else if (avgPrice30d / fairValuePrice < 10)
+                    {
+                        fairValuePriceBonus += bonus;
                     }
                 }
 
@@ -493,23 +507,25 @@ namespace PT.Middleware
                 }
                 if (0 < percentChange && percentChange <= 100)
                 {
-                    volumeTrendingModifier += (percentChange / 20) + bonus;
+                    volumeTrendingModifier += percentChange < 25 ? (percentChange / 5) + bonus :
+                        (percentChange / 20) + (bonus * 2);
                 }
                 else if (100 < percentChange)
                 {
                     volumeTrendingModifier += bonus * 4;
                 }
                 // Penalty cases
-                else if (0 > percentChange && percentChange >= -100)
-                {
-                    volumeTrendingModifier += (percentChange / 20) + penalty;
-                }
-                else if (-100 > percentChange)
+                if (history.DollarVolumeToday < history.DollarVolume10Day - 100000 &&
+                    history.DollarVolume10Day < history.DollarVolume30Day - 100000)
                 {
                     volumeTrendingModifier += penalty * 3;
                 }
-                if (history.DollarVolumeToday < history.DollarVolume10Day - 100000 &&
-                    history.DollarVolume10Day < history.DollarVolume30Day - 100000)
+                else if (0 > percentChange && percentChange >= -100)
+                {
+                    volumeTrendingModifier += percentChange > -25 ? (percentChange / 5) + penalty :
+                        (percentChange / 20) + (penalty * 2);
+                }
+                else if (-100 > percentChange)
                 {
                     volumeTrendingModifier += penalty * 3;
                 }
@@ -540,9 +556,10 @@ namespace PT.Middleware
                 composite += normalizedVolumelopeBonus;
                 composite += normalizedPriceSlopeBonus;
                 composite += fairValuePriceBonus;
-                composite += netExpenseRatioBonus;
+                //composite += netExpenseRatioBonus;
                 composite += goldenPathBonus;
-                composite += peBonus;
+                composite += composite >= 60 && peBonus < 0 ? peBonus : 0;
+                composite += peBonus > 0 ? peBonus : 0;
                 composite = Math.Min(70, composite);
                 composite += epsBonus;
                 composite += divBonus;
