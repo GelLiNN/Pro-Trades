@@ -446,17 +446,6 @@ namespace PT.Middleware
                     netAssets = bookValuePrice * sharesOutstanding;
                 }
 
-                /* Net expense ratio bonus
-                decimal netExpenseRatioBonus = 0;
-                if (0 < netExpenseRatio && netExpenseRatio < 0.25M)
-                {
-                    netExpenseRatioBonus = 5 * bonus;
-                }
-                else if (0.25M <= netExpenseRatio && netExpenseRatio < 0.6M)
-                {
-                    netExpenseRatioBonus = 2 * bonus;
-                }*/
-
                 // Fair value price bonus
                 decimal fairValuePriceBonus = 0;
                 decimal fairValuePrice = 0;
@@ -556,15 +545,14 @@ namespace PT.Middleware
                 composite += normalizedVolumelopeBonus;
                 composite += normalizedPriceSlopeBonus;
                 composite += fairValuePriceBonus;
-                //composite += netExpenseRatioBonus;
                 composite += goldenPathBonus;
-                composite += composite >= 60 && peBonus < 0 ? peBonus : 0;
-                composite += peBonus > 0 ? peBonus : 0;
+                composite += peBonus;
                 composite = Math.Min(70, composite);
                 composite += epsBonus;
                 composite += divBonus;
                 composite += composite >= 60 && volumeTrendingModifier < 0 ? volumeTrendingModifier : 0;
                 composite += volumeTrendingModifier > 0 ? volumeTrendingModifier : 0;
+                composite += composite < 60 && peBonus < 0 ? (-0.5M * peBonus) : 0;
 
                 composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives
