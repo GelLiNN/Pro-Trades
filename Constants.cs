@@ -34,7 +34,7 @@ namespace PT
         public const int DEFAULT_HISTORY_DAYS = 375;
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
-        public const decimal SIGNAL_CONSTANT = 3.9M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
+        public const decimal SIGNAL_CONSTANT = 3.8M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
         public const int THIRTY_DAYS = 30;
         public const int TEN_DAYS = 10;
         public const decimal HUNDRED = 100.0M;

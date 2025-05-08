@@ -461,10 +461,6 @@ namespace PT.Middleware
                     {
                         fairValuePriceBonus = 2 * bonus;
                     }
-                    else if (avgPrice30d / fairValuePrice < 10)
-                    {
-                        fairValuePriceBonus += bonus;
-                    }
                 }
 
                 // Calculate figures for EPS bonus and PE bonus
@@ -501,7 +497,7 @@ namespace PT.Middleware
                 }
                 else if (100 < percentChange)
                 {
-                    volumeTrendingModifier += bonus * 4;
+                    volumeTrendingModifier += bonus * 3;
                 }
                 // Penalty cases
                 if (history.DollarVolumeToday < history.DollarVolume10Day - 100000 &&
@@ -552,6 +548,7 @@ namespace PT.Middleware
                 composite += divBonus;
                 composite += composite >= 60 && volumeTrendingModifier < 0 ? volumeTrendingModifier : 0;
                 composite += volumeTrendingModifier > 0 ? volumeTrendingModifier : 0;
+                // Give back half the PE penalty if composite is below fair
                 composite += composite < 60 && peBonus < 0 ? (-0.5M * peBonus) : 0;
 
                 composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
