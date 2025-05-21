@@ -74,11 +74,13 @@ namespace PT.Models.CoreModels
         // Average shares traded volume USD for different periods
         public decimal HighestHigh30Day { get; set; }
         public decimal AverageHigh10Day { get; set; }
-        public decimal HighToday { get; set; }
         public decimal LowestLow30Day { get; set; }
         public decimal AverageLow10Day { get; set; }
-        public decimal LowToday { get; set; }
-        public decimal VwapToday { get; set; }
+        public decimal TodayOpen { get; set; }
+        public decimal TodayClose { get; set; }
+        public decimal TodayLow { get; set; }
+        public decimal TodayHigh { get; set; }
+        public decimal TodayVwap { get; set; }
 
         // Track specific counts of volume USD going below threshold
         public bool Has30DayQualifiedVolume { get; set; }

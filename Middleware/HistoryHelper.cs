@@ -97,9 +97,11 @@ namespace PT.Middleware
                         lastVol += curVol;
                         usdVolumeQualified1d = curVolUsd >= Constants.DEFAULT_VOLUME_USD_1D_LIMIT;
                         ptDay.PassVolumeFilter = usdVolumeQualified1d;
-                        ptHistory.LowToday = ptDay.PriceLow;
-                        ptHistory.HighToday = ptDay.PriceHigh;
-                        ptHistory.VwapToday = curVwap;
+                        ptHistory.TodayOpen = ptDay.PriceOpen;
+                        ptHistory.TodayClose = ptDay.PriceClose;
+                        ptHistory.TodayLow = ptDay.PriceLow;
+                        ptHistory.TodayHigh = ptDay.PriceHigh;
+                        ptHistory.TodayVwap = curVwap;
                     }
                     historyStack.Push(ptDay);
                 }
@@ -248,13 +250,13 @@ namespace PT.Middleware
             }*/
 
             // Long sell targets
-            decimal priceSlopeProjection5d = history.VwapToday + (fundResult.PriceSlope * Constants.FIVE);
+            decimal priceSlopeProjection5d = history.TodayVwap + (fundResult.PriceSlope * Constants.FIVE);
             history.AddPriceTarget("Standard price slope projection target", priceSlopeProjection5d);
 
-            decimal vwapSlopeProjection5d = history.VwapToday + (fundResult.VwapSlope * Constants.TWO);
+            decimal vwapSlopeProjection5d = history.TodayVwap + (fundResult.VwapSlope * Constants.TWO);
             history.AddPriceTarget("Average VWAP slope projection target", vwapSlopeProjection5d);
 
-            decimal basicTarget = GetBasicPriceTarget(history.VwapToday, false);
+            decimal basicTarget = GetBasicPriceTarget(history.TodayVwap, false);
             history.AddPriceTarget("Pro-Trades basic price target", basicTarget);
             history.AddPriceTarget("Recent highest high price target", history.HighestHigh30Day);
 
@@ -280,7 +282,7 @@ namespace PT.Middleware
             decimal avgShortTarget = (history.HistoricalVwapYList[0] + history.LowestLow30Day + history.AverageLow10Day) / 3.0M;
             history.AddPriceTarget("Average 30d VWAP and lows price target (short)", avgShortTarget);
 
-            decimal basicTargetShort = GetBasicPriceTarget(history.VwapToday, true);
+            decimal basicTargetShort = GetBasicPriceTarget(history.TodayVwap, true);
             history.AddPriceTarget("Pro-Trades basic price target (short)", basicTargetShort);
 
             history.PriceTargets = history.PriceTargets.OrderByDescending(x => x.TargetPrice).ToList();

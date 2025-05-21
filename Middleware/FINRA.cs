@@ -106,23 +106,27 @@ namespace PT.Middleware
             };
         }
 
-        public static List<FinraRecord> GetShortVolume(string symbol, IEnumerable<Skender.Stock.Indicators.Quote> history, int days, RequestManager rm)
+        public static List<FinraRecord> GetShortVolume(string symbol, IEnumerable<Skender.Stock.Indicators.Quote> supplement, int days, RequestManager rm)
         {
             List<FinraRecord> shortRecords = new List<FinraRecord>();
 
-            //Get last 14 trading days for this symbol using TD
-            //This way the FINRA short interest module completely relies on TD for dates
+            //Get last 14 trading days for this symbol using PTHistory
+            //This way the FINRA short interest module completely relies on PTHistory for dates
             //string ochlResponse = TwelveData.CompleteTwelveDataRequest("time_series", symbol).Result;
             //JObject data = JObject.Parse(ochlResponse);
             //JArray resultSet = (JArray)data.GetValue("values");
 
-            List<Skender.Stock.Indicators.Quote> historyList = history.ToList();
+            List<Skender.Stock.Indicators.Quote> historyList = supplement.ToList();
 
-            for (int i = 1; i <= days; i++)
+            int daysCaptured = 0;
+            int daysAttempted = 0;
+            int daysFailed = 0;
+            while (daysCaptured < days && daysAttempted < historyList.Count && daysFailed <= 3)
             {
                 try
                 {
-                    var ochlResult = historyList[historyList.Count - i];
+                    daysAttempted++;
+                    var ochlResult = historyList[historyList.Count - daysAttempted];
                     decimal ochlResultVolume = Convert.ToDecimal(ochlResult.Volume);
                     DateTime date = ochlResult.Date;
 
@@ -131,26 +135,30 @@ namespace PT.Middleware
                         List<FinraRecord> allRecords = GetAllShortVolume(date, rm).Result;
                         FinraRecord curDayRecord = allRecords.Where(x => x.Symbol == symbol).FirstOrDefault();
 
-                        if (curDayRecord != null)
+                        if (curDayRecord != null &&
+                            (curDayRecord.ShortVolume > 0 || curDayRecord.ShortExemptVolume > 0 || curDayRecord.TotalVolume > 0))
                         {
                             //Inject volume from TD since FINRA total volume CAN BE inaccurate
                             decimal curDayVolume = Math.Max(ochlResultVolume, curDayRecord.TotalVolume);
                             curDayRecord.TotalVolume = curDayVolume;
                             shortRecords.Add(curDayRecord);
+                            daysCaptured++;
                         }
                         else
                         {
                             //FINRA record was missing for this date, we should do something
                             Debug.WriteLine(string.Format("INFO: FINRA record missing for {0} on date {1}",
                                 symbol, date.ToString("MM-dd-yyyy")));
+                            daysFailed++;
                         }
                     }
                 }
                 catch (Exception e)
                 {
                     //FINRA record parsing failed, we should do something
-                    Debug.WriteLine(string.Format("EXCEPTION CAUGHT: FINRA record FAILED for {0} on day {1}",
-                        symbol, i));
+                    Debug.WriteLine(string.Format("ERROR FINRA record FAILED for {0} on day {1}",
+                        symbol, daysAttempted));
+                    daysFailed++;
                     continue;
                 }
             }

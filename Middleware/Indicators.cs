@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using PT.Models.CoreModels;
 using PT.Models.RequestModels;
 using PT.Services;
@@ -14,12 +15,16 @@ namespace PT.Middleware
     {
         //TODO: add version numbers 1.0 in comments to each Indicator Composite Function
         //TODO: move to Core/Predictor.cs and Core/Maths.cs
-        public static CompositeScoreResult GetCompositeScoreResult(string symbol, Snapshot quote, RequestManager rm)
+        public static CompositeScoreResult GetCompositeScoreResult(string symbol, RequestManager rm)
         {
             Stopwatch sw = Stopwatch.StartNew();
 
             // Alpaca API price history
             PTHistory ptHistory = HistoryHelper.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).GetAwaiter().GetResult();
+
+            // Always fail the prediction if we fail to get history data
+            if (ptHistory.SkenderHistory.Count() == 0) return new CompositeScoreResult();
+
             //AlpacaHistory alpacaHistory = Alpaca.GetHistoryAsyncOld(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).GetAwaiter().GetResult();
             List<Skender.Stock.Indicators.Quote> history = ptHistory.SkenderHistory.ToList();
 
@@ -29,8 +34,17 @@ namespace PT.Middleware
             // Only used for the bbands composite
             List<Skender.Stock.Indicators.Quote> supplement = ptHistory.SkenderHistory.TakeLast(7).ToList();
 
-            // get fundamentals with Alpaca price history (should update to PTHistory
+            long alpacaStopMs = sw.ElapsedMilliseconds;
+            long alpacaMs = alpacaStopMs;
+
+            // YahooQuotesApi get quote
+            Snapshot? quote = YahooFinance.GetQuoteAsync(symbol).GetAwaiter().GetResult();
+
+            // get fundamentals with Alpaca price history and YahooQuotesApi quote
             FundamentalsResult fundResult = GetFundamentalsResult(symbol, quote, ptHistory);
+
+            long yahooStopMs = sw.ElapsedMilliseconds;
+            long yahooMs = yahooStopMs - alpacaStopMs;
 
             decimal adxCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_ADX, history, Constants.DEFAULT_LOOKBACK_DAYS);
             decimal obvCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_OBV, obvHistory, Constants.DEFAULT_LOOKBACK_DAYS);
@@ -38,8 +52,18 @@ namespace PT.Middleware
             decimal bbandsCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_BBANDS, history, Constants.DEFAULT_LOOKBACK_DAYS, supplement);
             decimal aroonCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_AROON, history, Constants.DEFAULT_LOOKBACK_DAYS);
 
-            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, history, 7, rm);
+            long indicatorStopMs = sw.ElapsedMilliseconds;
+            long coreMs1 = indicatorStopMs - yahooStopMs;
+
+            ShortInterestResult shortResult = FINRA.GetShortInterest(symbol, supplement, 7, rm);
+
+            long finraStopMs = sw.ElapsedMilliseconds;
+            long finraMs = finraStopMs - indicatorStopMs;
+
             HedgeFundsResult hfResult = TipRanks.GetTipRanksResult(symbol, rm);
+
+            long tipRanksStopMs = sw.ElapsedMilliseconds;
+            long tipRanksMs = tipRanksStopMs - finraStopMs;
 
             var finalResult = GetCompositeScoreFinalValue(fundResult, hfResult, shortResult,
                 adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
@@ -49,15 +73,19 @@ namespace PT.Middleware
             // Price targets for buy, sell, and short
             decimal buyTarget = HistoryHelper.GetPriceBuyTarget(ptHistory);
             HistoryHelper.ComputePriceSellTargets(fundResult, ptHistory);
+            List<PTPriceTarget> priceTargets = ptHistory.PriceTargets.OrderByDescending(x => x.TargetPrice).ToList();
+
+            long coreStopMs = sw.ElapsedMilliseconds;
+            long coreMs2 = coreStopMs - tipRanksStopMs;
 
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
                 Symbol = symbol,
-                Name = quote.LongName,
-                Exchange = quote.FullExchangeName,
+                Name = quote?.LongName,
+                Exchange = quote?.FullExchangeName,
                 CompositeScoreValue = finalResult.cs,
-                PriceOpen = quote.RegularMarketOpen,
-                PriceLast = quote.RegularMarketPrice,
+                PriceOpen = ptHistory.TodayOpen,
+                PriceLast = quote?.RegularMarketPrice ?? ptHistory.TodayClose,
                 PriceVwap = ptHistory.PriceHistory[0].PriceVwap,
                 PriceBuyTarget = buyTarget,
                 PriceSellTarget = ptHistory.PriceTargetProLong,
@@ -72,10 +100,15 @@ namespace PT.Middleware
                 RatingsComposite = hfResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestCompositeScore,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
-                ScoreTimeMS = sw.ElapsedMilliseconds,
+                TotalTimeMS = coreStopMs,
+                AlpacaTimeMS = alpacaMs,
+                YahooTimeMS = yahooMs,
+                FinraTimeMS = finraMs,
+                TipRanksTimeMS = tipRanksMs,
+                CoreTimeMS = coreMs1 + coreMs2,
                 ScoreDate = DateTime.Now,
                 ParameterSet = paramType,
-                PriceTargets = ptHistory.PriceTargets.OrderByDescending(x => x.TargetPrice).ToList(),
+                PriceTargets = priceTargets,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
                 HedgeFunds = hfResult,
@@ -155,14 +188,14 @@ namespace PT.Middleware
                     sr.ShortInterestCompositeScore + bbandsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal, Constants.HS4);
             }
-            else if (bbandsComposite > aroonComposite)
+            else if (bbandsComposite > aroonComposite && aroonComposite < obvComposite)
             {
                 //HS3 - BBANDS AROON SWAP
                 compositeScoreFinal = (adxComposite + bbandsComposite + obvComposite + macdComposite +
                     sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal, Constants.HS3);
             }
-            else if (bbandsComposite > obvComposite)
+            else if (bbandsComposite > obvComposite && obvComposite < aroonComposite)
             {
                 //HS2 - BBANDS OBV SWAP
                 compositeScoreFinal = (adxComposite + aroonComposite + bbandsComposite + macdComposite +
@@ -348,14 +381,14 @@ namespace PT.Middleware
             }
             catch (Exception e)
             {
-                Debug.WriteLine("EXCEPTION CAUGHT: Indicators.cs GetCompositeScore for symbol " + symbol + ", comosite " + comp + ", message: " + e.Message);
+                Debug.WriteLine("ERROR Indicators.cs GetCompositeScore for symbol " + symbol + ", comosite " + comp + ", message: " + e.Message);
             }
             return compositeScore;
         }
 
         // Fundamentals (advanced stats, volume, price, earnings and filings up-to-date)
         // RELIES completely on unofficial yahoo finance API for now
-        public static FundamentalsResult GetFundamentalsResult(string symbol, Snapshot quote, PTHistory history)
+        public static FundamentalsResult GetFundamentalsResult(string symbol, Snapshot? quote, PTHistory history)
         {
             try
             {
@@ -418,10 +451,10 @@ namespace PT.Middleware
                 // Get base value as a function of price-to-book percentage
                 decimal baseValue = 0;
                 decimal bookValuePrice = 0;
-                if (priceToBook > 0 && history.VwapToday > 0)
+                if (priceToBook > 0 && history.TodayVwap > 0)
                 {
-                    bookValuePrice = history.VwapToday * (1 / priceToBook);
-                    decimal bookValuePriceDiffPercent = (bookValuePrice - history.VwapToday) / history.VwapToday;
+                    bookValuePrice = history.TodayVwap * (1 / priceToBook);
+                    decimal bookValuePriceDiffPercent = (bookValuePrice - history.TodayVwap) / history.TodayVwap;
                     baseValue = bookValuePriceDiffPercent * 100;
                     if (baseValue >= 10)
                     {
@@ -591,7 +624,7 @@ namespace PT.Middleware
             catch (Exception e)
             {
                 string msg = $"Indicators.cs GetFundamentals for symbol {symbol}, message: {e.Message}";
-                Debug.WriteLine($"EXCEPTION CAUGHT: {msg}");
+                Debug.WriteLine($"ERROR {msg}");
                 return new FundamentalsResult
                 {
                     FundamentalsComposite = Constants.INVALID_COMPOSITE,
@@ -1452,6 +1485,8 @@ namespace PT.Middleware
         // Transform input data into normalized (or scaled) data
         public static List<decimal> GetNormalizedData(List<decimal> input)
         {
+            if (IsAllZeroes(input)) return input;
+
             // Protect against divide by 0 errors
             if (input.Count == 0)
                 return new List<decimal>();
@@ -1483,6 +1518,8 @@ namespace PT.Middleware
 
         public static List<decimal> GetZScores(List<decimal> input)
         {
+            if (IsAllZeroes(input)) return input;
+
             // Find standard deviation and compute Z Scores
             decimal mean = input.Sum() / input.Count;
 
@@ -1508,6 +1545,16 @@ namespace PT.Middleware
             }
 
             return zScores;
+        }
+
+        public static bool IsAllZeroes(List<decimal> input)
+        {
+            bool allZeroes = true;
+            foreach (decimal cur in input)
+            {
+                allZeroes = cur == 0;
+            }
+            return allZeroes;
         }
 
         // May not be needed anymore now that I can use Standard Deviation

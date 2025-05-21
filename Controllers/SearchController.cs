@@ -33,8 +33,7 @@ namespace PT.Controllers
         public CompositeScoreResult GetCompositeScore(string symbol)
         {
             symbol = symbol.ToUpper();
-            YahooQuotesApi.Snapshot quote = YahooFinance.GetQuoteAsync(symbol).GetAwaiter().GetResult();
-            return Indicators.GetCompositeScoreResult(symbol, quote, _rm);
+            return Indicators.GetCompositeScoreResult(symbol, _rm);
         }
 
         // For getting backtesting data for single composite

@@ -132,7 +132,7 @@ namespace PT.Middleware
             }
             catch (Exception e)
             {
-                Debug.WriteLine("EXCEPTION CAUGHT: TipRanks.cs GetTipRanksResult for symbol " + symbol + ", message: " + e.Message);
+                Debug.WriteLine("ERROR TipRanks.cs GetTipRanksResult for symbol " + symbol + ", message: " + e.Message);
                 return new HedgeFundsResult
                 {
                     RatingsComposite = Constants.INVALID_COMPOSITE,

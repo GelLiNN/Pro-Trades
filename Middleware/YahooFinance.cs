@@ -1,8 +1,10 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection.Metadata.Ecma335;
 using NodaTime;
 using PT.Models.RequestModels;
 using PT.Services;
+using Skender.Stock.Indicators;
 using YahooQuotesApi;
 
 namespace PT.Middleware
@@ -12,7 +14,7 @@ namespace PT.Middleware
     public class YahooFinance
     {
 
-        // With YahooQuotesApi
+        // Get company stats with YahooQuotesApi
         public static async Task<CompanyStats> GetCompanyStatsAsync(string symbol, RequestManager rm)
         {
             Stopwatch sw = Stopwatch.StartNew();
@@ -20,7 +22,7 @@ namespace PT.Middleware
             try
             {
                 // Yahoo Quote
-                Snapshot quote = GetQuoteAsync(symbol).Result;
+                Snapshot quote = await GetQuoteAsync(symbol);
                 if (quote != null)
                 {
                     // parse quote data into company stat
@@ -86,28 +88,38 @@ namespace PT.Middleware
                     };
                 }
 
-                var score = GetCompositeScoreInternal(symbol, quote, rm);
-                score.ScoreTimeMS = sw.ElapsedMilliseconds;
+                var score = Indicators.GetCompositeScoreResult(symbol, rm);
+                //var score = Indicators.GetCompositeScoreResult(symbol, quote, rm);
                 if (score.CompositeScoreValue > 0)
                     companyStat.CompositeScoreResult = score;
+
+                score.TotalTimeMS = sw.ElapsedMilliseconds;
             }
             catch (Exception e)
             {
-                Debug.WriteLine("EXCEPTION CAUGHT: YF.cs YF.GetComanyStatsAsync for symbol " + symbol + ", message: " + e.Message + ", StackTrace: " + e.StackTrace);
+                Debug.WriteLine("ERROR YF.cs YF.GetComanyStatsAsync for symbol " + symbol + ", message: " + e.Message + ", StackTrace: " + e.StackTrace);
             }
             return await Task.FromResult(companyStat);
         }
 
         // With YahooQuotesApi
-        public static async Task<Snapshot> GetQuoteAsync(string symbol)
+        public static async Task<Snapshot?> GetQuoteAsync(string symbol)
         {
-            // You could query multiple symbols with multiple fields through the following steps:
-            YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
+            Snapshot? quote = null;
+            try
+            {
+                // You could query multiple symbols with multiple fields through the following steps:
+                YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-            Dictionary<string, Snapshot?> securities = await yahooQuotes.GetSnapshotAsync(new[] { symbol });
+                Dictionary<string, Snapshot?> securities = await yahooQuotes.GetSnapshotAsync(new[] { symbol });
 
-            Snapshot security = securities[symbol] ?? throw new ArgumentException($"YahooQuotesApi GetSnapshotAsync: Unknown symbol {symbol}");
-            return security;
+                quote = securities[symbol] ?? throw new ArgumentException($"YahooQuotesApi GetSnapshotAsync: Unknown symbol {symbol}");
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine($"ERROR YahooFinance GetQuoteAsync for symbol {symbol}: {e.Message}");
+            }
+            return quote;
         }
 
         // With YahooQuotesApi
@@ -150,12 +162,6 @@ namespace PT.Middleware
                 }
             }
             return await Task.FromResult(screened);
-        }
-
-        // Used internally for cache loading
-        public static CompositeScoreResult GetCompositeScoreInternal(string symbol, Snapshot quote, RequestManager rm)
-        {
-            return Indicators.GetCompositeScoreResult(symbol, quote, rm);
         }
     }
 }

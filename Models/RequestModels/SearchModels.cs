@@ -26,10 +26,14 @@ namespace PT.Models.RequestModels
         public decimal RatingsComposite { get; set; }
         public decimal ShortInterestComposite { get; set; }
         public decimal FundamentalsComposite { get; set; }
-        public long ScoreTimeMS { get; set; }
+        public long TotalTimeMS { get; set; }
+        public long AlpacaTimeMS { get; set; }
+        public long YahooTimeMS { get; set; }
+        public long FinraTimeMS { get; set; }
+        public long TipRanksTimeMS { get; set; }
+        public long CoreTimeMS { get; set; }
         public DateTime ScoreDate { get; set; }
         public ParameterSetType ParameterSet { get; set; }
-
         public List<PTPriceTarget> PriceTargets { get; set; }
         public ShortInterestResult ShortInterest { get; set; }
         public FundamentalsResult Fundamentals { get; set; }

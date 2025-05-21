@@ -96,15 +96,14 @@ namespace PT.Services
 
                 // Remove before updating and re-adding
                 RemoveCachedSymbol(cacheKey);
-                Snapshot quote = YahooFinance.GetQuoteAsync(symbol).GetAwaiter().GetResult();
-                CompositeScoreResult result = Indicators.GetCompositeScoreResult(symbol, quote, _rm);
+                CompositeScoreResult result = Indicators.GetCompositeScoreResult(symbol, _rm);
 
                 // Save score to cache
                 Add(result, cacheKey);
             }
             catch (Exception e)
             {
-                Debug.WriteLine("ERROR UpdateYFCompanyCacheEntry: " + e.Message);
+                Debug.WriteLine("ERROR DataCache UpdateYFCompanyCacheEntry: " + e.Message);
             }
             ScrapedSymbolsAttempted++;
         }
