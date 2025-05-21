@@ -9,6 +9,8 @@ using TinyCsvParser.TypeConverter;
 
 namespace PT.Middleware
 {
+    //TODO - Add Dictionary to this class so I can store the date-based responses from FINRA
+    //Then we can use cached responses to get the short data for multiple companies
     public static class FINRA
     {
         public static readonly DateTime FirstDate = new DateTime(2018, 11, 5);
