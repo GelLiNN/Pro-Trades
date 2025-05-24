@@ -281,7 +281,7 @@ namespace PT.Middleware
             decimal bsnBonus = 0;
             if (hasBsns)
             {
-                decimal bsnWeight = (decimal)Math.PI / 2;
+                decimal bsnWeight = Constants.BONUS / 2;
                 bsnBonus += (bsnYList[bsnYList.Count - 1] * bsnWeight) + ((decimal)bsns[^1].consensus);
                 bsnBonus += bsnSlope >= 0 ? (bsnSlope * bsnSlopeMultiplier) + bsnWeight : -(bsnSlope * bsnSlopeMultiplier) - bsnWeight;
                 bsnBonus = Math.Min(15, bsnBonus); // Limit bsn bonus to 15
@@ -350,17 +350,17 @@ namespace PT.Middleware
                 // Add holding bonuses if institutional holding percent > 0
                 if (iPercentage != null && iPercentage > 0)
                 {
-                    holdingBonus += (decimal) Math.PI * 2;
+                    holdingBonus += Constants.BONUS * 2;
                 }
                 // Add holding bonuses if 1mil or more holding
                 if (amountHolding >= 1000000)
                 {
-                    holdingBonus += (decimal) Math.PI * 2;
+                    holdingBonus += Constants.BONUS * 2;
                 }
                 // Add smaller holding bonuses if more than 0 holding
                 else if (amountHolding > 0)
                 {
-                    holdingBonus += (decimal) Math.PI;
+                    holdingBonus += Constants.BONUS;
                 }
             }
             // Limit holding bonus to 15
@@ -406,11 +406,11 @@ namespace PT.Middleware
             decimal trendValueBonus = 0;
             if (trendValue > 0)
             {
-                trendValueBonus = 2.0M * (decimal) Math.PI;
+                trendValueBonus = 2.0M * Constants.BONUS;
             }
             else if (trendValue < 0)
             {
-                trendValueBonus = -2.0M * (decimal)Math.PI;
+                trendValueBonus = -2.0M * Constants.BONUS;
             }
             // Limit hedge sentiment bonus to 15
             hedgeBonus += trendValueBonus;

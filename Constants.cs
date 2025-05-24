@@ -34,16 +34,19 @@ namespace PT
         public const int DEFAULT_HISTORY_DAYS = 375;
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
-        public const decimal SIGNAL_CONSTANT = 3.75M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
+        public const decimal SIGNAL_CONSTANT = 3.7M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
         public const int THIRTY_DAYS = 30;
         public const int TEN_DAYS = 10;
         public const decimal HUNDRED = 100.0M;
         public const decimal THIRTY = 30.0M;
         public const decimal TEN = 10.0M;
         public const decimal FIVE = 5.0M;
+        public const decimal THREE = 3.0M;
         public const decimal TWO = 2.0M;
         public const decimal FIB = 0.618M;
         public const decimal BT_AVG_WEEK_DIFF_PERCENT = 0.03M;
+        public const decimal PENALTY = (decimal) (-1 * Math.PI);
+        public const decimal BONUS = (decimal) Math.PI;
 
         // Dollar volume and price disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 900000.0M;
