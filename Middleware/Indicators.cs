@@ -487,7 +487,11 @@ namespace PT.Middleware
                     {
                         fairValuePriceBonus = 3 * Constants.BONUS;
                     }
-                    else if (avgPrice30d / fairValuePrice <= 5)
+                    else if (avgPrice30d / fairValuePrice <= 3)
+                    {
+                        fairValuePriceBonus = 2 * Constants.BONUS;
+                    }
+                    else if (avgPrice30d / fairValuePrice <= 7)
                     {
                         fairValuePriceBonus = Constants.BONUS;
                     }
@@ -565,7 +569,8 @@ namespace PT.Middleware
 
                 // calculate composite score based on the following values and weighted multipliers
                 // Base value should be calculated based on EPS and PE data
-                // Bonuses added for positive volume and price slopes, PE Growth, and dividends
+                // Bonuses added for positive v:wq
+                // olume and price slopes, PE Growth, and dividends
                 decimal composite = 0;
                 composite += baseValue;
                 composite += normalizedVolumelopeBonus;
