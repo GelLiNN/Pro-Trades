@@ -101,7 +101,7 @@ namespace PT.Middleware
                 ShortInterestPercentToday = shortInterestToday,
                 ShortInterestPercentAverage = shortInterestAverage,
                 ShortInterestSlope = shortSlope,
-                ShortInterestCompositeScore = compositeScore
+                ShortInterestComposite = compositeScore
             };
         }
 

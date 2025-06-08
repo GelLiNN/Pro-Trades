@@ -242,7 +242,7 @@ namespace PT.Middleware
                 rank = "GOOD";
             else if (scoreResult.CompositeScoreValue >= 80)
                 rank = "PRIME";
-            scoreResult.CompositeRank = rank;
+            scoreResult.CompositeScoreRank = rank;
 
             return scoreResult;
         }*/

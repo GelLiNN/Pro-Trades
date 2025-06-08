@@ -79,35 +79,36 @@ namespace PT.Controllers
                 foreach (string cacheKey in cachedSymbols)
                 {
                     CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                    if (companyScore != null && companyScore.CompositeRank.StartsWith(Constants.RANK_DISQUALIFIED))
+
+                    if (companyScore != null && companyScore.CompositeScoreRank.StartsWith(Constants.RANK_DISQUALIFIED))
                     {
                         disqualifiedCount++;
                     }
-                    else if (companyScore != null && companyScore.CompositeRank.EndsWith(Constants.RANK_E))
+                    else if (companyScore != null && companyScore.CompositeScoreRank.EndsWith(Constants.RANK_E))
                     {
                         earningsCount++;
                     }
-                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_SHORT)
+                    else if (companyScore != null && companyScore.CompositeScoreRank == Constants.RANK_SHORT)
                     {
                         shortCount++;
                     }
-                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_BAD)
+                    else if (companyScore != null && companyScore.CompositeScoreRank == Constants.RANK_BAD)
                     {
                         badCount++;
                     }
-                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_NEUTRAL)
+                    else if (companyScore != null && companyScore.CompositeScoreRank == Constants.RANK_NEUTRAL)
                     {
                         neutralCount++;
                     }
-                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_FAIR)
+                    else if (companyScore != null && companyScore.CompositeScoreRank == Constants.RANK_FAIR)
                     {
                         fairCount++;
                     }
-                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_GOOD)
+                    else if (companyScore != null && companyScore.CompositeScoreRank == Constants.RANK_GOOD)
                     {
                         goodCount++;
                     }
-                    else if (companyScore != null && companyScore.CompositeRank == Constants.RANK_PRIME)
+                    else if (companyScore != null && companyScore.CompositeScoreRank == Constants.RANK_PRIME)
                     {
                         primeCount++;
                     }
@@ -165,7 +166,7 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == Constants.RANK_PRIME)
+                if (companyScore != null && companyScore.CompositeScoreRank == Constants.RANK_PRIME)
                 {
                     cachedPrimes.Add(companyScore);
                 }
@@ -184,7 +185,7 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == Constants.RANK_GOOD)
+                if (companyScore != null && companyScore.CompositeScoreRank == Constants.RANK_GOOD)
                 {
                     cachedGoods.Add(companyScore);
                 }
@@ -203,7 +204,7 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == Constants.RANK_SHORT)
+                if (companyScore != null && companyScore.CompositeScoreRank == Constants.RANK_SHORT)
                 {
                     cachedShorts.Add(companyScore);
                 }
@@ -222,8 +223,8 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && !companyScore.CompositeRank.StartsWith(Constants.RANK_DISQUALIFIED)
-                    && companyScore.CompositeRank.EndsWith(Constants.RANK_E))
+                if (companyScore != null && !companyScore.CompositeScoreRank.StartsWith(Constants.RANK_DISQUALIFIED)
+                    && companyScore.CompositeScoreRank.EndsWith(Constants.RANK_E))
                 {
                     cachedEarnings.Add(companyScore);
                 }
@@ -242,12 +243,12 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == "PRIME" && companyScore.ParameterSet.Type == Constants.HS1
+                if (companyScore != null && companyScore.CompositeScoreRank == "PRIME" && companyScore.ParameterSet.Type == Constants.HS1
                     && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
                 {
                     cachedTopTwentyClean.Add(companyScore);
                 }
-                else if (companyScore != null && companyScore.CompositeRank == "GOOD" && companyScore.ParameterSet.Type == Constants.HS1
+                else if (companyScore != null && companyScore.CompositeScoreRank == "GOOD" && companyScore.ParameterSet.Type == Constants.HS1
                     && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
                 {
                     cachedTopTwentyClean.Add(companyScore);
@@ -268,12 +269,12 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == "PRIME" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
+                if (companyScore != null && companyScore.CompositeScoreRank == "PRIME" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
                     && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
                 {
                     cachedTopTwentyClean.Add(companyScore);
                 }
-                else if (companyScore != null && companyScore.CompositeRank == "GOOD" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
+                else if (companyScore != null && companyScore.CompositeScoreRank == "GOOD" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
                     && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
                 {
                     cachedTopTwentyClean.Add(companyScore);
@@ -294,7 +295,7 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == "BAD")
+                if (companyScore != null && companyScore.CompositeScoreRank == "BAD")
                 {
                     cachedBottomTwenty.Add(companyScore);
                 }
@@ -314,7 +315,7 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeRank == "BAD" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
+                if (companyScore != null && companyScore.CompositeScoreRank == "BAD" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
                     && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
                 {
                     cachedBottomTwenty.Add(companyScore);
@@ -427,7 +428,7 @@ namespace PT.Controllers
                 ADXComposite = adxCompositeScore,
                 AROONComposite = aroonCompositeScore,
                 MACDComposite = macdCompositeScore,
-                CompositeScoreValue = (adxCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestCompositeScore) / 4,
+                CompositeScoreValue = (adxCompositeScore + aroonCompositeScore + macdCompositeScore + shortResult.ShortInterestComposite) / 4,
                 ShortInterest = shortResult
             };
         }

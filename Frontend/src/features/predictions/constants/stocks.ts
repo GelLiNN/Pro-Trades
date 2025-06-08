@@ -13,7 +13,7 @@ export const STOCKS: Stock[] = [
     ratingsComposite: 100,
     shortInterestComposite: 70.40034,
     fundamentalsComposite: 100,
-    compositeRank: 'PRIME',
+    CompositeScoreRank: 'PRIME',
     compositeScoreValue: 84.29694,
     shortInterest: {
       totalVolume: 1576400,

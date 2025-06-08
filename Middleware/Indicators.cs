@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using PT.Models.CoreModels;
 using PT.Models.RequestModels;
 using PT.Services;
@@ -65,7 +64,10 @@ namespace PT.Middleware
             long tipRanksStopMs = sw.ElapsedMilliseconds;
             long tipRanksMs = tipRanksStopMs - finraStopMs;
 
-            var finalResult = GetCompositeScoreFinalValue(fundResult, hfResult, shortResult,
+            var finalResult = GetCompositeScoreParametrizedValue(fundResult, hfResult, shortResult,
+                adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
+
+            string compositeScoreNotes = GetCompositeScoreNotes(fundResult, hfResult, shortResult,
                 adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
 
             var paramType = GetParameterType(finalResult.hs);
@@ -84,6 +86,7 @@ namespace PT.Middleware
                 Name = quote?.LongName,
                 Exchange = quote?.FullExchangeName,
                 CompositeScoreValue = finalResult.cs,
+                CompositeScoreNotes = compositeScoreNotes,
                 PriceOpen = ptHistory.TodayOpen,
                 PriceLast = quote?.RegularMarketPrice ?? ptHistory.TodayClose,
                 PriceVwap = ptHistory.PriceHistory[0].PriceVwap,
@@ -98,7 +101,7 @@ namespace PT.Middleware
                 MACDComposite = macdCompositeScore,
                 BBANDSComposite = bbandsCompositeScore,
                 RatingsComposite = hfResult.RatingsComposite,
-                ShortInterestComposite = shortResult.ShortInterestCompositeScore,
+                ShortInterestComposite = shortResult.ShortInterestComposite,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
                 TotalTimeMS = coreStopMs,
                 AlpacaTimeMS = alpacaMs,
@@ -116,14 +119,14 @@ namespace PT.Middleware
             };
             scoreResult.PriceRedGreen = scoreResult.PriceLast >= scoreResult.PriceOpen ?
                 Constants.DEFAULT_GREEN : Constants.DEFAULT_RED;
-            scoreResult.CompositeRank = GetCompositeRank(scoreResult);
+            scoreResult.CompositeScoreRank = GetCompositeScoreRank(scoreResult);
 
             sw.Reset();
             return scoreResult;
         }
 
         // Get Composite Rank for the prediction depending on boundary conditions
-        private static string GetCompositeRank(CompositeScoreResult scoreResult)
+        private static string GetCompositeScoreRank(CompositeScoreResult scoreResult)
         {
             DateTime today = DateTime.Today;
             DateTime nextFriday = Enumerable.Range(1, 7)
@@ -170,45 +173,78 @@ namespace PT.Middleware
         }
 
         // Get final prediction composite score decimal, and prediction parameter set HS type string
-        private static (decimal cs, string hs) GetCompositeScoreFinalValue(FundamentalsResult fr, HedgeFundsResult hr, ShortInterestResult sr,
-            decimal adxComposite, decimal obvComposite, decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
+        private static (decimal cs, string hs) GetCompositeScoreParametrizedValue(FundamentalsResult fr,
+            HedgeFundsResult hr, ShortInterestResult sr, decimal adxComposite, decimal obvComposite,
+            decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
         {
             decimal compositeScoreFinal = 0;
             if (hr.RatingsComposite == Constants.INVALID_COMPOSITE)
             {
                 //HS5 - FINANCIAL INSTRUMENTS
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
-                    sr.ShortInterestCompositeScore + fr.FundamentalsComposite + bbandsComposite) / 7;
+                    sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
                 return (compositeScoreFinal, Constants.HS5);
             }
             else if (fr.FundamentalsComposite == Constants.INVALID_COMPOSITE)
             {
                 //HS4 - FUNDAMENTALS NOT FOUND
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
-                    sr.ShortInterestCompositeScore + bbandsComposite + hr.RatingsComposite) / 7;
+                    sr.ShortInterestComposite + bbandsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal, Constants.HS4);
             }
             else if (bbandsComposite > aroonComposite && aroonComposite < obvComposite)
             {
                 //HS3 - BBANDS AROON SWAP
                 compositeScoreFinal = (adxComposite + bbandsComposite + obvComposite + macdComposite +
-                    sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+                    sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal, Constants.HS3);
             }
             else if (bbandsComposite > obvComposite && obvComposite < aroonComposite)
             {
                 //HS2 - BBANDS OBV SWAP
                 compositeScoreFinal = (adxComposite + aroonComposite + bbandsComposite + macdComposite +
-                    sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+                    sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal, Constants.HS2);
             }
             else
             {
                 //HS1 - PURE FORM
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
-                    sr.ShortInterestCompositeScore + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+                    sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal, Constants.HS1);
             }
+        }
+
+        /// <summary>
+        /// Get string of notes with buy and sell signals (++ major buy signal, + minor buy signal, - sell signal)
+        /// </summary>
+        /// <param name="fr"></param>
+        /// <param name="hr"></param>
+        /// <param name="sr"></param>
+        /// <param name="adxComposite"></param>
+        /// <param name="obvComposite"></param>
+        /// <param name="macdComposite"></param>
+        /// <param name="bbandsComposite"></param>
+        /// <param name="aroonComposite"></param>
+        /// <returns></returns>
+        public static string GetCompositeScoreNotes(FundamentalsResult fr,
+            HedgeFundsResult hr, ShortInterestResult sr, decimal adxComposite, decimal obvComposite,
+            decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
+        {
+            string notes = "";
+            notes += (fr != null && fr.FundamentalsComposite != Constants.INVALID_COMPOSITE && fr.FundamentalsComposite >= 90) ? "fund+, " : "";
+            notes += (fr != null && fr.FundamentalsComposite != Constants.INVALID_COMPOSITE && fr.FundamentalsComposite <= 40) ? "fund-, " : "";
+            notes += (hr != null && hr.RatingsComposite != Constants.INVALID_COMPOSITE && hr.RatingsComposite >= 90) ? "hedge+, " : "";
+            notes += (hr != null && hr.RatingsComposite != Constants.INVALID_COMPOSITE && hr.RatingsComposite <= 40) ? "hedge-, " : "";
+            notes += (sr != null && sr.ShortInterestComposite != Constants.INVALID_COMPOSITE && sr.ShortInterestComposite >= 95) ? "long+, " : "";
+            notes += (sr != null && sr.ShortInterestComposite != Constants.INVALID_COMPOSITE && sr.ShortInterestComposite <= 40) ? "long-, " : "";
+
+            notes += (macdComposite >= 95) ? "macd++, " : (macdComposite >= 80) ? "macd+, " : (macdComposite <= 30) ? "macd-, " : "";
+            notes += (adxComposite == 100) ? "adx++, " : (adxComposite >= 80) ? "adx+, " : (adxComposite <= 30) ? "adx-, " : "";
+            notes += (obvComposite == 100) ? "obv++, " : (obvComposite >= 80) ? "obv+, " : (obvComposite <= 30) ? "obv-, " : "";
+            notes += (aroonComposite >= 95) ? "aroon++, " : (aroonComposite >= 80) ? "aroon+, " : (aroonComposite <= 30) ? "aroon-, " : "";
+            notes += (bbandsComposite >= 90) ? "bbands++, " : (bbandsComposite >= 80) ? "bbands+, " : (bbandsComposite <= 30) ? "bbands-, " : "";
+            return notes.Substring(0, notes.Length - 2);
         }
 
         // Get ParameterType object using HS Type name constant as identifier

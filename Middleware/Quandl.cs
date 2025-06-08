@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 using Newtonsoft.Json.Linq;
@@ -142,7 +142,7 @@ namespace PT.Middleware
                 ShortInterestPercentToday = shortInterestToday,
                 ShortInterestPercentAverage = shortInterestAverage,
                 ShortInterestSlope = shortSlope,
-                ShortInterestCompositeScore = compositeScore
+                ShortInterestComposite = compositeScore
             };
         }
     }

@@ -9,7 +9,7 @@ export interface Stock {
   // Composites
   adxComposite: number
   aroonComposite: number
-  compositeRank: 'BAD' | 'DISQUALIFIED' | 'FAIR' | 'GOOD' | 'PRIME'
+  CompositeScoreRank: 'BAD' | 'DISQUALIFIED' | 'FAIR' | 'GOOD' | 'PRIME'
   compositeScoreValue: number
   fundamentalsComposite: number
   macdComposite: number

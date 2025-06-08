@@ -7,16 +7,17 @@ namespace PT.Models.RequestModels
         public string? Symbol { get; set; }
         public string? Name { get; set; }
         public string? Exchange { get; set; }
-        public string CompositeRank { get; set; }
+        public string CompositeScoreRank { get; set; }
         public decimal CompositeScoreValue { get; set; }
+        public string CompositeScoreNotes { get; set; }
         public decimal PriceOpen { get; set; }
         public decimal PriceLast { get; set; }
         public decimal PriceVwap { get; set; }
+        public string PriceRedGreen { get; set; }
         public decimal PriceBuyTarget { get; set; }
         public decimal PriceSellTarget { get; set; }
         public decimal PriceSellTargetShort { get; set; }
         public decimal PriceTargetHedgeFunds { get; set; }
-        public string PriceRedGreen { get; set; }
         public int PriceHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
         public decimal OBVComposite { get; set; }
@@ -86,7 +87,7 @@ namespace PT.Models.RequestModels
         public decimal ShortInterestPercentToday { get; set; }
         public decimal ShortInterestPercentAverage { get; set; }
         public decimal ShortInterestSlope { get; set; }
-        public decimal ShortInterestCompositeScore { get; set; }
+        public decimal ShortInterestComposite { get; set; }
     }
 
     public class FundamentalsResult

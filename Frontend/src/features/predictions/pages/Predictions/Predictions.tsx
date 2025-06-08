@@ -60,7 +60,7 @@ export const Predictions = () => {
     : data!.map(dataRow => ({
         name: dataRow.name,
         price: dataRow.price,
-        scoreRank: dataRow.compositeRank,
+        scoreRank: dataRow.CompositeScoreRank,
         scoreValue: dataRow.compositeScoreValue,
         symbol: dataRow.symbol,
         throughput: dataRow.fundamentals.averageVolumeUSD,

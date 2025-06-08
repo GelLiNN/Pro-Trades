@@ -10,7 +10,7 @@
   "ratingsComposite": 100,
   "shortInterestComposite": 70.40034255265161126617609744,
   "fundamentalsComposite": 100,
-  "compositeRank": "PRIME",
+  "CompositeScoreRank": "PRIME",
   "compositeScoreValue": 84.29694239429263819532100969,
   "shortInterest": {
     "totalVolume": 1576400,

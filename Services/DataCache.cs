@@ -99,11 +99,18 @@ namespace PT.Services
                 CompositeScoreResult result = Indicators.GetCompositeScoreResult(symbol, _rm);
 
                 // Save score to cache
-                Add(result, cacheKey);
+                if (result.ParameterSet != null)
+                {
+                    Add(result, cacheKey);
+                }
+                else
+                {
+                    Debug.WriteLine($"ERROR DataCache UpdateYFCompanyCacheEntry: {symbol} failed to score");
+                }
             }
             catch (Exception e)
             {
-                Debug.WriteLine("ERROR DataCache UpdateYFCompanyCacheEntry: " + e.Message);
+                Debug.WriteLine("EXCEPTION DataCache UpdateYFCompanyCacheEntry: " + e.Message);
             }
             ScrapedSymbolsAttempted++;
         }
