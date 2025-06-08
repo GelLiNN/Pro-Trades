@@ -67,15 +67,16 @@ namespace PT.Middleware
             var finalResult = GetCompositeScoreParametrizedValue(fundResult, hfResult, shortResult,
                 adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
 
-            string compositeScoreNotes = GetCompositeScoreNotes(fundResult, hfResult, shortResult,
-                adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
-
             var paramType = GetParameterType(finalResult.hs);
 
             // Price targets for buy, sell, and short
             decimal buyTarget = HistoryHelper.GetPriceBuyTarget(ptHistory);
             HistoryHelper.ComputePriceSellTargets(fundResult, ptHistory);
             List<PTPriceTarget> priceTargets = ptHistory.PriceTargets.OrderByDescending(x => x.TargetPrice).ToList();
+
+            string compositeScoreNotes = GetCompositeScoreNotes(fundResult, hfResult, shortResult,
+                adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore,
+                ptHistory.PriceTargetAvgLong, ptHistory.PriceTargetAvgShort);
 
             long coreStopMs = sw.ElapsedMilliseconds;
             long coreMs2 = coreStopMs - tipRanksStopMs;
@@ -229,7 +230,7 @@ namespace PT.Middleware
         /// <returns></returns>
         public static string GetCompositeScoreNotes(FundamentalsResult fr,
             HedgeFundsResult hr, ShortInterestResult sr, decimal adxComposite, decimal obvComposite,
-            decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
+            decimal macdComposite, decimal bbandsComposite, decimal aroonComposite, decimal targetL, decimal targetS)
         {
             string notes = "";
             notes += (fr != null && fr.FundamentalsComposite != Constants.INVALID_COMPOSITE && fr.FundamentalsComposite >= 90) ? "fund+, " : "";
@@ -244,7 +245,8 @@ namespace PT.Middleware
             notes += (obvComposite == 100) ? "obv++, " : (obvComposite >= 80) ? "obv+, " : (obvComposite <= 30) ? "obv-, " : "";
             notes += (aroonComposite >= 95) ? "aroon++, " : (aroonComposite >= 80) ? "aroon+, " : (aroonComposite <= 30) ? "aroon-, " : "";
             notes += (bbandsComposite >= 90) ? "bbands++, " : (bbandsComposite >= 80) ? "bbands+, " : (bbandsComposite <= 30) ? "bbands-, " : "";
-            return notes.Substring(0, notes.Length - 2);
+            notes += $"TL: ${Math.Round(targetL, 2)}, TS: ${Math.Round(targetS, 2)}";
+            return notes;
         }
 
         // Get ParameterType object using HS Type name constant as identifier

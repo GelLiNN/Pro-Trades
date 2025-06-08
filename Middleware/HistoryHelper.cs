@@ -239,22 +239,12 @@ namespace PT.Middleware
 
         public static void ComputePriceSellTargets(FundamentalsResult fundResult, PTHistory history)
         {
-            /*if (fundResult.FairValuePrice != 0)
-            {
-                history.AddPriceTarget("Fair value price target (net assets / shares outstanding)", fundResult.FairValuePrice);
-            }
-
-            if (fundResult.BookValuePrice != history.VwapToday)
-            {
-                history.AddPriceTarget("Book value price target", fundResult.BookValuePrice);
-            }*/
-
             // Long sell targets
             decimal priceSlopeProjection5d = history.TodayVwap + (fundResult.PriceSlope * Constants.FIVE);
             history.AddPriceTarget("Standard price slope projection target", priceSlopeProjection5d);
 
-            decimal vwapSlopeProjection5d = history.TodayVwap + (fundResult.VwapSlope * Constants.TWO);
-            history.AddPriceTarget("Average VWAP slope projection target", vwapSlopeProjection5d);
+            decimal vwapSlopeProjection = history.TodayVwap + (fundResult.VwapSlope * (1 + Constants.FIB));
+            history.AddPriceTarget("Average VWAP slope projection target", vwapSlopeProjection);
 
             decimal basicTarget = GetBasicPriceTarget(history.TodayVwap, false);
             history.AddPriceTarget("Pro-Trades basic price target", basicTarget);
@@ -279,19 +269,24 @@ namespace PT.Middleware
             
             history.AddPriceTarget("Fibonacci extension modified price target (short)", fibExtPriceTargetShort);
 
-            decimal avgShortTarget = (history.HistoricalVwapYList[0] + history.LowestLow30Day + history.AverageLow10Day) / 3.0M;
-            history.AddPriceTarget("Average 30d VWAP and lows price target (short)", avgShortTarget);
+            decimal compositeShortTarget = (history.HistoricalVwapYList[0] + history.LowestLow30Day + history.AverageLow10Day) / 3.0M;
+            history.AddPriceTarget("Composite 30d VWAP, 30d low, 10d avg low price target (short)", compositeShortTarget);
 
             decimal basicTargetShort = GetBasicPriceTarget(history.TodayVwap, true);
             history.AddPriceTarget("Pro-Trades basic price target (short)", basicTargetShort);
 
+            decimal avgShortTarget = (fibExtPriceTargetShort + compositeShortTarget + basicTargetShort) / 3.0M;
+            history.AddPriceTarget("Pro-Trades average price target (short)", compositeShortTarget);
+
             history.PriceTargets = history.PriceTargets.OrderByDescending(x => x.TargetPrice).ToList();
 
             int len = history.PriceTargets.Count;
-            history.PriceTargetProLong =
+            history.PriceTargetProLong = 
                 (history.PriceTargets[0].TargetPrice + history.PriceTargets[1].TargetPrice + history.PriceTargets[2].TargetPrice) / 3.0M;
+            history.PriceTargetAvgLong = avgPriceTarget;
             history.PriceTargetProShort =
                 (history.PriceTargets[len - 1].TargetPrice + history.PriceTargets[len - 2].TargetPrice + history.PriceTargets[len - 3].TargetPrice) / 3.0M;
+            history.PriceTargetAvgShort = avgShortTarget;
         }
     }
 }

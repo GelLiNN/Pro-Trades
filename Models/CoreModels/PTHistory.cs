@@ -64,7 +64,15 @@ namespace PT.Models.CoreModels
         /// <summary>
         /// Pro Trades Price Target (tm)
         /// </summary>
+        public decimal PriceTargetAvgLong { get; set; }
+        /// <summary>
+        /// Pro Trades Price Target (tm)
+        /// </summary>
         public decimal PriceTargetProShort { get; set; }
+        /// <summary>
+        /// Pro Trades Price Target (tm)
+        /// </summary>
+        public decimal PriceTargetAvgShort { get; set; }
 
         // Average shares traded volume USD for different periods
         public decimal DollarVolume30Day { get; set; }
