@@ -48,6 +48,8 @@ namespace PT.Services
             ScrapedSymbols = new HashSet<string>();
             ScrapedSymbolsAttempted = 0;
 
+            FINRA.LoadFinraCache(15, rm);
+
             CachedSymbols = new Dictionary<string, HashSet<string>>();
             foreach (string cacheId in CacheIds)
                 CachedSymbols.Add(cacheId, new HashSet<string>());

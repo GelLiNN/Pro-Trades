@@ -21,6 +21,8 @@ namespace PT.Middleware
         private static readonly decimal ModeratelyBearishLowerBound = 0.25M;
         private static readonly decimal ModeratelyBearishUpperBound = 0.5M;
 
+        public static Dictionary<DateTime, List<FinraRecord>> FinraCache = new Dictionary<DateTime, List<FinraRecord>>();
+
         public static ShortInterestResult GetShortInterest(string symbol, IEnumerable<Skender.Stock.Indicators.Quote> history, int daysToCalculate, RequestManager rm)
         {
             decimal compositeScore = 0;
@@ -131,8 +133,10 @@ namespace PT.Middleware
 
                     if (DateTime.Compare(date, FirstDate) >= 0)
                     {
-                        List<FinraRecord> allRecords = GetAllShortVolume(date, rm).Result;
-                        FinraRecord curDayRecord = allRecords.Where(x => x.Symbol == symbol).FirstOrDefault();
+                        //List<FinraRecord> allRecords = GetAllShortVolume(date, rm).Result;
+                        //FinraRecord curDayRecord = allRecords.Where(x => x.Symbol == symbol).FirstOrDefault();
+
+                        FinraRecord? curDayRecord = GetFromCache(symbol, date);
 
                         if (curDayRecord != null &&
                             (curDayRecord.ShortVolume > 0 || curDayRecord.ShortExemptVolume > 0 || curDayRecord.TotalVolume > 0))
@@ -155,7 +159,7 @@ namespace PT.Middleware
                 catch (Exception e)
                 {
                     //FINRA record parsing failed, we should do something
-                    Debug.WriteLine(string.Format("ERROR FINRA record FAILED for {0} on day {1}",
+                    Debug.WriteLine(string.Format("ERROR getting FINRA record FAILED for {0} on day {1}",
                         symbol, daysAttempted));
                     daysFailed++;
                     continue;
@@ -174,6 +178,60 @@ namespace PT.Middleware
             var finraResponse = FinraResponseParser.ParseResponse(responseStr);
 
             return await Task.FromResult(finraResponse);
+        }
+
+        public static FinraRecord? GetFromCache(string symbol, DateTime date)
+        {
+            List<FinraRecord> curDateRecords = FinraCache[date.Date];
+            FinraRecord curDayRecord = curDateRecords.Where(x => x.Symbol == symbol).FirstOrDefault();
+            return curDayRecord;
+        }
+
+        public static void LoadFinraCache(int defaultDays, RequestManager rm)
+        {
+            //Get last 14 trading days for this symbol using PTHistory
+            //This way the FINRA short interest module completely relies on PTHistory for dates
+            //string ochlResponse = TwelveData.CompleteTwelveDataRequest("time_series", symbol).Result;
+            //JObject data = JObject.Parse(ochlResponse);
+            //JArray resultSet = (JArray)data.GetValue("values");
+
+            int daysCaptured = 0;
+            int daysAttempted = 0;
+            int daysFailed = 0;
+            while (daysCaptured < defaultDays)
+            {
+                try
+                {
+                    DateTime curDate = DateTime.Now.AddDays(-1 * daysAttempted).Date;
+                    daysAttempted++;
+
+                    if (DateTime.Compare(curDate, FirstDate) >= 0)
+                    {
+                        List<FinraRecord> allRecords = GetAllShortVolume(curDate, rm).Result;
+
+                        if (allRecords.Count > 0)
+                        {
+                            FinraCache.Add(curDate, allRecords);
+                            daysCaptured++;
+                        }
+                        else
+                        {
+                            //FINRA records missing for this date, we should do something
+                            Debug.WriteLine(string.Format("INFO: FINRA cache records missing for date {0}",
+                                curDate.ToString("MM-dd-yyyy")));
+                            daysFailed++;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //FINRA record caching failed, we should do something
+                    Debug.WriteLine(string.Format("ERROR cache fetch FINRA records FAILED on day {0}",
+                        daysAttempted));
+                    daysFailed++;
+                    continue;
+                }
+            }
         }
 
         public class FinraResponseParser
