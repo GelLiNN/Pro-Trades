@@ -14,10 +14,10 @@ namespace PT
         public const string LOG_TIMESTAMP = "{0} | {1}";
 
         // Encryption & Security
-        public const string SESSION_EXP_DATE = "12/12/2024";
+        public const string SESSION_EXP_DATE = "12/12/2028";
         public const string SESSION_KEY = "SessionKey";
         public const string SESSION_SALT = "SessionSalt";
-        public const string PASSWORD_EXP_DATE = "12/12/2024";
+        public const string PASSWORD_EXP_DATE = "12/12/2028";
         public const string PASSWORD_KEY = "PasswordKey";
         public const string PASSWORD_SALT = "PasswordSalt";
         public const string KEY_GENERATION_FAILED = "Encryption failed to generate key.";
@@ -44,6 +44,7 @@ namespace PT
         public const decimal THREE = 3.0M;
         public const decimal TWO = 2.0M;
         public const decimal FIB = 0.618M;
+        public const decimal HALF = 0.5M;
         public const decimal BT_AVG_WEEK_DIFF_PERCENT = 0.03M;
         public const decimal PENALTY = (decimal) (-1 * Math.PI);
         public const decimal BONUS = (decimal) Math.PI;

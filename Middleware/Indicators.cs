@@ -64,8 +64,8 @@ namespace PT.Middleware
             long tipRanksStopMs = sw.ElapsedMilliseconds;
             long tipRanksMs = tipRanksStopMs - finraStopMs;
 
-            var finalResult = GetCompositeScoreParametrizedValue(fundResult, hfResult, shortResult,
-                adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
+            var finalResult = CalcParametrizedComposites(fundResult, hfResult, shortResult, adxCompositeScore,
+                obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
 
             var paramType = GetParameterType(finalResult.hs);
 
@@ -174,7 +174,7 @@ namespace PT.Middleware
         }
 
         // Get final prediction composite score decimal, and prediction parameter set HS type string
-        private static (decimal cs, string hs) GetCompositeScoreParametrizedValue(FundamentalsResult fr,
+        private static (decimal cs, string hs) CalcParametrizedComposites(FundamentalsResult fr,
             HedgeFundsResult hr, ShortInterestResult sr, decimal adxComposite, decimal obvComposite,
             decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
         {
@@ -184,7 +184,7 @@ namespace PT.Middleware
                 //HS5 - FINANCIAL INSTRUMENTS
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
-                return (compositeScoreFinal, Constants.HS5);
+                return (compositeScoreFinal + (Constants.BONUS / 2), Constants.HS5);
             }
             else if (fr.FundamentalsComposite == Constants.INVALID_COMPOSITE)
             {
@@ -198,7 +198,7 @@ namespace PT.Middleware
                 //HS3 - BBANDS AROON SWAP
                 compositeScoreFinal = (adxComposite + bbandsComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
-                return (compositeScoreFinal, Constants.HS3);
+                return (compositeScoreFinal + Constants.BONUS, Constants.HS3); 
             }
             else if (bbandsComposite > obvComposite && obvComposite < aroonComposite)
             {
@@ -212,7 +212,7 @@ namespace PT.Middleware
                 //HS1 - PURE FORM
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
-                return (compositeScoreFinal, Constants.HS1);
+                return (compositeScoreFinal + (Constants.BONUS / 2), Constants.HS1);
             }
         }
 
@@ -587,10 +587,11 @@ namespace PT.Middleware
                     volumeTrendingModifier += Constants.PENALTY * 3;
                 }
 
-                //Get golden path modifier if avg vwap slope and ang vol slope positive
+                //Get golden path modifier if avg vwap slope and avg vol slope positive
                 decimal goldenPathBonus = 0;
-                bool hasGoldenPath = (vwapSlope >= 0.01M && avgVolumeSlope >= 0.01M);
-                if (vwapSlope >= 0.05M && avgVolumeSlope >= 0.05M)
+                bool hasGoldenPath = (vwapSlope >= 0.05M && avgVolumeSlope >= 0.1M &&
+                    (history.DollarVolume10Day > history.DollarVolume30Day || history.DollarVolumeToday > history.DollarVolume30Day));
+                if (hasGoldenPath)
                 {
                     goldenPathBonus += Constants.BONUS * 2;
                 }
@@ -1446,7 +1447,7 @@ namespace PT.Middleware
             composite += (lowerSlope > 0) ? (lowerSlope * lowerSlopeMultiplier) + (Constants.BONUS * 3) : 0;
             composite += (middleSlope > 0) ? (middleSlope * middleSlopeMultiplier) + (Constants.BONUS * 4) : (Constants.PENALTY * 2);
             composite += (upperSlope > 0 && recentPositivity) ? (Constants.BONUS * 3) : 0;
-            composite = Math.Min(composite, 75);
+            composite = Math.Min(composite, 70 + (Constants.HALF * Constants.BONUS));
             composite += composite > 50 && bbandsBonus < 0 ? bbandsBonus : 0;
             composite += bbandsBonus > 0 ? bbandsBonus : 0;
 
@@ -1787,23 +1788,23 @@ namespace PT.Middleware
             if (hasYield)
             {
                 decimal divYield = (decimal)quote.DividendYield;
-                //if div yield is between 0 and 1, add 2 * divYield
-                if (0 < divYield && divYield <= 2)
+                //if div yield is between 0 and 5, add reduced bonus
+                if (1 < divYield && divYield <= 5)
                 {
-                    divBonus += divYield + (Constants.BONUS / Constants.TWO);
+                    divBonus += (Constants.HALF * divYield) + (Constants.BONUS / Constants.THREE);
                 }
-                //if div yield is between 1 and 3, add divYield + 2 bonus
-                else if (2 < divYield && divYield <= 3)
+                //if div yield is between 5 and 10, add divYield + bonus
+                else if (5 < divYield && divYield <= 10)
                 {
-                    divBonus += divYield + Constants.BONUS;
+                    divBonus += (Constants.HALF * divYield) + (Constants.BONUS / Constants.TWO);
                 }
                 //if div yield is above 3, add divYield + 5 bonus
-                if (divYield >= 3)
+                if (divYield >= 10)
                 {
-                    divBonus += divYield * 2 + Constants.BONUS;
+                    divBonus += (Constants.HALF * divYield) + Constants.BONUS;
                 }
             }
-            return divBonus;
+            return Math.Min(divBonus, 25);
         }
 
         private static decimal GetTimeScaledBuySignalBonus(bool hasBuySignal, decimal bonus, int daysSinceSignal)
