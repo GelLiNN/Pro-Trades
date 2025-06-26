@@ -74,12 +74,9 @@ namespace PT.Models.CoreModels
         /// </summary>
         public decimal PriceTargetAvgShort { get; set; }
 
-        // Average shares traded volume USD for different periods
-        public decimal DollarVolume30Day { get; set; }
-        public decimal DollarVolume10Day { get; set; }
-        public decimal DollarVolumeToday { get; set; }
-
-        // Average shares traded volume USD for different periods
+        // Average highs, lows, and traded volume USD for different periods
+        public decimal AverageVolUsd30Day { get; set; }
+        public decimal AverageVolUsd10Day { get; set; }
         public decimal HighestHigh30Day { get; set; }
         public decimal AverageHigh10Day { get; set; }
         public decimal LowestLow30Day { get; set; }
@@ -89,6 +86,7 @@ namespace PT.Models.CoreModels
         public decimal TodayLow { get; set; }
         public decimal TodayHigh { get; set; }
         public decimal TodayVwap { get; set; }
+        public decimal TodayVolUsd { get; set; }
 
         // Track specific counts of volume USD going below threshold
         public bool Has30DayQualifiedVolume { get; set; }

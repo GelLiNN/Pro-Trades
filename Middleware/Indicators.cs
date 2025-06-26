@@ -234,17 +234,17 @@ namespace PT.Middleware
         {
             string notes = "";
             notes += (fr != null && fr.FundamentalsComposite != Constants.INVALID_COMPOSITE && fr.FundamentalsComposite >= 90) ? "fund+, " : "";
-            notes += (fr != null && fr.FundamentalsComposite != Constants.INVALID_COMPOSITE && fr.FundamentalsComposite <= 40) ? "fund-, " : "";
+            notes += (fr != null && fr.FundamentalsComposite != Constants.INVALID_COMPOSITE && fr.FundamentalsComposite <= 33) ? "fund-, " : "";
             notes += (hr != null && hr.RatingsComposite != Constants.INVALID_COMPOSITE && hr.RatingsComposite >= 90) ? "hedge+, " : "";
-            notes += (hr != null && hr.RatingsComposite != Constants.INVALID_COMPOSITE && hr.RatingsComposite <= 40) ? "hedge-, " : "";
+            notes += (hr != null && hr.RatingsComposite != Constants.INVALID_COMPOSITE && hr.RatingsComposite <= 33) ? "hedge-, " : "";
             notes += (sr != null && sr.ShortInterestComposite != Constants.INVALID_COMPOSITE && sr.ShortInterestComposite >= 95) ? "long+, " : "";
-            notes += (sr != null && sr.ShortInterestComposite != Constants.INVALID_COMPOSITE && sr.ShortInterestComposite <= 40) ? "long-, " : "";
+            notes += (sr != null && sr.ShortInterestComposite != Constants.INVALID_COMPOSITE && sr.ShortInterestComposite <= 33) ? "long-, " : "";
 
-            notes += (macdComposite >= 95) ? "macd++, " : (macdComposite >= 80) ? "macd+, " : (macdComposite <= 30) ? "macd-, " : "";
-            notes += (adxComposite == 100) ? "adx++, " : (adxComposite >= 80) ? "adx+, " : (adxComposite <= 30) ? "adx-, " : "";
-            notes += (obvComposite == 100) ? "obv++, " : (obvComposite >= 80) ? "obv+, " : (obvComposite <= 30) ? "obv-, " : "";
-            notes += (aroonComposite >= 95) ? "aroon++, " : (aroonComposite >= 80) ? "aroon+, " : (aroonComposite <= 30) ? "aroon-, " : "";
-            notes += (bbandsComposite >= 90) ? "bbands++, " : (bbandsComposite >= 80) ? "bbands+, " : (bbandsComposite <= 30) ? "bbands-, " : "";
+            notes += (macdComposite >= 95) ? "macd++, " : (macdComposite >= Constants.PRIME_GATE) ? "macd+, " : (macdComposite <= 33) ? "macd-, " : "";
+            notes += (adxComposite == 100) ? "adx++, " : (adxComposite >= Constants.PRIME_GATE) ? "adx+, " : (adxComposite <= 33) ? "adx-, " : "";
+            notes += (obvComposite == 100) ? "obv++, " : (obvComposite >= Constants.PRIME_GATE) ? "obv+, " : (obvComposite <= 33) ? "obv-, " : "";
+            notes += (aroonComposite >= 95) ? "aroon++, " : (aroonComposite >= Constants.PRIME_GATE) ? "aroon+, " : (aroonComposite <= 33) ? "aroon-, " : "";
+            notes += (bbandsComposite >= 90) ? "bbands++, " : (bbandsComposite >= Constants.PRIME_GATE) ? "bbands+, " : (bbandsComposite <= 33) ? "bbands-, " : "";
             notes += $"TL: ${Math.Round(targetL, 2)}, TS: ${Math.Round(targetS, 2)}";
             return notes;
         }
@@ -553,12 +553,12 @@ namespace PT.Middleware
                 decimal divBonus = GetDividendBonus(quote);
 
                 // Add positive fractional bonus if current dullar volume is greater than 30 average dollar volume, negative otherwise
-                decimal diff = history.DollarVolumeToday - history.DollarVolume30Day;
-                decimal percentChange = (diff / history.DollarVolume30Day) * 100;
+                decimal diff = history.TodayVolUsd - history.AverageVolUsd30Day;
+                decimal percentChange = (diff / history.AverageVolUsd30Day) * 100;
                 decimal volumeTrendingModifier = 0;
                 // Reward cases
-                if (history.DollarVolumeToday > history.DollarVolume10Day + 50000 &&
-                    history.DollarVolume10Day > history.DollarVolume30Day + 50000)
+                if (history.TodayVolUsd > history.AverageVolUsd10Day + 50000 &&
+                    history.AverageVolUsd10Day > history.AverageVolUsd30Day + 50000)
                 {
                     volumeTrendingModifier += Constants.BONUS * 3;
                 }
@@ -572,8 +572,8 @@ namespace PT.Middleware
                     volumeTrendingModifier += Constants.BONUS * 3;
                 }
                 // Penalty cases
-                if (history.DollarVolumeToday < history.DollarVolume10Day - 100000 &&
-                    history.DollarVolume10Day < history.DollarVolume30Day - 100000)
+                if (history.TodayVolUsd < history.AverageVolUsd10Day - 100000 &&
+                    history.AverageVolUsd10Day < history.AverageVolUsd30Day - 100000)
                 {
                     volumeTrendingModifier += Constants.PENALTY * 3;
                 }
@@ -587,13 +587,19 @@ namespace PT.Middleware
                     volumeTrendingModifier += Constants.PENALTY * 3;
                 }
 
-                //Get golden path modifier if avg vwap slope and avg vol slope positive
+                // Get small slopes modifier
+                decimal smallSlopesModifier = 0;
+                smallSlopesModifier += (vwapSlope >= 0.05M && avgVolumeSlope >= 0.1M) ? Constants.BONUS : 0;
+                smallSlopesModifier += (vwapSlope < -0.7M && avgVolumeSlope < -0.7M) ? Constants.PENALTY : 0;
+
+                // Get golden path bonus if todays dollar is volume geater than the 10d avg
+                // dollar volume, and if 10d avg dollar volume is greater than the 30d avg dollar volume
                 decimal goldenPathBonus = 0;
-                bool hasGoldenPath = (vwapSlope >= 0.05M && avgVolumeSlope >= 0.1M &&
-                    (history.DollarVolume10Day > history.DollarVolume30Day || history.DollarVolumeToday > history.DollarVolume30Day));
+                bool hasGoldenPath = (history.TodayVolUsd > history.AverageVolUsd10Day
+                    && history.AverageVolUsd10Day >= history.AverageVolUsd30Day);
                 if (hasGoldenPath)
                 {
-                    goldenPathBonus += Constants.BONUS * 2;
+                    goldenPathBonus += Constants.BONUS * 2 + 1;
                 }
 
                 // Get normalized price slope and volume slope bonuses
@@ -615,11 +621,12 @@ namespace PT.Middleware
                 composite += normalizedVolumelopeBonus;
                 composite += normalizedPriceSlopeBonus;
                 composite += fairValuePriceBonus;
-                composite += goldenPathBonus;
                 composite += peBonus;
-                composite = Math.Min(70, composite);
+                composite = Math.Min(65, composite);
+                composite += goldenPathBonus;
                 composite += epsBonus;
                 composite += divBonus;
+                composite += smallSlopesModifier;
                 composite += composite >= 60 && volumeTrendingModifier < 0 ? volumeTrendingModifier : 0;
                 composite += volumeTrendingModifier > 0 ? volumeTrendingModifier : 0;
                 // Give back half the PE penalty if composite is below fair
@@ -632,16 +639,16 @@ namespace PT.Middleware
                 var disqualifyingLimit = Constants.DEFAULT_VOLUME_USD_1D_LIMIT;
 
                 bool volumeDisqualified = !(history.Has1DayQualifiedVolume && history.Has10DayQualifiedVolume && history.Has30DayQualifiedVolume);
-                decimal volUsdAvg = (history.DollarVolumeToday + history.DollarVolume10Day + history.DollarVolume30Day) / 3.0M;
+                decimal volUsdAvg = (history.TodayVolUsd + history.AverageVolUsd10Day + history.AverageVolUsd30Day) / 3.0M;
 
                 bool hasDivs = quote.DividendRate > 0 && quote.DividendYield > 0;
 
                 return new FundamentalsResult
                 {
                     FundamentalsComposite = composite,
-                    DollarVolumeToday = history.DollarVolumeToday,
-                    DollarVolume10Day = history.DollarVolume10Day,
-                    DollarVolume30Day = history.DollarVolume30Day,
+                    DollarVolumeToday = history.TodayVolUsd,
+                    DollarVolume10Day = history.AverageVolUsd10Day,
+                    DollarVolume30Day = history.AverageVolUsd30Day,
                     DollarVolumeAverage = volUsdAvg,
                     VolumeSlope = volumeSlope,
                     PriceSlope = priceSlope,
@@ -1814,19 +1821,19 @@ namespace PT.Middleware
             {
                 if (daysSinceSignal == 1 || daysSinceSignal == 2)
                 {
-                    timeScaledBonus = bonus * 8 + Constants.SIGNAL_CONSTANT;
+                    timeScaledBonus = bonus * 8 + Constants.SIGNAL_MODIFIER;
                 }
                 else if (daysSinceSignal == 3)
                 {
-                    timeScaledBonus = bonus * 7 + Constants.SIGNAL_CONSTANT;
+                    timeScaledBonus = bonus * 7 + Constants.SIGNAL_MODIFIER;
                 }
                 else if (daysSinceSignal == 4)
                 {
-                    timeScaledBonus = bonus * 5 + Constants.SIGNAL_CONSTANT;
+                    timeScaledBonus = bonus * 5 + Constants.SIGNAL_MODIFIER;
                 }
                 else if (daysSinceSignal == 5)
                 {
-                    timeScaledBonus = bonus * 4 + Constants.SIGNAL_CONSTANT;
+                    timeScaledBonus = bonus * 4 + Constants.SIGNAL_MODIFIER;
                 }
                 else if (daysSinceSignal == 6)
                 {
@@ -1847,19 +1854,19 @@ namespace PT.Middleware
             {
                 if (daysSinceSignal == 1 || daysSinceSignal == 2)
                 {
-                    timeScaledPenalty = penalty * 7 + Constants.SIGNAL_CONSTANT;
+                    timeScaledPenalty = penalty * 7 + Constants.SIGNAL_MODIFIER;
                 }
                 else if (daysSinceSignal == 3)
                 {
-                    timeScaledPenalty = penalty * 6 + Constants.SIGNAL_CONSTANT;
+                    timeScaledPenalty = penalty * 6 + Constants.SIGNAL_MODIFIER;
                 }
                 else if (daysSinceSignal == 4)
                 {
-                    timeScaledPenalty = penalty * 5 + Constants.SIGNAL_CONSTANT;
+                    timeScaledPenalty = penalty * 5 + Constants.SIGNAL_MODIFIER;
                 }
                 else if (daysSinceSignal == 5)
                 {
-                    timeScaledPenalty = penalty * 4 + Constants.SIGNAL_CONSTANT;
+                    timeScaledPenalty = penalty * 4 + Constants.SIGNAL_MODIFIER;
                 }
                 else if (daysSinceSignal == 6)
                 {

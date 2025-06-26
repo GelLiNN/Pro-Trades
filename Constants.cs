@@ -33,8 +33,6 @@ namespace PT
         public const int HEALTHY_SHORT_INTEREST_PCT = 17;
         public const int DEFAULT_HISTORY_DAYS = 375;
         public const int DEFAULT_LOOKBACK_DAYS = 7;
-        public const int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
-        public const decimal SIGNAL_CONSTANT = 3.7M; // Min 0, Max 7 depending on overall market conditions (bullish 0, bearish 7)
         public const int THIRTY_DAYS = 30;
         public const int TEN_DAYS = 10;
         public const decimal HUNDRED = 100.0M;
@@ -48,6 +46,8 @@ namespace PT
         public const decimal BT_AVG_WEEK_DIFF_PERCENT = 0.03M;
         public const decimal PENALTY = (decimal) (-1 * Math.PI);
         public const decimal BONUS = (decimal) Math.PI;
+        public const int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
+        public const decimal SIGNAL_MODIFIER = 3.7M; // Min 0, Max 7 depending on overall market conditions (Uber bullish 1, Uber bearish 7)
 
         // Dollar volume and price disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 900000.0M;
@@ -62,7 +62,7 @@ namespace PT
         public static readonly string RECOVER_PASSWORD_EMAIL_BODY = "Hello {0}, here's your one time passcode: {1}";
         public static readonly string INVALID_VERIFICATION_TOKEN = "Auth Error: invalid verification token.";
         public static readonly string TOKEN_EXPIRED = "Token has expired.";
-        public static readonly string EMAIL_AUTH_ERROR = "Auth Error: Email not tied to an existing out.";
+        public static readonly string EMAIL_AUTH_ERROR = "Auth Error: Email not tied to an existing account.";
 
         // Prediction rankings
         public static readonly string RANK_DISQUALIFIED = "DISQUALIFIED";

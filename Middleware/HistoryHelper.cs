@@ -30,6 +30,8 @@ namespace PT.Middleware
                 decimal avgPrice10d = 0;
                 decimal avgVol30d = 0;
                 decimal avgVol10d = 0;
+                decimal avgVolUsd30d = 0;
+                decimal avgVolUsd10d = 0;
                 decimal avgLow10d = 0;
                 decimal avgHigh10d = 0;
                 decimal lastPriceVw = 0;
@@ -63,11 +65,13 @@ namespace PT.Middleware
                     {
                         avgPrice30d += curVwap;
                         avgVol30d += curVol;
+                        avgVolUsd30d += curVolUsd;
 
                         ptHistory.HighestHigh30Day = Math.Max(ptDay.PriceHigh, ptHistory.HighestHigh30Day);
                         ptHistory.LowestLow30Day = ptHistory.LowestLow30Day == 0 ? ptDay.PriceLow : ptHistory.LowestLow30Day;
                         ptHistory.LowestLow30Day = Math.Min(ptDay.PriceLow, ptHistory.LowestLow30Day);
 
+                        // Check trading volume disqualifying limit
                         bool result30d = curVolUsd >= Constants.DEFAULT_VOLUME_USD_30D_LIMIT;
                         if (result30d)
                         {
@@ -77,13 +81,16 @@ namespace PT.Middleware
                     }
                     if (isLast10)
                     {
-                        ptHistory.Price10YList.Add(curVwap);
-                        ptHistory.Volume10YList.Add(curVol);
                         avgPrice10d += curVwap;
                         avgVol10d += curVol;
                         avgHigh10d += ptDay.PriceHigh;
                         avgLow10d += ptDay.PriceLow;
-                        
+                        avgVolUsd10d += curVolUsd;
+
+                        ptHistory.Price10YList.Add(curVwap);
+                        ptHistory.Volume10YList.Add(curVol);
+
+                        // Check trading volume disqualifying limit
                         bool result10d = curVolUsd >= Constants.DEFAULT_VOLUME_USD_10D_LIMIT;
                         if (result10d)
                         {
@@ -120,9 +127,9 @@ namespace PT.Middleware
                 ptHistory.AverageHigh10Day = avgHigh10d / Constants.TEN;
                 ptHistory.AverageLow10Day = avgLow10d / Constants.TEN;
 
-                ptHistory.DollarVolumeToday = lastPriceVw * lastVol;
-                ptHistory.DollarVolume10Day = avgPrice10d * avgVol10d;
-                ptHistory.DollarVolume30Day = avgPrice30d * avgVol30d;
+                ptHistory.AverageVolUsd30Day = avgVolUsd30d / Constants.THIRTY;
+                ptHistory.AverageVolUsd10Day = avgVolUsd10d / Constants.TEN;
+                ptHistory.TodayVolUsd = lastPriceVw * lastVol;
 
                 // Make X and Y Lists
                 ptHistory.HistoricalVwapYList.Add(avgPrice30d);
