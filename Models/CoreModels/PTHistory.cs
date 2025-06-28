@@ -75,6 +75,8 @@ namespace PT.Models.CoreModels
         public decimal PriceTargetAvgShort { get; set; }
 
         // Average highs, lows, and traded volume USD for different periods
+        public decimal AveragePrice100Day { get; set; }
+        public decimal AveragePrice30Day { get; set; }
         public decimal AverageVolUsd30Day { get; set; }
         public decimal AverageVolUsd10Day { get; set; }
         public decimal HighestHigh30Day { get; set; }

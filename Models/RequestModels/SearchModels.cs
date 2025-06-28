@@ -93,6 +93,8 @@ namespace PT.Models.RequestModels
     public class FundamentalsResult
     {
         public decimal FundamentalsComposite { get; set; }
+        public decimal AveragePrice100Day { get; set; }
+        public decimal AveragePrice30Day { get; set; }
         public decimal DollarVolumeToday { get; set; }
         public decimal DollarVolume10Day { get; set; }
         public decimal DollarVolume30Day { get; set; }
@@ -111,8 +113,8 @@ namespace PT.Models.RequestModels
         public decimal DivRate { get; set; }
         public decimal DivYield { get; set; }
         public bool IsBlacklisted { get; set; }
-        public DateTime NextEarningsDate { get; set; }
-        public DateTime PrevEarningsDate { get; set; }
+        public DateTime? NextEarningsDate { get; set; }
+        public DateTime? PrevEarningsDate { get; set; }
         public string? Message { get; set; }
     }
 

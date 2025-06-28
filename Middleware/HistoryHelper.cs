@@ -26,6 +26,7 @@ namespace PT.Middleware
                 Stack<PTDay> historyStack = new();
 
                 // Averages we must compute
+                decimal avgPrice100d = 0;
                 decimal avgPrice30d = 0;
                 decimal avgPrice10d = 0;
                 decimal avgVol30d = 0;
@@ -57,9 +58,15 @@ namespace PT.Middleware
                     var curVol = ptDay.Volume;
                     var curVolUsd = ptDay.DollarVolume;
 
+                    bool isLast100 = (historyData.Count - (i + 1) < 100);
                     bool isLast30 = (historyData.Count - (i + 1) < 30);
                     bool isLast10 = (historyData.Count - (i + 1) < 10);
                     bool isLast = (historyData.Count - (i + 1) == 0);
+
+                    if (isLast100)
+                    {
+                        avgPrice100d += curVwap;
+                    }
 
                     if (isLast30)
                     {
@@ -118,11 +125,15 @@ namespace PT.Middleware
                 ptHistory.Has10DayQualifiedVolume = last30PassCount >= Constants.DEFAULT_MIN_PASS_30D_LIMIT;
                 ptHistory.Has1DayQualifiedVolume = usdVolumeQualified1d;
 
-                // Compute final averages and figures for 30d and 10d
+                // Compute final averages and figures for 100d, 30d, and 10d
+                avgPrice100d = avgPrice100d / Constants.HUNDRED;
                 avgPrice30d = avgPrice30d / Constants.THIRTY;
                 avgVol30d = avgVol30d / Constants.THIRTY;
                 avgPrice10d = avgPrice10d / Constants.TEN;
                 avgVol10d = avgVol10d / Constants.TEN;
+
+                ptHistory.AveragePrice100Day = avgPrice100d;
+                ptHistory.AveragePrice30Day = avgPrice30d;
 
                 ptHistory.AverageHigh10Day = avgHigh10d / Constants.TEN;
                 ptHistory.AverageLow10Day = avgLow10d / Constants.TEN;
