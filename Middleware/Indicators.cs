@@ -466,6 +466,7 @@ namespace PT.Middleware
                     if (quote != null)
                     {
                         peTrailing = Convert.ToDecimal(quote.TrailingPE);
+                        peTrailing = peTrailing == 0 ? Convert.ToDecimal(quote.PriceEpsCurrentYear) : peTrailing;
                         peForward = Convert.ToDecimal(quote.ForwardPE);
                         epsTrailing = quote.EpsTrailingTwelveMonths;
                         epsCurrentYear = quote.EpsCurrentYear;
@@ -492,7 +493,7 @@ namespace PT.Middleware
                     baseValue = bookValuePriceDiffPercent * 100;
                     if (baseValue >= 10)
                     {
-                        baseValue += (Constants.BONUS * 2); //more than 10% undervalued bonus
+                        baseValue += Constants.BONUS + 1; //more than 10% undervalued bonus
                     }
                     else if (baseValue <= 0)
                     {
@@ -503,8 +504,8 @@ namespace PT.Middleware
                 }
                 else
                 {
-                    //pi pity points with vwap slope bonus
-                    baseValue = Constants.BONUS + (vwapSlope > 0.5M ? Constants.BONUS * 2 : 0);
+                    //pi pity points
+                    baseValue = Constants.BONUS;
                 }
 
                 // Calculate net asset value if unavailable
@@ -522,15 +523,15 @@ namespace PT.Middleware
                     decimal avgPrice30d = history.HistoricalVwapYList[0];
                     if (avgPrice30d < fairValuePrice)
                     {
-                        fairValuePriceBonus = 3 * Constants.BONUS - 1;
+                        fairValuePriceBonus = 2 * Constants.BONUS + 1;
                     }
                     else if (avgPrice30d / fairValuePrice <= 3)
                     {
-                        fairValuePriceBonus = 2 * Constants.BONUS - 1;
+                        fairValuePriceBonus = Constants.BONUS + 1;
                     }
                     else if (avgPrice30d / fairValuePrice <= 7)
                     {
-                        fairValuePriceBonus = Constants.BONUS - 1;
+                        fairValuePriceBonus = Constants.BONUS * Constants.HALF;
                     }
                 }
 
@@ -546,7 +547,7 @@ namespace PT.Middleware
                 decimal epsBonus = CalcEPSBonus(averageEPS, growthEPS);
 
                 // Get PE ratio activity bonus
-                decimal peBonus = CalcPEBonus(averagePE, growthPE);
+                decimal peBonus = CalcPEModifier(averagePE, growthPE);
 
                 // Get dividend bonus
                 decimal divBonus = CalcDividendBonus(divRate, divYield);
@@ -560,22 +561,26 @@ namespace PT.Middleware
                 // Get golden path bonus if todays dollar is volume geater than the 10d avg
                 // dollar volume, and if 10d avg dollar volume is greater than the 30d avg dollar volume
                 decimal goldenPathBonus = 0;
-                bool hasGoldenPath = (history.TodayVolUsd > history.AverageVolUsd10Day
-                    && history.AverageVolUsd10Day >= history.AverageVolUsd30Day);
+                bool hasGoldenPath = history.TodayVolUsd > (history.AverageVolUsd10Day + Constants.THIRTY_THOUSAND)
+                    && history.AverageVolUsd10Day > (history.AverageVolUsd30Day + Constants.THIRTY_THOUSAND);
                 if (hasGoldenPath)
                 {
                     goldenPathBonus += Constants.BONUS * 2 + 1;
                 }
 
                 // Get normalized price slope and volume slope bonuses
-                decimal normalizedPriceSlopeBonus = (normalizedPriceSlope > 0.05M) ?
-                    normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
-                normalizedPriceSlopeBonus = Math.Min(normalizedPriceSlopeBonus, 10);
-                normalizedPriceSlopeBonus += (normalizedPriceSlope > 0) ? Constants.BONUS : 0;
+                decimal normalizedPriceVolBonus = 0;
 
-                decimal normalizedVolumelopeBonus = (normalizedVolumeSlope > 0.05M) ?
+                normalizedPriceVolBonus += normalizedPriceSlope > 0.05M ?
+                    normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
+                normalizedPriceVolBonus = Math.Min(normalizedPriceVolBonus, 10);
+                normalizedPriceVolBonus = (normalizedVolumeSlope > 0.05M) ?
                     normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : 0;
-                normalizedVolumelopeBonus = Math.Min(normalizedVolumelopeBonus, 10);
+                normalizedPriceVolBonus += normalizedPriceSlope > 0.05M && normalizedVolumeSlope > 0.05M
+                    ? Constants.BONUS - 1 : 0;
+                normalizedPriceVolBonus = Math.Min(normalizedPriceVolBonus, 20);
+
+
 
                 // calculate composite score based on the following values and weighted multipliers
                 // Base value should be calculated based on EPS and PE data
@@ -583,11 +588,10 @@ namespace PT.Middleware
                 // olume and price slopes, PE Growth, and dividends
                 decimal composite = 0;
                 composite += baseValue;
-                composite += normalizedVolumelopeBonus;
-                composite += normalizedPriceSlopeBonus;
+                composite += normalizedPriceVolBonus;
                 composite += fairValuePriceBonus;
                 composite += peBonus;
-                composite = Math.Min(65, composite);
+                composite = Math.Min(60, composite);
                 composite += goldenPathBonus;
                 composite += epsBonus;
                 composite += divBonus;
@@ -1679,65 +1683,69 @@ namespace PT.Middleware
             return epsBonus;
         }
 
-        public static decimal CalcPEBonus(decimal averagePE, decimal growthPE)
+        public static decimal CalcPEModifier(decimal averagePE, decimal growthPE)
         {
-            decimal peBonus = 0;
-
-            //If everything is negative return 0
+            //If average PE significantly negative return penalty
+            if (averagePE < -10)
+            {
+                return Constants.PENALTY;
+            }
+            //If everything is 0 return 0
             if (averagePE <= 0 && growthPE <= 0)
             {
-                return peBonus;
+                return 0;
             }
+            decimal peModifier = 0;
 
             // averagePE score fomulation
             // Reward cases
-            if (0 < averagePE && averagePE <=25)
+            if (0 < averagePE && averagePE <= 25)
             {
-                peBonus += (averagePE / 5) + (3 * Constants.BONUS);
+                peModifier += (averagePE / 5) + (3 * Constants.BONUS);
             }
             else if (25 < averagePE && averagePE <= 50)
             {
-                peBonus += (averagePE / 10) + Constants.BONUS;
+                peModifier += (averagePE / 10) + Constants.BONUS;
             }
             else if (50 < averagePE && averagePE <= 100)
             {
-                peBonus += (averagePE / 15);
+                peModifier += (averagePE / 15);
             }
             // Penalty cases
             else if (averagePE > 100)
             {
-                peBonus += (-1 * (averagePE / 15));
+                peModifier += (-1 * (averagePE / 15));
             }
 
             // growthPE score fomulation
             // Reward cases
             if (-50 <= growthPE && growthPE < 0)
             {
-                peBonus += (-1 * (growthPE / 10));
+                peModifier += (-1 * (growthPE / 10));
             }
             else if (-100 <= growthPE && growthPE < -50)
             {
-                peBonus += (-1 * (growthPE / 10)) + Constants.BONUS;
+                peModifier += (-1 * (growthPE / 10)) + Constants.BONUS;
             }
             else if (-100 > growthPE)
             {
-                peBonus += (-1 * (growthPE / 100)) + (Constants.BONUS * 3);
+                peModifier += (-1 * (growthPE / 100)) + (Constants.BONUS * 3);
             }
             else if (0 < growthPE && growthPE <= 50)
             {
-                peBonus += (-1 * (growthPE / 10));
+                peModifier += (-1 * (growthPE / 10));
             }
             // Penalty cases
             /*else if (50 < growthPE && growthPE <= 100)
             {
-                peBonus += (-1 * (growthPE / 10)) - 3;
+                peModifier += (-1 * (growthPE / 10)) - 3;
             }
             else if (100 < growthPE)
             {
-                peBonus += (-1 * (growthPE / 100)) - 10;
+                peModifier += (-1 * (growthPE / 100)) - 10;
             }
-            return Math.Max(-10, peBonus);*/
-            return peBonus;
+            return Math.Max(-10, peModifier);*/
+            return peModifier;
         }
 
         private static decimal CalcDividendBonus(decimal divRate, decimal divYield)
@@ -1752,10 +1760,10 @@ namespace PT.Middleware
                 {
                     divBonus += divRate * 2 + 1;
                 }
-                //if div rate above 0.5, add divRate * 3 + 2
+                //if div rate above 0.5, add divRate * 2 + bonus
                 else if (divRate > 0.5M)
                 {
-                    divBonus += divRate * 3 + Constants.BONUS;
+                    divBonus += divRate * (Constants.BONUS - 1) + Constants.BONUS;
                 }
             }
             if (hasYield)
@@ -1800,15 +1808,11 @@ namespace PT.Middleware
             decimal smaModifier = 0;
 
             // General bullish or bearish
-            if (history.AveragePrice30Day > history.AveragePrice100Day)
+            if (history.AveragePrice30Day > history.AveragePrice100Day + (history.AveragePrice100Day * .01M))
             {
                 smaModifier += Constants.BONUS * 2;
             }
-            else if (history.AveragePrice30Day >= history.AveragePrice100Day - (history.AveragePrice100Day * .05M))
-            {
-                smaModifier += Constants.BONUS;
-            }
-            else
+            else if (history.AveragePrice30Day < history.AveragePrice100Day - (history.AveragePrice100Day * .01M))
             {
                 smaModifier += Constants.PENALTY * 2;
             }
@@ -1824,32 +1828,25 @@ namespace PT.Middleware
 
         private static decimal CalcVolumeTrendingModifier(PTHistory history)
         {
-            // Add positive fractional bonus if current dullar volume is greater than 30 average dollar volume, negative otherwise
-            decimal diff = history.TodayVolUsd - history.AverageVolUsd30Day;
-            decimal percentChange = (diff / history.AverageVolUsd30Day) * 100;
+            // Add positive fractional bonus if today dollar volume is greater than 30d average dollar volume, negative otherwise
+            decimal percentChange = CalcPercentDiff(history.AverageVolUsd30Day, history.TodayVolUsd);
             decimal volumeTrendingModifier = 0;
-            // Reward cases
-            if (history.TodayVolUsd > history.AverageVolUsd10Day + 50000 &&
-                history.AverageVolUsd10Day > history.AverageVolUsd30Day + 50000)
-            {
-                volumeTrendingModifier += Constants.BONUS * 3;
-            }
-            if (0 < percentChange && percentChange <= 100)
+            if (0.5M < percentChange && percentChange <= 100)
             {
                 volumeTrendingModifier += percentChange < 25 ? (percentChange / 5) + Constants.BONUS :
                     (percentChange / 20) + (Constants.BONUS * 2);
             }
             else if (100 < percentChange)
             {
-                volumeTrendingModifier += Constants.BONUS * 3;
+                volumeTrendingModifier += Constants.BONUS * 2 + 1;
             }
             // Penalty cases
-            if (history.TodayVolUsd < history.AverageVolUsd10Day - 100000 &&
-                history.AverageVolUsd10Day < history.AverageVolUsd30Day - 100000)
+            if (history.TodayVolUsd < history.AverageVolUsd10Day - Constants.FIFTY_THOUSAND &&
+                history.AverageVolUsd10Day < history.AverageVolUsd30Day - Constants.FIFTY_THOUSAND)
             {
-                volumeTrendingModifier += Constants.PENALTY * 3;
+                volumeTrendingModifier += Constants.PENALTY * 2;
             }
-            else if (0 > percentChange && percentChange >= -100)
+            else if (-0.5M > percentChange && percentChange >= -100)
             {
                 volumeTrendingModifier += percentChange > -25 ? (percentChange / 5) + Constants.PENALTY :
                     (percentChange / 20) + (Constants.PENALTY * 2);

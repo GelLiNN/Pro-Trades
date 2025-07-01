@@ -35,6 +35,9 @@ namespace PT
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const int THIRTY_DAYS = 30;
         public const int TEN_DAYS = 10;
+        public const decimal TEN_THOUSAND = 10000.0M;
+        public const decimal THIRTY_THOUSAND = 30000.0M;
+        public const decimal FIFTY_THOUSAND = 50000.0M;
         public const decimal HUNDRED = 100.0M;
         public const decimal THIRTY = 30.0M;
         public const decimal TEN = 10.0M;
@@ -47,12 +50,12 @@ namespace PT
         public const decimal PENALTY = (decimal) (-1 * Math.PI);
         public const decimal BONUS = (decimal) Math.PI;
         public const int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
-        public const decimal SIGNAL_MODIFIER = 3.7M; // Min 0, Max 7 depending on overall market conditions (Uber bullish 1, Uber bearish 7)
+        public const decimal SIGNAL_MODIFIER = 3.5M; // Min 0, Max 7 depending on overall market conditions (Uber bullish 1, Uber bearish 7)
 
         // Dollar volume and price disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 900000.0M;
-        public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 600000.0M;
-        public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 300000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 600000.0M; //TODO: Raise to 700k
+        public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 350000.0M; //TODO: Raise to 400k
         public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
         public static readonly int DEFAULT_MIN_PASS_30D_LIMIT = 24;
         public static readonly int DEFAULT_MIN_PASS_10D_LIMIT = 8;
