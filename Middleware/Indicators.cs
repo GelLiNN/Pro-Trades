@@ -198,7 +198,7 @@ namespace PT.Middleware
                 //HS3 - BBANDS AROON SWAP
                 compositeScoreFinal = (adxComposite + bbandsComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
-                return (compositeScoreFinal + Constants.BONUS, Constants.HS3); 
+                return (compositeScoreFinal + Constants.BONUS - 1, Constants.HS3); 
             }
             else if (bbandsComposite > obvComposite && obvComposite < aroonComposite)
             {
@@ -498,7 +498,7 @@ namespace PT.Middleware
                     else if (baseValue <= 0)
                     {
                         //pi pity points with vwap slope bonus
-                        baseValue = Constants.BONUS + (vwapSlope > 0.5M ? Constants.BONUS * 2 : 0);
+                        baseValue = Constants.BONUS + (vwapSlope > 0.5M ? Constants.BONUS : 0);
                     }
                     baseValue = Math.Min(baseValue, 30);
                 }
@@ -543,20 +543,20 @@ namespace PT.Middleware
                 averagePE = (peForward + peTrailing) / 2;
                 growthPE = peForward - peTrailing;
 
-                // Get EPS activity bonus
-                decimal epsBonus = CalcEPSBonus(averageEPS, growthEPS);
+                // Get EPS activity modifier
+                decimal epsModifier = CalcEPSModifier(averageEPS, growthEPS);
 
-                // Get PE ratio activity bonus
-                decimal peBonus = CalcPEModifier(averagePE, growthPE);
-
-                // Get dividend bonus
-                decimal divBonus = CalcDividendBonus(divRate, divYield);
+                // Get PE ratio activity modifier
+                decimal peModifier = CalcPEModifier(averagePE, growthPE);
 
                 // Get volume trending modifier
                 decimal volumeTrendingModifier = CalcVolumeTrendingModifier(history);
 
                 // Get modifier for interactions with 30d SMA and 100d SMA
                 decimal smaModifier = CalcSmaModifier(history);
+
+                // Get dividend bonus
+                decimal divBonus = CalcDividendBonus(divRate, divYield);
 
                 // Get golden path bonus if todays dollar is volume geater than the 10d avg
                 // dollar volume, and if 10d avg dollar volume is greater than the 30d avg dollar volume
@@ -568,19 +568,9 @@ namespace PT.Middleware
                     goldenPathBonus += Constants.BONUS * 2 + 1;
                 }
 
-                // Get normalized price slope and volume slope bonuses
-                decimal normalizedPriceVolBonus = 0;
-
-                normalizedPriceVolBonus += normalizedPriceSlope > 0.05M ?
-                    normalizedPriceSlope * normalizedPriceSlopeMultiplier : 0;
-                normalizedPriceVolBonus = Math.Min(normalizedPriceVolBonus, 10);
-                normalizedPriceVolBonus = (normalizedVolumeSlope > 0.05M) ?
-                    normalizedVolumeSlope * normalizedVolumeSlopeMultiplier : 0;
-                normalizedPriceVolBonus += normalizedPriceSlope > 0.05M && normalizedVolumeSlope > 0.05M
-                    ? Constants.BONUS - 1 : 0;
-                normalizedPriceVolBonus = Math.Min(normalizedPriceVolBonus, 20);
-
-
+                // Get normalized price slope and volume slope bonus
+                decimal normalizedPriceVolBonus = normalizedPriceSlope > 0.05M ? Constants.BONUS * Constants.HALF : 0;
+                normalizedPriceVolBonus += normalizedVolumeSlope > 0.05M ? Constants.BONUS * Constants.HALF : 0;
 
                 // calculate composite score based on the following values and weighted multipliers
                 // Base value should be calculated based on EPS and PE data
@@ -1624,63 +1614,63 @@ namespace PT.Middleware
             return current;
         }
 
-        public static decimal CalcEPSBonus(decimal averageEPS, decimal growthEPS)
+        public static decimal CalcEPSModifier(decimal averageEPS, decimal growthEPS)
         {
-            decimal epsBonus = 0;
+            decimal epsModifier = 0;
 
             //If everything is negative return base
             if (averageEPS <= 0 && growthEPS <= 0)
             {
-                return epsBonus;
+                return epsModifier;
             }
 
             // averageEPS score formulation
             // Reward cases
             if (0 < averageEPS && averageEPS <= 0.5M)
             {
-                epsBonus += averageEPS * 10 + Constants.BONUS;
+                epsModifier += averageEPS * 10 + Constants.BONUS;
             }
             else if (0.5M < averageEPS && averageEPS <= 1)
             {
-                epsBonus += averageEPS * 5 + (2 * Constants.BONUS);
+                epsModifier += averageEPS * 5 + (2 * Constants.BONUS);
             }
             else if (1 < averageEPS && averageEPS <= 2)
             {
-                epsBonus += averageEPS * 2 + (3 * Constants.BONUS);
+                epsModifier += averageEPS * 2 + (3 * Constants.BONUS);
             }
-            else if (2 < averageEPS && averageEPS <= 3)
+            else if (2 < averageEPS && averageEPS <= 5)
             {
-                epsBonus += averageEPS * 2 + (4 * Constants.BONUS);
+                epsModifier += averageEPS * 2 + (4 * Constants.BONUS);
             }
-            else if (3 < averageEPS)
+            else if (5 < averageEPS)
             {
-                epsBonus += averageEPS + (5 * Constants.BONUS);
+                epsModifier += Constants.HALF * averageEPS + (4 * Constants.BONUS);
             }
 
             // growthEPS score formulation
             // Reward cases
             if (0 < growthEPS && growthEPS <= 1)
             {
-                epsBonus += growthEPS * 5 + Constants.BONUS;
+                epsModifier += growthEPS * 5 + Constants.BONUS;
             }
-            else if (1 < growthEPS && growthEPS <= 2)
+            else if (1 < growthEPS && growthEPS <= 3)
             {
-                epsBonus += growthEPS * 3 + (2 * Constants.BONUS);
+                epsModifier += growthEPS * 3 + (2 * Constants.BONUS);
             }
-            else if (2 < growthEPS)
+            else if (3 < growthEPS)
             {
-                epsBonus += growthEPS + (5 * Constants.BONUS);
+                epsModifier += growthEPS + (3 * Constants.BONUS);
             }
             /* Penalty cases
             else if (-1 <= growthEPS && growthEPS <0)
             {
-                epsBonus += growthEPS * 3 - 3;
+                epsModifier += growthEPS * 3 - 3;
             }
             else if (-1 >= growthEPS)
             {
-                epsBonus += growthEPS * 3 - 6;
+                epsModifier += growthEPS * 3 - 6;
             }*/
-            return epsBonus;
+            return Math.Min(epsModifier, 33);
         }
 
         public static decimal CalcPEModifier(decimal averagePE, decimal growthPE)
@@ -1745,7 +1735,7 @@ namespace PT.Middleware
                 peModifier += (-1 * (growthPE / 100)) - 10;
             }
             return Math.Max(-10, peModifier);*/
-            return peModifier;
+            return Math.Min(peModifier, 33);
         }
 
         private static decimal CalcDividendBonus(decimal divRate, decimal divYield)
