@@ -29,6 +29,8 @@ namespace PT
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly string DEFAULT_RED = "Red";
         public static readonly string DEFAULT_GREEN = "Green";
+        public const decimal PENALTY = (decimal)(-1 * Math.PI);
+        public const decimal BONUS = (decimal)Math.PI;
         public const int PRIME_GATE = 83;
         public const int HEALTHY_SHORT_INTEREST_PCT = 17;
         public const int DEFAULT_HISTORY_DAYS = 375;
@@ -38,6 +40,7 @@ namespace PT
         public const decimal TEN_THOUSAND = 10000.0M;
         public const decimal THIRTY_THOUSAND = 30000.0M;
         public const decimal FIFTY_THOUSAND = 50000.0M;
+        public const decimal MILLION = 1000000.0M;
         public const decimal HUNDRED = 100.0M;
         public const decimal THIRTY = 30.0M;
         public const decimal TEN = 10.0M;
@@ -47,10 +50,13 @@ namespace PT
         public const decimal FIB = 0.618M;
         public const decimal HALF = 0.5M;
         public const decimal BT_AVG_WEEK_DIFF_PERCENT = 0.03M;
-        public const decimal PENALTY = (decimal) (-1 * Math.PI);
-        public const decimal BONUS = (decimal) Math.PI;
-        public const int INVALID_COMPOSITE = -1; // Used when composite fails, i.e. Ratings Composite
-        public const decimal SIGNAL_MODIFIER = 3.5M; // Min 0, Max 7 depending on overall market conditions (Uber bullish 1, Uber bearish 7)
+        public const decimal NER_INVERSE_MULTIPLIER_PERCENT = 0.07M;
+        public const decimal NER_MAJOR_LIMIT_PERCENT = 0.5M;
+        public const decimal NER_MINOR_LIMIT_PERCENT = 0.2M;
+        // Min 0, Max 7 depending on overall market conditions (Uber bullish 1, Uber bearish 7)
+        public const decimal SIGNAL_MODIFIER = 3.6M;
+        // Used when composite fails, i.e. Ratings Composite
+        public const int INVALID_COMPOSITE = -1;
 
         // Dollar volume and price disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 900000.0M;

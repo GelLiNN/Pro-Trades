@@ -334,7 +334,7 @@ namespace PT.Middleware
                         //The two Aroon indicators(bullish and bearish) can also be made into a single oscillator by
                         //making the bullish indicator 100 to 0 and the bearish indicator 0 to - 100 and finding the
                         //difference between the two values. This oscillator then varies between 100 and - 100, with 0 indicating no trend.
-                        int aroonPeriod = 15;
+                        int aroonPeriod = 16;
                         IEnumerable<AroonResult> aroonResults = Indicator.GetAroon(history, aroonPeriod);
                         compositeScore = GetAROONComposite(aroonResults, daysToCalculate);
                         break;
@@ -483,8 +483,8 @@ namespace PT.Middleware
                 }
                 catch (Exception e) { /*do nothing*/ }
 
-                // Get base value as a function of price-to-book percentage
-                decimal baseValue = 0;
+                // Get base value starting with 1Mil USD bonus, then function of price-to-book percentage
+                decimal baseValue = history.TodayVolUsd >= Constants.MILLION ? Constants.BONUS : 0;
                 decimal bookValuePrice = 0;
                 if (priceToBook > 0 && history.TodayVwap > 0)
                 {
@@ -558,6 +558,9 @@ namespace PT.Middleware
                 // Get dividend bonus
                 decimal divBonus = CalcDividendBonus(divRate, divYield);
 
+                // Get net expense ratio bonus to supplement HS5 financial instruments
+                decimal netExpenseRatioBonus = CalcNetExpenseRatioBonus(netExpenseRatio);
+
                 // Get golden path bonus if todays dollar is volume geater than the 10d avg
                 // dollar volume, and if 10d avg dollar volume is greater than the 30d avg dollar volume
                 decimal goldenPathBonus = 0;
@@ -569,8 +572,8 @@ namespace PT.Middleware
                 }
 
                 // Get normalized price slope and volume slope bonus
-                decimal normalizedPriceVolBonus = normalizedPriceSlope > 0.05M ? Constants.BONUS * Constants.HALF : 0;
-                normalizedPriceVolBonus += normalizedVolumeSlope > 0.05M ? Constants.BONUS * Constants.HALF : 0;
+                decimal normalizedPriceVolBonus = normalizedPriceSlope > 0.025M ? Constants.BONUS * Constants.HALF : 0;
+                normalizedPriceVolBonus += normalizedVolumeSlope > 0.025M ? Constants.BONUS * Constants.HALF : 0;
 
                 // calculate composite score based on the following values and weighted multipliers
                 // Base value should be calculated based on EPS and PE data
@@ -580,16 +583,18 @@ namespace PT.Middleware
                 composite += baseValue;
                 composite += normalizedPriceVolBonus;
                 composite += fairValuePriceBonus;
-                composite += peBonus;
+                composite += netExpenseRatioBonus;
+                composite += peModifier;
                 composite = Math.Min(60, composite);
                 composite += goldenPathBonus;
-                composite += epsBonus;
+                composite += epsModifier;
                 composite += divBonus;
-                composite += smaModifier;
+                composite += composite >= 60 && smaModifier < 0 ? smaModifier : 0;
+                composite += smaModifier > 0 ? smaModifier : 0;
                 composite += composite >= 60 && volumeTrendingModifier < 0 ? volumeTrendingModifier : 0;
                 composite += volumeTrendingModifier > 0 ? volumeTrendingModifier : 0;
                 // Give back half the PE penalty if composite is below fair
-                composite += composite < 60 && peBonus < 0 ? (-0.5M * peBonus) : 0;
+                composite += composite < 60 && peModifier < 0 ? (-0.5M * peModifier) : 0;
 
                 composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives
@@ -1079,6 +1084,7 @@ namespace PT.Middleware
 
             int daysCalculated = 0;
             int aroonPositiveDays = 0;
+            int aroonNegativeDays = 0;
             decimal aroonUpTotal = 0;
             decimal aroonDownTotal = 0;
             int daysSinceSignal = -1;
@@ -1163,6 +1169,10 @@ namespace PT.Middleware
                         {
                             aroonPositiveDays++;
                         }
+                        else
+                        {
+                            aroonNegativeDays++;
+                        }
 
                         dates.Add(aroonDate);
                         daysCalculated++;
@@ -1194,10 +1204,11 @@ namespace PT.Middleware
             decimal percentDiffUp = (aroonAvgUp / aroonAvgDown) * 100;
 
             //Whether aroonAvgUp or aroonAvgDown is higher, that one will be more than 100 percent of the other
-            decimal baseBullResult = Math.Min(100 - percentDiffDown, 45); //base bull result caps at 45
+            decimal baseBullResult = Math.Min(100 - percentDiffDown, 42); //base bull result caps at 42
             decimal baseBearResult = Math.Min(percentDiffUp, 30); //base bear result caps at 30
             decimal baseValue = (aroonAvgUp > aroonAvgDown) ? baseBullResult : baseBearResult;
-            baseValue += aroonPositiveDays + Constants.BONUS;
+            baseValue += aroonPositiveDays * Constants.HALF;
+            baseValue += aroonPositiveDays > aroonNegativeDays ? Constants.BONUS : 0;
 
             //Get recent positivity modifiers
             decimal recentPositivityMinorModifier = aroonHasRecentPositivityMinor ? Constants.BONUS : 0;
@@ -1235,7 +1246,7 @@ namespace PT.Middleware
             composite += aroonAvgModifier;
             composite += oscilatorSlopeModifier;
             composite += downSlopeModifier;
-            composite = Math.Min(composite, 80);
+            composite = Math.Min(composite, 70 + (Constants.BONUS * 2));
             composite += bullMajorBonus;
             composite += buySignalBonus;
             composite += composite > 50 ? sellSignalPenalty : 0;
@@ -1662,11 +1673,11 @@ namespace PT.Middleware
                 epsModifier += growthEPS + (3 * Constants.BONUS);
             }
             /* Penalty cases
-            else if (-1 <= growthEPS && growthEPS <0)
+            else if (-5 <= growthEPS && growthEPS < 0)
             {
                 epsModifier += growthEPS * 3 - 3;
             }
-            else if (-1 >= growthEPS)
+            else if (growthEPS < -5)
             {
                 epsModifier += growthEPS * 3 - 6;
             }*/
@@ -1814,6 +1825,19 @@ namespace PT.Middleware
                 smaModifier += Constants.BONUS + (7 - Math.Abs(percentDiff));
             }
             return smaModifier;
+        }
+
+        private static decimal CalcNetExpenseRatioBonus(decimal netExpenseRatio)
+        {
+            if (netExpenseRatio <= 0) return 0;
+            decimal nerBonus = 0;
+            if (0 < netExpenseRatio && netExpenseRatio <= Constants.NER_MAJOR_LIMIT_PERCENT)
+            {
+                nerBonus += (1.0M / netExpenseRatio) * Constants.NER_INVERSE_MULTIPLIER_PERCENT + 1;
+                nerBonus += netExpenseRatio <= Constants.NER_MINOR_LIMIT_PERCENT ?
+                    Constants.BONUS / Constants.TWO : 0;
+            }
+            return nerBonus;
         }
 
         private static decimal CalcVolumeTrendingModifier(PTHistory history)
