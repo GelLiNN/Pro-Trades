@@ -83,14 +83,14 @@ namespace PT.Middleware
             bool moderatelyBearish = (ModeratelyBearishLowerBound <= shortSlope && shortSlope <= ModeratelyBearishUpperBound);
 
             //calculate composite score based on the following values and weighted multipliers
-            compositeScore += Constants.PRIME_GATE - shortInterestAverage; //get base score as Prime Gate - short interest avg
+            compositeScore += Constants.CORE_PRIME_GATE - shortInterestAverage; //get base score as Prime Gate - short interest avg
             compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + (Constants.BONUS * 3) : 0;
             compositeScore += (shortSlope < -0.5M) ? Constants.BONUS * 3 : 0;
             compositeScore += (shortSlope > 0.5M) ? Constants.PENALTY * 4 : 0;
             compositeScore += (shortSlope > 0 && slightlyBearish) ? Constants.BONUS * 2 : 0;
             compositeScore += (shortSlope > 0 && moderatelyBearish) ? Constants.BONUS : 0;
             compositeScore += shortDiffMod;
-            compositeScore += shortInterestAverage < Constants.HEALTHY_SHORT_INTEREST_PCT ? Constants.BONUS * 4 : 0;
+            compositeScore += shortInterestAverage < Constants.SHORT_HEALTHY_VOL_PERCENT ? Constants.BONUS * 4 : 0;
 
             //Cap this compositeScore at 100 because we should not give it extra weight
             compositeScore = Math.Min(compositeScore, 100);

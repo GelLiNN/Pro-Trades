@@ -12,8 +12,8 @@ namespace PT.Middleware
     //https://www.codeproject.com/Articles/15047/Creating-a-Mechanical-Trading-System-Part-1-Techni
     public static class Indicators
     {
+        //TODO: move to Core/Predictor.cs, Core/Maths.cs, and Core/GRU.cs
         //TODO: add version numbers 1.0 in comments to each Indicator Composite Function
-        //TODO: move to Core/Predictor.cs and Core/Maths.cs
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, RequestManager rm)
         {
             Stopwatch sw = Stopwatch.StartNew();
@@ -149,9 +149,9 @@ namespace PT.Middleware
                 rank = Constants.RANK_NEUTRAL;
             else if (scoreResult.CompositeScoreValue >= 60 && scoreResult.CompositeScoreValue < 70)
                 rank = Constants.RANK_FAIR;
-            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < Constants.PRIME_GATE)
+            else if (scoreResult.CompositeScoreValue >= 70 && scoreResult.CompositeScoreValue < Constants.CORE_PRIME_GATE)
                 rank = Constants.RANK_GOOD;
-            else if (scoreResult.CompositeScoreValue >= Constants.PRIME_GATE)
+            else if (scoreResult.CompositeScoreValue >= Constants.CORE_PRIME_GATE)
                 rank = Constants.RANK_PRIME;
 
             rank += earningsDuringAttrition ? Constants.RANK_E : string.Empty;
@@ -184,35 +184,35 @@ namespace PT.Middleware
                 //HS5 - FINANCIAL INSTRUMENTS
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
-                return (compositeScoreFinal + (Constants.BONUS / 2), Constants.HS5);
+                return (compositeScoreFinal + Constants.CORE_HS5_MOD, Constants.HS5);
             }
             else if (fr.FundamentalsComposite == Constants.INVALID_COMPOSITE)
             {
                 //HS4 - FUNDAMENTALS NOT FOUND
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + bbandsComposite + hr.RatingsComposite) / 7;
-                return (compositeScoreFinal, Constants.HS4);
+                return (compositeScoreFinal + Constants.CORE_HS4_MOD, Constants.HS4);
             }
             else if (bbandsComposite > aroonComposite && aroonComposite < obvComposite)
             {
                 //HS3 - BBANDS AROON SWAP
                 compositeScoreFinal = (adxComposite + bbandsComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
-                return (compositeScoreFinal + Constants.BONUS - 1, Constants.HS3); 
+                return (compositeScoreFinal + Constants.CORE_HS3_MOD, Constants.HS3); 
             }
             else if (bbandsComposite > obvComposite && obvComposite < aroonComposite)
             {
                 //HS2 - BBANDS OBV SWAP
                 compositeScoreFinal = (adxComposite + aroonComposite + bbandsComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
-                return (compositeScoreFinal, Constants.HS2);
+                return (compositeScoreFinal + Constants.CORE_HS2_MOD, Constants.HS2);
             }
             else
             {
                 //HS1 - PURE FORM
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
-                return (compositeScoreFinal + (Constants.BONUS / 2), Constants.HS1);
+                return (compositeScoreFinal + Constants.CORE_HS1_MOD, Constants.HS1);
             }
         }
 
@@ -240,11 +240,11 @@ namespace PT.Middleware
             notes += (sr != null && sr.ShortInterestComposite != Constants.INVALID_COMPOSITE && sr.ShortInterestComposite >= 95) ? "long+, " : "";
             notes += (sr != null && sr.ShortInterestComposite != Constants.INVALID_COMPOSITE && sr.ShortInterestComposite <= 33) ? "long-, " : "";
 
-            notes += (macdComposite >= 95) ? "macd++, " : (macdComposite >= Constants.PRIME_GATE) ? "macd+, " : (macdComposite <= 33) ? "macd-, " : "";
-            notes += (adxComposite == 100) ? "adx++, " : (adxComposite >= Constants.PRIME_GATE) ? "adx+, " : (adxComposite <= 33) ? "adx-, " : "";
-            notes += (obvComposite == 100) ? "obv++, " : (obvComposite >= Constants.PRIME_GATE) ? "obv+, " : (obvComposite <= 33) ? "obv-, " : "";
-            notes += (aroonComposite >= 95) ? "aroon++, " : (aroonComposite >= Constants.PRIME_GATE) ? "aroon+, " : (aroonComposite <= 33) ? "aroon-, " : "";
-            notes += (bbandsComposite >= 90) ? "bbands++, " : (bbandsComposite >= Constants.PRIME_GATE) ? "bbands+, " : (bbandsComposite <= 33) ? "bbands-, " : "";
+            notes += (macdComposite >= 95) ? "macd++, " : (macdComposite >= Constants.CORE_PRIME_GATE) ? "macd+, " : (macdComposite <= 33) ? "macd-, " : "";
+            notes += (adxComposite == 100) ? "adx++, " : (adxComposite >= Constants.CORE_PRIME_GATE) ? "adx+, " : (adxComposite <= 33) ? "adx-, " : "";
+            notes += (obvComposite == 100) ? "obv++, " : (obvComposite >= Constants.CORE_PRIME_GATE) ? "obv+, " : (obvComposite <= 33) ? "obv-, " : "";
+            notes += (aroonComposite >= 95) ? "aroon++, " : (aroonComposite >= Constants.CORE_PRIME_GATE) ? "aroon+, " : (aroonComposite <= 33) ? "aroon-, " : "";
+            notes += (bbandsComposite >= 90) ? "bbands++, " : (bbandsComposite >= Constants.CORE_PRIME_GATE) ? "bbands+, " : (bbandsComposite <= 33) ? "bbands-, " : "";
             notes += $"TL: ${Math.Round(targetL, 2)}, TS: ${Math.Round(targetS, 2)}";
             return notes;
         }
@@ -305,7 +305,7 @@ namespace PT.Middleware
             return null;
         }
 
-        // Main composite function to separate and organize the AI model's composites
+        // Main composite function to separate and organize the AI model's composite elements
         public static decimal GetIndicatorComposite(string symbol, string comp, List<Skender.Stock.Indicators.Quote> history, int daysToCalculate, object supplement = null)
         {
             decimal compositeScore = 0;
@@ -489,7 +489,7 @@ namespace PT.Middleware
                 if (priceToBook > 0 && history.TodayVwap > 0)
                 {
                     bookValuePrice = history.TodayVwap * (1 / priceToBook);
-                    decimal bookValuePriceDiffPercent = CalcPercentDiff(history.TodayVwap, bookValuePrice);
+                    decimal bookValuePriceDiffPercent = GetPercentDiff(history.TodayVwap, bookValuePrice);
                     baseValue = bookValuePriceDiffPercent * 100;
                     if (baseValue >= 10)
                     {
@@ -758,8 +758,8 @@ namespace PT.Middleware
             decimal averageTrendingBonus = averageDmiTrendingPositive ? Constants.BONUS * 2 : 0;
 
             //Add time-scaled bonus and penalty for buy and sell signals
-            decimal buySignalBonus = GetTimeScaledBuySignalBonus(hasBuySignal, Constants.BONUS, daysSinceSignal);
-            decimal sellSignalPenalty = GetTimeScaledSellSignalPenalty(hasSellSignal, Constants.BONUS, daysSinceSignal);
+            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(hasBuySignal, Constants.BONUS, daysSinceSignal);
+            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(hasSellSignal, Constants.BONUS, daysSinceSignal);
 
             //Add bonus for ADX average above 25 per investopedia recommendation
             decimal averageBuySignalBonus = adxAvg > 25 && hasBuySignal ? Constants.BONUS * 2 : 0;
@@ -899,8 +899,8 @@ namespace PT.Middleware
                 normalizedSlopeBonus += Constants.BONUS;
 
             //Get time-scaled buy and sell signal bonus and penalty
-            decimal buySignalBonus = GetTimeScaledBuySignalBonus(obvHasBuySignal, Constants.BONUS, daysSinceSignal);
-            decimal sellSignalPenalty = GetTimeScaledSellSignalPenalty(obvHasSellSignal, Constants.BONUS, daysSinceSignal);
+            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(obvHasBuySignal, Constants.BONUS, daysSinceSignal);
+            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(obvHasSellSignal, Constants.BONUS, daysSinceSignal);
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
@@ -1053,8 +1053,8 @@ namespace PT.Middleware
             decimal baseAboveSignalBonus = prevTwoBaseAboveSignal ? Constants.BONUS * 3 : 0;
 
             //Get time-scaled buy and sell signal bonus and penalty
-            decimal buySignalBonus = GetTimeScaledBuySignalBonus(macdHasBuySignal, Constants.BONUS, daysSinceSignal);
-            decimal sellSignalPenalty = GetTimeScaledSellSignalPenalty(macdHasSellSignal, Constants.BONUS, daysSinceSignal);
+            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(macdHasBuySignal, Constants.BONUS, daysSinceSignal);
+            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(macdHasSellSignal, Constants.BONUS, daysSinceSignal);
 
             //Calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
@@ -1226,8 +1226,8 @@ namespace PT.Middleware
             downSlopeModifier = downSlopeModifier < -20 ? Math.Max(-20, downSlopeModifier) : downSlopeModifier;
 
             //Get time-scaled buy and sell signal bonus and penalty
-            decimal buySignalBonus = GetTimeScaledBuySignalBonus(aroonHasBuySignal, Constants.BONUS, daysSinceSignal);
-            decimal sellSignalPenalty = GetTimeScaledSellSignalPenalty(aroonHasSellSignal, Constants.BONUS, daysSinceSignal);
+            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(aroonHasBuySignal, Constants.BONUS, daysSinceSignal);
+            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(aroonHasSellSignal, Constants.BONUS, daysSinceSignal);
 
             //Get other bonuses
             decimal lastOscValue = oscillatorYList[oscillatorYList.Count - 1];
@@ -1681,7 +1681,7 @@ namespace PT.Middleware
             {
                 epsModifier += growthEPS * 3 - 6;
             }*/
-            return Math.Min(epsModifier, 33);
+            return Math.Min(epsModifier, Constants.FUND_EPS_MOD_UPPER_LIMIT);
         }
 
         public static decimal CalcPEModifier(decimal averagePE, decimal growthPE)
@@ -1746,7 +1746,7 @@ namespace PT.Middleware
                 peModifier += (-1 * (growthPE / 100)) - 10;
             }
             return Math.Max(-10, peModifier);*/
-            return Math.Min(peModifier, 33);
+            return Math.Min(peModifier, Constants.FUND_PE_MOD_UPPER_LIMIT);
         }
 
         private static decimal CalcDividendBonus(decimal divRate, decimal divYield)
@@ -1794,7 +1794,7 @@ namespace PT.Middleware
         /// <param name="V1">The first decimal value (old value)</param>
         /// <param name="V2">The second decimal value (new value)</param>
         /// <returns>The percentage difference as a decimal. Returns 0 if V1 is 0 to avoid division by zero.</returns>
-        public static decimal CalcPercentDiff(decimal V1, decimal V2)
+        public static decimal GetPercentDiff(decimal V1, decimal V2)
         {
             // Check for zero to avoid division by zero
             if (V1 == 0) return 0m;
@@ -1819,7 +1819,7 @@ namespace PT.Middleware
             }
 
             // Bonus if current price is close enough to 100Day for likely rebound
-            var percentDiff = CalcPercentDiff(history.AveragePrice100Day, history.TodayVwap);
+            var percentDiff = GetPercentDiff(history.AveragePrice100Day, history.TodayVwap);
             if (-7 <= Math.Abs(percentDiff) && Math.Abs(percentDiff) <= 7)
             {
                 smaModifier += Constants.BONUS + (7 - Math.Abs(percentDiff));
@@ -1831,10 +1831,10 @@ namespace PT.Middleware
         {
             if (netExpenseRatio <= 0) return 0;
             decimal nerBonus = 0;
-            if (0 < netExpenseRatio && netExpenseRatio <= Constants.NER_MAJOR_LIMIT_PERCENT)
+            if (0 < netExpenseRatio && netExpenseRatio <= Constants.FUND_NER_MAJOR_LIMIT_PERCENT)
             {
-                nerBonus += (1.0M / netExpenseRatio) * Constants.NER_INVERSE_MULTIPLIER_PERCENT + 1;
-                nerBonus += netExpenseRatio <= Constants.NER_MINOR_LIMIT_PERCENT ?
+                nerBonus += (1.0M / netExpenseRatio) * Constants.FUND_NER_INVERSE_MULTIPLIER_PERCENT + 1;
+                nerBonus += netExpenseRatio <= Constants.FUND_NER_MINOR_LIMIT_PERCENT ?
                     Constants.BONUS / Constants.TWO : 0;
             }
             return nerBonus;
@@ -1843,7 +1843,7 @@ namespace PT.Middleware
         private static decimal CalcVolumeTrendingModifier(PTHistory history)
         {
             // Add positive fractional bonus if today dollar volume is greater than 30d average dollar volume, negative otherwise
-            decimal percentChange = CalcPercentDiff(history.AverageVolUsd30Day, history.TodayVolUsd);
+            decimal percentChange = GetPercentDiff(history.AverageVolUsd30Day, history.TodayVolUsd);
             decimal volumeTrendingModifier = 0;
             if (0.5M < percentChange && percentChange <= 100)
             {
@@ -1872,26 +1872,26 @@ namespace PT.Middleware
             return volumeTrendingModifier;
         }
 
-        private static decimal GetTimeScaledBuySignalBonus(bool hasBuySignal, decimal bonus, int daysSinceSignal)
+        private static decimal CalcTimeScaledBuySignalBonus(bool hasBuySignal, decimal bonus, int daysSinceSignal)
         {
             decimal timeScaledBonus = 0;
             if (hasBuySignal)
             {
                 if (daysSinceSignal == 1 || daysSinceSignal == 2)
                 {
-                    timeScaledBonus = bonus * 8 + Constants.SIGNAL_MODIFIER;
+                    timeScaledBonus = bonus * 8 + Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 3)
                 {
-                    timeScaledBonus = bonus * 7 + Constants.SIGNAL_MODIFIER;
+                    timeScaledBonus = bonus * 7 + Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 4)
                 {
-                    timeScaledBonus = bonus * 5 + Constants.SIGNAL_MODIFIER;
+                    timeScaledBonus = bonus * 5 + Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 5)
                 {
-                    timeScaledBonus = bonus * 4 + Constants.SIGNAL_MODIFIER;
+                    timeScaledBonus = bonus * 4 + Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 6)
                 {
@@ -1905,26 +1905,26 @@ namespace PT.Middleware
             return timeScaledBonus;
         }
 
-        private static decimal GetTimeScaledSellSignalPenalty(bool hasSellSignal, decimal penalty, int daysSinceSignal)
+        private static decimal CalcTimeScaledSellSignalPenalty(bool hasSellSignal, decimal penalty, int daysSinceSignal)
         {
             decimal timeScaledPenalty = 0;
             if (hasSellSignal)
             {
                 if (daysSinceSignal == 1 || daysSinceSignal == 2)
                 {
-                    timeScaledPenalty = penalty * 7 + Constants.SIGNAL_MODIFIER;
+                    timeScaledPenalty = penalty * 7 + Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 3)
                 {
-                    timeScaledPenalty = penalty * 6 + Constants.SIGNAL_MODIFIER;
+                    timeScaledPenalty = penalty * 6 + Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 4)
                 {
-                    timeScaledPenalty = penalty * 5 + Constants.SIGNAL_MODIFIER;
+                    timeScaledPenalty = penalty * 5 + Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 5)
                 {
-                    timeScaledPenalty = penalty * 4 + Constants.SIGNAL_MODIFIER;
+                    timeScaledPenalty = penalty * 4 + Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 6)
                 {
