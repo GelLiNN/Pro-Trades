@@ -1,5 +1,6 @@
-﻿using System.Diagnostics;
 using Newtonsoft.Json.Linq;
+using PT.Core;
+using System.Diagnostics;
 
 namespace PT.Middleware
 {
@@ -282,13 +283,13 @@ namespace PT.Middleware
                 adxXList.Add(i);
 
             List<decimal> adxYList = adxValueYList.ToList();
-            decimal adxSlope = Indicators.GetSlope(adxXList, adxYList);
-            decimal adxSlopeMultiplier = Indicators.GetSlopeMultiplier(adxSlope);
+            decimal adxSlope = Maths.GetSlope(adxXList, adxYList);
+            decimal adxSlopeMultiplier = Maths.GetSlopeMultiplier(adxSlope);
             decimal adxAvg = adxTotal / numberOfResults;
 
-            List<decimal> adxZScores = Indicators.GetZScores(adxYList);
-            decimal zScoreSlope = Indicators.GetSlope(adxXList, adxZScores);
-            decimal zScoreSlopeMultiplier = Indicators.GetSlopeMultiplier(zScoreSlope);
+            List<decimal> adxZScores = Maths.GetZScores(adxYList);
+            decimal zScoreSlope = Maths.GetSlope(adxXList, adxZScores);
+            decimal zScoreSlopeMultiplier = Maths.GetSlopeMultiplier(zScoreSlope);
 
             //Start with the average of the 2 most recent ADX values
             decimal baseValue = (adxYList[adxYList.Count - 1] + adxYList[adxYList.Count - 2]) / 2;
@@ -355,14 +356,14 @@ namespace PT.Middleware
                 aroonXList.Add(i);
 
             List<decimal> upYList = aroonUpYList.ToList();
-            decimal upSlope = Indicators.GetSlope(aroonXList, upYList);
+            decimal upSlope = Maths.GetSlope(aroonXList, upYList);
             List<decimal> downYList = aroonDownYList.ToList();
-            decimal downSlope = Indicators.GetSlope(aroonXList, downYList);
+            decimal downSlope = Maths.GetSlope(aroonXList, downYList);
             List<decimal> oscillatorYList = aroonOscillatorYList.ToList();
             //decimal oscillatorSlope = GetSlope(aroonXList, oscillatorYList);
 
-            decimal upSlopeMultiplier = Indicators.GetSlopeMultiplier(upSlope);
-            decimal downSlopeMultiplier = Indicators.GetSlopeMultiplier(downSlope);
+            decimal upSlopeMultiplier = Maths.GetSlopeMultiplier(upSlope);
+            decimal downSlopeMultiplier = Maths.GetSlopeMultiplier(downSlope);
             //decimal oscillatorSlopeMultiplier = GetSlopeMultiplier(oscillatorSlope);
 
             //look for buy and sell signals
@@ -460,11 +461,11 @@ namespace PT.Middleware
                 macdXList.Add(i);
 
             List<decimal> baseYList = macdBaseYList.ToList();
-            decimal baseSlope = Indicators.GetSlope(macdXList, baseYList);
+            decimal baseSlope = Maths.GetSlope(macdXList, baseYList);
             List<decimal> signalYList = macdSignalYList.ToList();
-            decimal signalSlope = Indicators.GetSlope(macdXList, signalYList);
+            decimal signalSlope = Maths.GetSlope(macdXList, signalYList);
             List<decimal> histYList = macdHistYList.ToList();
-            decimal histSlope = Indicators.GetSlope(macdXList, histYList);
+            decimal histSlope = Maths.GetSlope(macdXList, histYList);
 
             //look for buy and sell signals
             bool macdHasBuySignal = false;
@@ -487,9 +488,9 @@ namespace PT.Middleware
                 macdPrev = current;
                 macdPrevIsNegative = macdPrev < 0;
             }
-            decimal histSlopeMultiplier = Indicators.GetSlopeMultiplier(histSlope);
-            decimal baseSlopeMultiplier = Indicators.GetSlopeMultiplier(baseSlope);
-            decimal signalSlopeMultiplier = Indicators.GetSlopeMultiplier(signalSlope);
+            decimal histSlopeMultiplier = Maths.GetSlopeMultiplier(histSlope);
+            decimal baseSlopeMultiplier = Maths.GetSlopeMultiplier(baseSlope);
+            decimal signalSlopeMultiplier = Maths.GetSlopeMultiplier(signalSlope);
 
             decimal histBonus = Math.Min((macdTotalHist * 5) + 5, 20); //cap histBonus at 20
 
@@ -542,16 +543,16 @@ namespace PT.Middleware
                 obvXList.Add(i);
 
             List<decimal> obvYList = obvValueYList.ToList();
-            decimal obvSlope = Indicators.GetSlope(obvXList, obvYList);
-            decimal obvSlopeMultiplier = Indicators.GetSlopeMultiplier(obvSlope);
+            decimal obvSlope = Maths.GetSlope(obvXList, obvYList);
+            decimal obvSlopeMultiplier = Maths.GetSlopeMultiplier(obvSlope);
 
-            List<decimal> zScores = Indicators.GetZScores(obvYList);
-            decimal zScoreSlope = Indicators.GetSlope(zScores, obvXList);
-            decimal zScoreSlopeMultiplier = Indicators.GetSlopeMultiplier(zScoreSlope);
+            List<decimal> zScores = Maths.GetZScores(obvYList);
+            decimal zScoreSlope = Maths.GetSlope(zScores, obvXList);
+            decimal zScoreSlopeMultiplier = Maths.GetSlopeMultiplier(zScoreSlope);
 
-            List<decimal> normalizedScores = Indicators.GetNormalizedData(obvYList);
-            decimal normalizedSlope = Indicators.GetSlope(normalizedScores, obvXList);
-            decimal normalizedSlopeMultiplier = Indicators.GetSlopeMultiplier(normalizedSlope);
+            List<decimal> normalizedScores = Maths.GetNormalizedData(obvYList);
+            decimal normalizedSlope = Maths.GetSlope(normalizedScores, obvXList);
+            decimal normalizedSlopeMultiplier = Maths.GetSlopeMultiplier(normalizedSlope);
 
             decimal obvAverage = obvSum / numberOfResults;
 

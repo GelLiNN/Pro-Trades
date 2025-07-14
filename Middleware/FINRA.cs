@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using PT.Core;
 using PT.Models.RequestModels;
 using PT.Services;
 using TinyCsvParser;
@@ -68,13 +69,13 @@ namespace PT.Middleware
                 shortXList.Add(i);
 
             List<decimal> shortYList = shortInterestYList.ToList();
-            decimal shortSlope = shortYList.Count > 0 ? Indicators.GetSlope(shortXList, shortYList) : 0.0M; //set to 0 if not found
-            decimal shortSlopeMultiplier = Indicators.GetSlopeMultiplier(shortSlope);
+            decimal shortSlope = shortYList.Count > 0 ? Maths.GetSlope(shortXList, shortYList) : 0.0M; //set to 0 if not found
+            decimal shortSlopeMultiplier = Maths.GetSlopeMultiplier(shortSlope);
             decimal shortInterestAverage = totalVolume > 0 ? (totalVolumeShort / totalVolume) * 100 : 30.0M; //set to 30 if not found
 
             //Add short diff modifier to reward todays short interest lower than avg
             decimal shortDiffMod = shortInterestAverage - shortInterestToday;
-            shortDiffMod += shortDiffMod > 0.5M ? Constants.BONUS * 3 : 0;
+            shortDiffMod += shortDiffMod > 0.5M ? Constants.CORE_BONUS * 3 : 0;
 
             //Add these bonuses to account for normal short interest fluctuations
             //The slope cannot be in both ranges if the ranges do not overlap
@@ -84,13 +85,13 @@ namespace PT.Middleware
 
             //calculate composite score based on the following values and weighted multipliers
             compositeScore += Constants.CORE_PRIME_GATE - shortInterestAverage; //get base score as Prime Gate - short interest avg
-            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + (Constants.BONUS * 3) : 0;
-            compositeScore += (shortSlope < -0.5M) ? Constants.BONUS * 3 : 0;
-            compositeScore += (shortSlope > 0.5M) ? Constants.PENALTY * 4 : 0;
-            compositeScore += (shortSlope > 0 && slightlyBearish) ? Constants.BONUS * 2 : 0;
-            compositeScore += (shortSlope > 0 && moderatelyBearish) ? Constants.BONUS : 0;
+            compositeScore += (shortSlope < 0) ? (shortSlope * shortSlopeMultiplier) + (Constants.CORE_BONUS * 3) : 0;
+            compositeScore += (shortSlope < -0.5M) ? Constants.CORE_BONUS * 3 : 0;
+            compositeScore += (shortSlope > 0.5M) ? Constants.CORE_PENALTY * 4 : 0;
+            compositeScore += (shortSlope > 0 && slightlyBearish) ? Constants.CORE_BONUS * 2 : 0;
+            compositeScore += (shortSlope > 0 && moderatelyBearish) ? Constants.CORE_BONUS : 0;
             compositeScore += shortDiffMod;
-            compositeScore += shortInterestAverage < Constants.SHORT_HEALTHY_VOL_PERCENT ? Constants.BONUS * 4 : 0;
+            compositeScore += shortInterestAverage < Constants.SHORT_HEALTHY_VOL_PERCENT ? Constants.CORE_BONUS * 4 : 0;
 
             //Cap this compositeScore at 100 because we should not give it extra weight
             compositeScore = Math.Min(compositeScore, 100);

@@ -244,12 +244,12 @@ namespace PT.Controllers
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
                 if (companyScore != null && companyScore.CompositeScoreRank == "PRIME" && companyScore.ParameterSet.Type == Constants.HS1
-                    && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
+                    && companyScore.FundamentalsComposite != Constants.CORE_INVALID_COMP)
                 {
                     cachedTopTwentyClean.Add(companyScore);
                 }
                 else if (companyScore != null && companyScore.CompositeScoreRank == "GOOD" && companyScore.ParameterSet.Type == Constants.HS1
-                    && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
+                    && companyScore.FundamentalsComposite != Constants.CORE_INVALID_COMP)
                 {
                     cachedTopTwentyClean.Add(companyScore);
                 }
@@ -269,13 +269,13 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeScoreRank == "PRIME" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
-                    && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
+                if (companyScore != null && companyScore.CompositeScoreRank == "PRIME" && companyScore.RatingsComposite != Constants.CORE_INVALID_COMP
+                    && companyScore.FundamentalsComposite != Constants.CORE_INVALID_COMP)
                 {
                     cachedTopTwentyClean.Add(companyScore);
                 }
-                else if (companyScore != null && companyScore.CompositeScoreRank == "GOOD" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
-                    && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
+                else if (companyScore != null && companyScore.CompositeScoreRank == "GOOD" && companyScore.RatingsComposite != Constants.CORE_INVALID_COMP
+                    && companyScore.FundamentalsComposite != Constants.CORE_INVALID_COMP)
                 {
                     cachedTopTwentyClean.Add(companyScore);
                 }
@@ -315,8 +315,8 @@ namespace PT.Controllers
             foreach (string cacheKey in cachedSymbols)
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
-                if (companyScore != null && companyScore.CompositeScoreRank == "BAD" && companyScore.RatingsComposite != Constants.INVALID_COMPOSITE
-                    && companyScore.FundamentalsComposite != Constants.INVALID_COMPOSITE)
+                if (companyScore != null && companyScore.CompositeScoreRank == "BAD" && companyScore.RatingsComposite != Constants.CORE_INVALID_COMP
+                    && companyScore.FundamentalsComposite != Constants.CORE_INVALID_COMP)
                 {
                     cachedBottomTwenty.Add(companyScore);
                 }

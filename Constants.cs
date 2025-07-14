@@ -13,6 +13,13 @@ namespace PT
         public const string LOGGER_SETUP_VALUES = "Logging initialized with FileLoggingEnabled: {0}, FileLogLevel: {1}, LogFilePath: {2}";
         public const string LOG_TIMESTAMP = "{0} | {1}";
 
+        // Long messages
+        public static readonly string RECOVER_PASSWORD_EMAIL_TITLE = "Pro-Trades: Recover password";
+        public static readonly string RECOVER_PASSWORD_EMAIL_BODY = "Hello {0}, here's your one time passcode: {1}";
+        public static readonly string INVALID_VERIFICATION_TOKEN = "Auth Error: invalid verification token.";
+        public static readonly string TOKEN_EXPIRED = "Token has expired.";
+        public static readonly string EMAIL_AUTH_ERROR = "Auth Error: Email not tied to an existing account.";
+
         // Encryption & Security
         public const string SESSION_EXP_DATE = "12/12/2028";
         public const string SESSION_KEY = "SessionKey";
@@ -29,10 +36,6 @@ namespace PT
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly string DEFAULT_RED = "Red";
         public static readonly string DEFAULT_GREEN = "Green";
-        public const decimal PENALTY = (decimal)(-1 * Math.PI);
-        public const decimal BONUS = (decimal)Math.PI;
-        // Used when composite fails, i.e. Ratings Composite
-        public const int INVALID_COMPOSITE = -1;
         public const int DEFAULT_HISTORY_DAYS = 375;
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const decimal TEN_THOUSAND = 10000.0M;
@@ -48,20 +51,27 @@ namespace PT
         public const decimal FIB = 0.618M;
         public const decimal HALF = 0.5M;
         public const decimal TARGET_AVG_WEEK_DIFF_PERCENT = 0.03M;
+
+        #region Core Model Constants
+        public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
+        public const decimal CORE_BONUS = (decimal)Math.PI;
+        public const int CORE_INVALID_COMP = -1;
+        public const decimal CORE_SIGNAL_MOD = 3.6M; // Uber bullish macros 1, Uber bearish macros 7
+        public const decimal CORE_PRIME_GATE = 83.0M;
+        public const decimal CORE_HS1_MOD = CORE_BONUS * HALF;
+        public const decimal CORE_HS2_MOD = 0.0M;
+        public const decimal CORE_HS3_MOD = CORE_BONUS - 1;
+        public const decimal CORE_HS4_MOD = 0.0M;
+        public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;
+
+        // GRU Composites
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
+        public const int OBV_LOOKBACK_DAYS = 42;
         public const decimal FUND_NER_INVERSE_MULTIPLIER_PERCENT = 0.07M;
         public const decimal FUND_NER_MAJOR_LIMIT_PERCENT = 0.5M;
         public const decimal FUND_NER_MINOR_LIMIT_PERCENT = 0.2M;
         public const decimal FUND_EPS_MOD_UPPER_LIMIT = 35.0M;
         public const decimal FUND_PE_MOD_UPPER_LIMIT = 33.0M;
-        // Min 0, Max 7 based on macro conditions (Uber bullish 1, Uber bearish 7)
-        public const decimal CORE_SIGNAL_MOD = 3.6M;
-        public const decimal CORE_PRIME_GATE = 83.0M;
-        public const decimal CORE_HS1_MOD = BONUS * HALF;
-        public const decimal CORE_HS2_MOD = 0.0M;
-        public const decimal CORE_HS3_MOD = BONUS - 1;
-        public const decimal CORE_HS4_MOD = 0.0M;
-        public const decimal CORE_HS5_MOD = BONUS * HALF;
 
 
         // Dollar volume and price disqualification limits
@@ -71,13 +81,6 @@ namespace PT
         public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
         public static readonly int DEFAULT_MIN_PASS_30D_LIMIT = 24;
         public static readonly int DEFAULT_MIN_PASS_10D_LIMIT = 8;
-
-        // Long messages
-        public static readonly string RECOVER_PASSWORD_EMAIL_TITLE = "Pro-Trades: Recover password";
-        public static readonly string RECOVER_PASSWORD_EMAIL_BODY = "Hello {0}, here's your one time passcode: {1}";
-        public static readonly string INVALID_VERIFICATION_TOKEN = "Auth Error: invalid verification token.";
-        public static readonly string TOKEN_EXPIRED = "Token has expired.";
-        public static readonly string EMAIL_AUTH_ERROR = "Auth Error: Email not tied to an existing account.";
 
         // Prediction rankings
         public static readonly string RANK_DISQUALIFIED = "DISQUALIFIED";
@@ -92,22 +95,22 @@ namespace PT
         // HS Parameter Set Types
         public static readonly string HS1 = "HS1";
         public static readonly string HS1_SHORT_DESCRIPTION = "Pure Form";
-        public static readonly string HS1_LONG_DESCRIPTION = "The oldest original prediction parameter set with the best recorded accuracy";
+        public static readonly string HS1_LONG_DESCRIPTION = "The 1st generation original prediction parameter set with the most historical data";
         public static readonly string HS1_SET = "adx_aroon_obv_macd_short_fund_hedge";
 
         public static readonly string HS2 = "HS2";
         public static readonly string HS2_SHORT_DESCRIPTION = "BBANDS OBV Swap";
-        public static readonly string HS2_LONG_DESCRIPTION = "2nd generation expanded parameter set for Bollinger Bands signal plays";
+        public static readonly string HS2_LONG_DESCRIPTION = "2nd generation expanded parameter set for Bollinger Bands signal setups instead of OBV";
         public static readonly string HS2_SET = "adx_aroon_bbands_macd_short_fund_hedge";
 
         public static readonly string HS3 = "HS3";
         public static readonly string HS3_SHORT_DESCRIPTION = "BBANDS AROON Swap";
-        public static readonly string HS3_LONG_DESCRIPTION = "3rd generation expanded parameter set for Bollinger Bands signal plays";
+        public static readonly string HS3_LONG_DESCRIPTION = "3rd generation expanded parameter set for Bollinger Bands signal setups instead of Aroon";
         public static readonly string HS3_SET = "adx_bbands_obv_macd_short_fund_hedge";
 
         public static readonly string HS4 = "HS4";
         public static readonly string HS4_SHORT_DESCRIPTION = "Fundamentals Not Found";
-        public static readonly string HS4_LONG_DESCRIPTION = "2nd generation parameter set for defensive case, not well studied";
+        public static readonly string HS4_LONG_DESCRIPTION = "2nd generation parameter set for defensive error cases, not well studied";
         public static readonly string HS4_SET = "adx_aroon_obv_bbands_macd_short_hedge";
 
         public static readonly string HS5 = "HS5";
@@ -121,5 +124,6 @@ namespace PT
         public const string COMPOSITE_BBANDS = "BBANDS";
         public const string COMPOSITE_OBV = "OBV";
         public const string COMPOSITE_MACD = "MACD";
+        #endregion
     }
 }

@@ -98,7 +98,7 @@ namespace PT.Middleware
 
         public static double PDF(double x)
         {
-            return Math.Exp(-0.5 * x * x) / Math.Sqrt(2.0 * Convert.ToDouble(Constants.BONUS));
+            return Math.Exp(-0.5 * x * x) / Math.Sqrt(2.0 * Convert.ToDouble(Constants.CORE_BONUS));
         }
 
 
@@ -148,7 +148,7 @@ namespace PT.Middleware
             const double a5 = 1.330274429;
             L = Math.Abs(X);
             K = 1.0 / (1.0 + 0.2316419 * L);
-            dCND = 1.0 - 1.0 / Math.Sqrt(2 * Convert.ToDouble(Constants.BONUS)) *
+            dCND = 1.0 - 1.0 / Math.Sqrt(2 * Convert.ToDouble(Constants.CORE_BONUS)) *
                 Math.Exp(-L * L / 2.0) * (a1 * K + a2 * K * K + a3 * Math.Pow(K, 3.0) +
                 a4 * Math.Pow(K, 4.0) + a5 * Math.Pow(K, 5.0));
 

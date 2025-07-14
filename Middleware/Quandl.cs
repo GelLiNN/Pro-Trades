@@ -1,8 +1,9 @@
+using Newtonsoft.Json.Linq;
+using PT.Core;
+using PT.Models.RequestModels;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
-using Newtonsoft.Json.Linq;
-using PT.Models.RequestModels;
 
 namespace PT.Middleware
 {
@@ -120,8 +121,8 @@ namespace PT.Middleware
                 shortXList.Add(i);
 
             List<decimal> shortYList = shortInterestYList.ToList();
-            decimal shortSlope = Indicators.GetSlope(shortXList, shortYList);
-            decimal shortSlopeMultiplier = Indicators.GetSlopeMultiplier(shortSlope);
+            decimal shortSlope = Maths.GetSlope(shortXList, shortYList);
+            decimal shortSlopeMultiplier = Maths.GetSlopeMultiplier(shortSlope);
             decimal shortInterestAverage = (totalVolumeShort / totalVolume) * 100;
 
             //Add these bonuses to account for normal short interest fluctuations

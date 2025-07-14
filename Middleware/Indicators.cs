@@ -1,6 +1,7 @@
 using PT.Models.CoreModels;
 using PT.Models.RequestModels;
 using PT.Services;
+using static PT.Core.Maths;
 using Skender.Stock.Indicators;
 using System.Diagnostics;
 using YahooQuotesApi;
@@ -28,10 +29,10 @@ namespace PT.Middleware
             List<Skender.Stock.Indicators.Quote> history = ptHistory.SkenderHistory.ToList();
 
             // Only used for the obv composite
-            List<Skender.Stock.Indicators.Quote> obvHistory = ptHistory.SkenderHistory.TakeLast(42).ToList();
+            List<Skender.Stock.Indicators.Quote> obvHistory = ptHistory.SkenderHistory.TakeLast(Constants.OBV_LOOKBACK_DAYS).ToList();
 
             // Only used for the bbands composite
-            List<Skender.Stock.Indicators.Quote> supplement = ptHistory.SkenderHistory.TakeLast(7).ToList();
+            List<Skender.Stock.Indicators.Quote> supplement = ptHistory.SkenderHistory.TakeLast(Constants.DEFAULT_LOOKBACK_DAYS).ToList();
 
             long alpacaStopMs = sw.ElapsedMilliseconds;
             long alpacaMs = alpacaStopMs;
@@ -170,7 +171,7 @@ namespace PT.Middleware
             return
                 (scoreResult.CompositeScoreValue < 40 &&
                 (scoreResult.ShortInterestComposite <= 50 && scoreResult.FundamentalsComposite <= 60) &&
-                !(scoreResult.RatingsComposite == Constants.INVALID_COMPOSITE && scoreResult.FundamentalsComposite == Constants.INVALID_COMPOSITE));
+                !(scoreResult.RatingsComposite == Constants.CORE_INVALID_COMP && scoreResult.FundamentalsComposite == Constants.CORE_INVALID_COMP));
         }
 
         // Get final prediction composite score decimal, and prediction parameter set HS type string
@@ -179,14 +180,14 @@ namespace PT.Middleware
             decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
         {
             decimal compositeScoreFinal = 0;
-            if (hr.RatingsComposite == Constants.INVALID_COMPOSITE)
+            if (hr.RatingsComposite == Constants.CORE_INVALID_COMP)
             {
                 //HS5 - FINANCIAL INSTRUMENTS
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
                 return (compositeScoreFinal + Constants.CORE_HS5_MOD, Constants.HS5);
             }
-            else if (fr.FundamentalsComposite == Constants.INVALID_COMPOSITE)
+            else if (fr.FundamentalsComposite == Constants.CORE_INVALID_COMP)
             {
                 //HS4 - FUNDAMENTALS NOT FOUND
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
@@ -233,12 +234,12 @@ namespace PT.Middleware
             decimal macdComposite, decimal bbandsComposite, decimal aroonComposite, decimal targetL, decimal targetS)
         {
             string notes = "";
-            notes += (fr != null && fr.FundamentalsComposite != Constants.INVALID_COMPOSITE && fr.FundamentalsComposite >= 90) ? "fund+, " : "";
-            notes += (fr != null && fr.FundamentalsComposite != Constants.INVALID_COMPOSITE && fr.FundamentalsComposite <= 33) ? "fund-, " : "";
-            notes += (hr != null && hr.RatingsComposite != Constants.INVALID_COMPOSITE && hr.RatingsComposite >= 90) ? "hedge+, " : "";
-            notes += (hr != null && hr.RatingsComposite != Constants.INVALID_COMPOSITE && hr.RatingsComposite <= 33) ? "hedge-, " : "";
-            notes += (sr != null && sr.ShortInterestComposite != Constants.INVALID_COMPOSITE && sr.ShortInterestComposite >= 95) ? "long+, " : "";
-            notes += (sr != null && sr.ShortInterestComposite != Constants.INVALID_COMPOSITE && sr.ShortInterestComposite <= 33) ? "long-, " : "";
+            notes += (fr != null && fr.FundamentalsComposite != Constants.CORE_INVALID_COMP && fr.FundamentalsComposite >= 90) ? "fund+, " : "";
+            notes += (fr != null && fr.FundamentalsComposite != Constants.CORE_INVALID_COMP && fr.FundamentalsComposite <= 33) ? "fund-, " : "";
+            notes += (hr != null && hr.RatingsComposite != Constants.CORE_INVALID_COMP && hr.RatingsComposite >= 90) ? "hedge+, " : "";
+            notes += (hr != null && hr.RatingsComposite != Constants.CORE_INVALID_COMP && hr.RatingsComposite <= 33) ? "hedge-, " : "";
+            notes += (sr != null && sr.ShortInterestComposite != Constants.CORE_INVALID_COMP && sr.ShortInterestComposite >= 95) ? "long+, " : "";
+            notes += (sr != null && sr.ShortInterestComposite != Constants.CORE_INVALID_COMP && sr.ShortInterestComposite <= 33) ? "long-, " : "";
 
             notes += (macdComposite >= 95) ? "macd++, " : (macdComposite >= Constants.CORE_PRIME_GATE) ? "macd+, " : (macdComposite <= 33) ? "macd-, " : "";
             notes += (adxComposite == 100) ? "adx++, " : (adxComposite >= Constants.CORE_PRIME_GATE) ? "adx+, " : (adxComposite <= 33) ? "adx-, " : "";
@@ -484,7 +485,7 @@ namespace PT.Middleware
                 catch (Exception e) { /*do nothing*/ }
 
                 // Get base value starting with 1Mil USD bonus, then function of price-to-book percentage
-                decimal baseValue = history.TodayVolUsd >= Constants.MILLION ? Constants.BONUS : 0;
+                decimal baseValue = history.TodayVolUsd >= Constants.MILLION ? Constants.CORE_BONUS : 0;
                 decimal bookValuePrice = 0;
                 if (priceToBook > 0 && history.TodayVwap > 0)
                 {
@@ -493,19 +494,19 @@ namespace PT.Middleware
                     baseValue = bookValuePriceDiffPercent * 100;
                     if (baseValue >= 10)
                     {
-                        baseValue += Constants.BONUS + 1; //more than 10% undervalued bonus
+                        baseValue += Constants.CORE_BONUS + 1; //more than 10% undervalued bonus
                     }
                     else if (baseValue <= 0)
                     {
                         //pi pity points with vwap slope bonus
-                        baseValue = Constants.BONUS + (vwapSlope > 0.5M ? Constants.BONUS : 0);
+                        baseValue = Constants.CORE_BONUS + (vwapSlope > 0.5M ? Constants.CORE_BONUS : 0);
                     }
                     baseValue = Math.Min(baseValue, 30);
                 }
                 else
                 {
                     //pi pity points
-                    baseValue = Constants.BONUS;
+                    baseValue = Constants.CORE_BONUS;
                 }
 
                 // Calculate net asset value if unavailable
@@ -523,15 +524,15 @@ namespace PT.Middleware
                     decimal avgPrice30d = history.HistoricalVwapYList[0];
                     if (avgPrice30d < fairValuePrice)
                     {
-                        fairValuePriceBonus = 2 * Constants.BONUS + 1;
+                        fairValuePriceBonus = 2 * Constants.CORE_BONUS + 1;
                     }
                     else if (avgPrice30d / fairValuePrice <= 3)
                     {
-                        fairValuePriceBonus = Constants.BONUS + 1;
+                        fairValuePriceBonus = Constants.CORE_BONUS + 1;
                     }
                     else if (avgPrice30d / fairValuePrice <= 7)
                     {
-                        fairValuePriceBonus = Constants.BONUS * Constants.HALF;
+                        fairValuePriceBonus = Constants.CORE_BONUS * Constants.HALF;
                     }
                 }
 
@@ -568,12 +569,12 @@ namespace PT.Middleware
                     && history.AverageVolUsd10Day > (history.AverageVolUsd30Day + Constants.THIRTY_THOUSAND);
                 if (hasGoldenPath)
                 {
-                    goldenPathBonus += Constants.BONUS * 2 + 1;
+                    goldenPathBonus += Constants.CORE_BONUS * 2 + 1;
                 }
 
                 // Get normalized price slope and volume slope bonus
-                decimal normalizedPriceVolBonus = normalizedPriceSlope > 0.025M ? Constants.BONUS * Constants.HALF : 0;
-                normalizedPriceVolBonus += normalizedVolumeSlope > 0.025M ? Constants.BONUS * Constants.HALF : 0;
+                decimal normalizedPriceVolBonus = normalizedPriceSlope > 0.025M ? Constants.CORE_BONUS * Constants.HALF : 0;
+                normalizedPriceVolBonus += normalizedVolumeSlope > 0.025M ? Constants.CORE_BONUS * Constants.HALF : 0;
 
                 // calculate composite score based on the following values and weighted multipliers
                 // Base value should be calculated based on EPS and PE data
@@ -641,7 +642,7 @@ namespace PT.Middleware
                 Debug.WriteLine($"ERROR {msg}");
                 return new FundamentalsResult
                 {
-                    FundamentalsComposite = Constants.INVALID_COMPOSITE,
+                    FundamentalsComposite = Constants.CORE_INVALID_COMP,
                     DollarVolumeToday = 0.0M,
                     DollarVolume10Day = 0.0M,
                     DollarVolume30Day = 0.0M,
@@ -754,22 +755,22 @@ namespace PT.Middleware
             baseValue = Math.Min(baseValue, 42.0M);
 
             //Add bonus for recent trending and avg trending
-            decimal recentTrendingBonus = recentDmiTrendingPositive ? Constants.BONUS * 2 : 0;
-            decimal averageTrendingBonus = averageDmiTrendingPositive ? Constants.BONUS * 2 : 0;
+            decimal recentTrendingBonus = recentDmiTrendingPositive ? Constants.CORE_BONUS * 2 : 0;
+            decimal averageTrendingBonus = averageDmiTrendingPositive ? Constants.CORE_BONUS * 2 : 0;
 
             //Add time-scaled bonus and penalty for buy and sell signals
-            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(hasBuySignal, Constants.BONUS, daysSinceSignal);
-            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(hasSellSignal, Constants.BONUS, daysSinceSignal);
+            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(hasBuySignal, Constants.CORE_BONUS, daysSinceSignal);
+            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(hasSellSignal, Constants.CORE_BONUS, daysSinceSignal);
 
             //Add bonus for ADX average above 25 per investopedia recommendation
-            decimal averageBuySignalBonus = adxAvg > 25 && hasBuySignal ? Constants.BONUS * 2 : 0;
+            decimal averageBuySignalBonus = adxAvg > 25 && hasBuySignal ? Constants.CORE_BONUS * 2 : 0;
 
             //Only add zscore slope bonus if +DMI > -DMI
             decimal zScoreSlopeBonus = (zScoreSlope > 0.1m) && averageDmiTrendingPositive ?
-                (zScoreSlope * zScoreSlopeMultiplier) + Constants.BONUS : 0;
+                (zScoreSlope * zScoreSlopeMultiplier) + Constants.CORE_BONUS : 0;
 
-            decimal pDmiSlopeBonus = (pDmiSlope > 0.1m) ? Constants.BONUS * 2 : Constants.PENALTY * 2;
-            decimal nDmiSlopeBonus = (nDmiSlope < -0.1m) ? Constants.BONUS * 2 : Constants.PENALTY * 2;
+            decimal pDmiSlopeBonus = (pDmiSlope > 0.1m) ? Constants.CORE_BONUS * 2 : Constants.CORE_PENALTY * 2;
+            decimal nDmiSlopeBonus = (nDmiSlope < -0.1m) ? Constants.CORE_BONUS * 2 : Constants.CORE_PENALTY * 2;
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
@@ -866,12 +867,12 @@ namespace PT.Middleware
             //Only allow positive normalizedScoreBase, divide by 4 instead of 2 (which would be classic mean)
             decimal normalizedScoreBase =
                 ((normalizedScores[normalizedScores.Count - 1] + normalizedScores[normalizedScores.Count - 2]) / 4) * 100;
-            normalizedScoreBase = normalizedScoreBase < 0 ? Constants.BONUS * 5 : normalizedScoreBase;
+            normalizedScoreBase = normalizedScoreBase < 0 ? Constants.CORE_BONUS * 5 : normalizedScoreBase;
 
             //ZScore base helps us get the base value for composite from derivatives
             //Only allow positive zScoreBase, divide by 4 instead of 2 (which would be classic mean)
             decimal zScoreBase = ((zScores[zScores.Count - 1] + zScores[zScores.Count - 2]) / 4) * 100;
-            zScoreBase = zScoreBase < 0 ? Constants.BONUS * 5 : zScoreBase;
+            zScoreBase = zScoreBase < 0 ? Constants.CORE_BONUS * 5 : zScoreBase;
 
             baseValue = (normalizedScoreBase + zScoreBase) / 2.0M;
 
@@ -879,28 +880,28 @@ namespace PT.Middleware
             baseValue = Math.Min(baseValue, 42.0M);
 
             //Add bonus if average OBV is greater than 0
-            decimal obvAverageBonus = obvAverage > 0 ? Constants.BONUS * 2 : 0;
+            decimal obvAverageBonus = obvAverage > 0 ? Constants.CORE_BONUS * 2 : 0;
 
             //Add bonus if OBV slope positive
-            decimal obvSlopeBonus = obvSlope > 0 ? Constants.BONUS * 3 : 0;
+            decimal obvSlopeBonus = obvSlope > 0 ? Constants.CORE_BONUS * 3 : 0;
 
             //Add Zscore slope bonus
             decimal zScoreSlopeBonus = 0;
             if (zScoreSlope > 0.05m && obvAverage > 0 && obvSlope > 0)
                 zScoreSlopeBonus += (zScoreSlope * zScoreSlopeMultiplier);
             if (zScoreSlope > 0.05m)
-                zScoreSlopeBonus += Constants.BONUS;
+                zScoreSlopeBonus += Constants.CORE_BONUS;
 
             //Add Normalized slope bonus
             decimal normalizedSlopeBonus = 0;
             if (normalizedSlope > 0.05m && obvAverage > 0 && obvSlope > 0)
                 normalizedSlopeBonus += (normalizedSlope * normalizedSlopeMultiplier);
             if (normalizedSlope > 0.05m)
-                normalizedSlopeBonus += Constants.BONUS;
+                normalizedSlopeBonus += Constants.CORE_BONUS;
 
             //Get time-scaled buy and sell signal bonus and penalty
-            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(obvHasBuySignal, Constants.BONUS, daysSinceSignal);
-            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(obvHasSellSignal, Constants.BONUS, daysSinceSignal);
+            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(obvHasBuySignal, Constants.CORE_BONUS, daysSinceSignal);
+            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(obvHasSellSignal, Constants.CORE_BONUS, daysSinceSignal);
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
@@ -1016,45 +1017,45 @@ namespace PT.Middleware
             decimal macdBaseSignalDiff = macdTotalBase - macdTotalSignal;
             if (macdBaseSignalDiff > 0)
             {
-                baseValue = (macdBaseSignalDiff * Constants.BONUS) + 5;
+                baseValue = (macdBaseSignalDiff * Constants.CORE_BONUS) + 5;
             }
             if (macdTotalHist > 0)
             {
-                baseValue += (macdTotalHist * Constants.BONUS) + 5;
+                baseValue += (macdTotalHist * Constants.CORE_BONUS) + 5;
             }
             if (baseValue == 0)
             {
-                baseValue += (3 * Constants.BONUS); //3-pi pity points
+                baseValue += (3 * Constants.CORE_BONUS); //3-pi pity points
             }
             baseValue = Math.Min(30, baseValue);
             baseValue += positiveHistDays;
 
-            decimal histSlopeBonus = (histSlope > 0) ? histSlope + (Constants.BONUS * 3) : 0;
-            decimal baseSlopeBonus = (baseSlope > 0) ? baseSlope + (Constants.BONUS * 2) : 0;
-            decimal signalSlopeBonus = (signalSlope > 0) ? signalSlope + Constants.BONUS : 0;
+            decimal histSlopeBonus = (histSlope > 0) ? histSlope + (Constants.CORE_BONUS * 3) : 0;
+            decimal baseSlopeBonus = (baseSlope > 0) ? baseSlope + (Constants.CORE_BONUS * 2) : 0;
+            decimal signalSlopeBonus = (signalSlope > 0) ? signalSlope + Constants.CORE_BONUS : 0;
 
             //Add histogram zscore slope bonus
             decimal zScoreHistSlopeBonus = 0;
             if (zScoreSlope > 0.1m)
                 zScoreHistSlopeBonus += (zScoreSlope * zScoreSlopeMultiplier);
             if (zScoreSlope > 0)
-                zScoreHistSlopeBonus += (2 * Constants.BONUS);
+                zScoreHistSlopeBonus += (2 * Constants.CORE_BONUS);
 
             //Add normalized histogram slope bonus
             decimal normalizedHistSlopeBonus = 0;
             if (normalizedHistSlope >= 0.5m)
                 normalizedHistSlopeBonus += normalizedHistSlope;
             if (normalizedHistSlope > 0)
-                normalizedHistSlopeBonus += (2 * Constants.BONUS);
+                normalizedHistSlopeBonus += (2 * Constants.CORE_BONUS);
 
             //Get previous 2 base above signal bonus
             bool prevTwoBaseAboveSignal = baseYList[baseYList.Count - 1] > signalYList[signalYList.Count - 1]
                 && baseYList[baseYList.Count - 2] > signalYList[signalYList.Count - 2];
-            decimal baseAboveSignalBonus = prevTwoBaseAboveSignal ? Constants.BONUS * 3 : 0;
+            decimal baseAboveSignalBonus = prevTwoBaseAboveSignal ? Constants.CORE_BONUS * 3 : 0;
 
             //Get time-scaled buy and sell signal bonus and penalty
-            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(macdHasBuySignal, Constants.BONUS, daysSinceSignal);
-            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(macdHasSellSignal, Constants.BONUS, daysSinceSignal);
+            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(macdHasBuySignal, Constants.CORE_BONUS, daysSinceSignal);
+            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(macdHasSellSignal, Constants.CORE_BONUS, daysSinceSignal);
 
             //Calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
@@ -1208,33 +1209,33 @@ namespace PT.Middleware
             decimal baseBearResult = Math.Min(percentDiffUp, 30); //base bear result caps at 30
             decimal baseValue = (aroonAvgUp > aroonAvgDown) ? baseBullResult : baseBearResult;
             baseValue += aroonPositiveDays * Constants.HALF;
-            baseValue += aroonPositiveDays > aroonNegativeDays ? Constants.BONUS : 0;
+            baseValue += aroonPositiveDays > aroonNegativeDays ? Constants.CORE_BONUS : 0;
 
             //Get recent positivity modifiers
-            decimal recentPositivityMinorModifier = aroonHasRecentPositivityMinor ? Constants.BONUS : 0;
-            decimal recentPositivityMajorModifier = aroonHasRecentPositivityMajor ? 2 * Constants.BONUS : 0;
+            decimal recentPositivityMinorModifier = aroonHasRecentPositivityMinor ? Constants.CORE_BONUS : 0;
+            decimal recentPositivityMajorModifier = aroonHasRecentPositivityMajor ? 2 * Constants.CORE_BONUS : 0;
 
             //Get aroon average modifier
-            decimal aroonAvgModifier = aroonAvgUp > aroonAvgDown ? Constants.BONUS * 2 : Constants.PENALTY * 2;
+            decimal aroonAvgModifier = aroonAvgUp > aroonAvgDown ? Constants.CORE_BONUS * 2 : Constants.CORE_PENALTY * 2;
 
             //Get slope modifiers
-            decimal oscilatorSlopeModifier = (oscillatorSlope > 1.0M) ? oscillatorSlope + (2 * Constants.BONUS) : Constants.PENALTY * 3;
+            decimal oscilatorSlopeModifier = (oscillatorSlope > 1.0M) ? oscillatorSlope + (2 * Constants.CORE_BONUS) : Constants.CORE_PENALTY * 3;
             oscilatorSlopeModifier = oscilatorSlopeModifier > 20 ? Math.Max(20, oscilatorSlopeModifier) : oscilatorSlopeModifier;
 
-            decimal downSlopeModifier = (downSlope < 0) ? (-1 * downSlope) + (2 * Constants.BONUS) : (-1 * downSlope) + (Constants.PENALTY * 2);
+            decimal downSlopeModifier = (downSlope < 0) ? (-1 * downSlope) + (2 * Constants.CORE_BONUS) : (-1 * downSlope) + (Constants.CORE_PENALTY * 2);
             downSlopeModifier = downSlopeModifier > 20 ? Math.Max(20, downSlopeModifier) : downSlopeModifier;
             downSlopeModifier = downSlopeModifier < -20 ? Math.Max(-20, downSlopeModifier) : downSlopeModifier;
 
             //Get time-scaled buy and sell signal bonus and penalty
-            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(aroonHasBuySignal, Constants.BONUS, daysSinceSignal);
-            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(aroonHasSellSignal, Constants.BONUS, daysSinceSignal);
+            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(aroonHasBuySignal, Constants.CORE_BONUS, daysSinceSignal);
+            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(aroonHasSellSignal, Constants.CORE_BONUS, daysSinceSignal);
 
             //Get other bonuses
             decimal lastOscValue = oscillatorYList[oscillatorYList.Count - 1];
 
             //Add bull major bonus if last AROON UP >= 70 per investopedia recommendation
             //This is the same as when last AROON OSC >= 50
-            decimal bullMajorBonus = (lastOscValue >= 50) ? Constants.BONUS * 2: 0;
+            decimal bullMajorBonus = (lastOscValue >= 50) ? Constants.CORE_BONUS * 2: 0;
 
             //calculate composite score based on the following values and weighted multipliers
             //if AROON avg up > AROON avg down, start score with 100 - (down as % of up)
@@ -1246,7 +1247,7 @@ namespace PT.Middleware
             composite += aroonAvgModifier;
             composite += oscilatorSlopeModifier;
             composite += downSlopeModifier;
-            composite = Math.Min(composite, 70 + (Constants.BONUS * 2));
+            composite = Math.Min(composite, 70 + (Constants.CORE_BONUS * 2));
             composite += bullMajorBonus;
             composite += buySignalBonus;
             composite += composite > 50 ? sellSignalPenalty : 0;
@@ -1376,26 +1377,26 @@ namespace PT.Middleware
             // Cross lower band and have positive breakout, buy signal, max weight
             if (crossLowerBand && recentPositivity && hasBreakout)
             {
-                bbandsBonus += Constants.BONUS * 8;
+                bbandsBonus += Constants.CORE_BONUS * 8;
                 bbandsHasMaxBuySignal = true;
             }
             // Cross middle band and have positive breakout, buy signal, medium weight
             else if (crossMiddleBand && recentPositivity && hasBreakout)
             {
-                bbandsBonus += Constants.BONUS * 4;
+                bbandsBonus += Constants.CORE_BONUS * 4;
                 bbandsHasMedBuySignal = true;
             }
 
             // Cross upper band and have positive breakout, sell signal, medium weight
             if (crossUpperBand && recentPositivity && hasBreakout)
             {
-                bbandsBonus -= Constants.BONUS * 4;
+                bbandsBonus -= Constants.CORE_BONUS * 4;
                 bbandsHasMedSellSignal = true;
             }
             // Cross upper band and have negative breakout, sell signal, max weight
             else if (crossUpperBand && !recentPositivity && hasBreakout)
             {
-                bbandsBonus -= Constants.BONUS * 8;
+                bbandsBonus -= Constants.CORE_BONUS * 8;
                 bbandsHasMaxSellSignal = true;
             }
 
@@ -1410,23 +1411,23 @@ namespace PT.Middleware
             else
             {
                 decimal percentageDiffRebound = (prices[prices.Count - 1] - lowerYList[lowerYList.Count - 1]) / lowerYList[lowerYList.Count - 1] * 100;
-                baseValue = percentageDiffRebound > 0 ? (100 - percentageDiffRebound) / 2 + Constants.BONUS : Constants.BONUS * 5; // Reward for price being below 2.5 std devs
+                baseValue = percentageDiffRebound > 0 ? (100 - percentageDiffRebound) / 2 + Constants.CORE_BONUS : Constants.CORE_BONUS * 5; // Reward for price being below 2.5 std devs
             }
             // Cap base value at 40 with small bonus for max
             baseValue = Math.Min(baseValue, 40);
-            baseValue += baseValue == 40 ? Constants.BONUS : 0;
+            baseValue += baseValue == 40 ? Constants.CORE_BONUS : 0;
 
             // Bonus for bullish consolidation of the bands
-            decimal consolidationBonus = lowerSlope > 0 && upperSlope < 0 && priceSlope > 0.05M ? Constants.BONUS * 3 : 0;
+            decimal consolidationBonus = lowerSlope > 0 && upperSlope < 0 && priceSlope > 0.05M ? Constants.CORE_BONUS * 3 : 0;
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
             composite += baseValue;
             composite += consolidationBonus;
-            composite += (lowerSlope > 0) ? (lowerSlope * lowerSlopeMultiplier) + (Constants.BONUS * 3) : 0;
-            composite += (middleSlope > 0) ? (middleSlope * middleSlopeMultiplier) + (Constants.BONUS * 4) : (Constants.PENALTY * 2);
-            composite += (upperSlope > 0 && recentPositivity) ? (Constants.BONUS * 3) : 0;
-            composite = Math.Min(composite, 70 + (Constants.HALF * Constants.BONUS));
+            composite += (lowerSlope > 0) ? (lowerSlope * lowerSlopeMultiplier) + (Constants.CORE_BONUS * 3) : 0;
+            composite += (middleSlope > 0) ? (middleSlope * middleSlopeMultiplier) + (Constants.CORE_BONUS * 4) : (Constants.CORE_PENALTY * 2);
+            composite += (upperSlope > 0 && recentPositivity) ? (Constants.CORE_BONUS * 3) : 0;
+            composite = Math.Min(composite, 70 + (Constants.HALF * Constants.CORE_BONUS));
             composite += composite > 50 && bbandsBonus < 0 ? bbandsBonus : 0;
             composite += bbandsBonus > 0 ? bbandsBonus : 0;
 
@@ -1437,192 +1438,6 @@ namespace PT.Middleware
         public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int N)
         {
             return source.Skip(Math.Max(0, source.Count() - N));
-        }
-
-        public static decimal GetSlope(List<decimal> xList, List<decimal> yList)
-        {
-            //"zip" xs and ys to make the sum of products easier
-            var xys = Enumerable.Zip(xList, yList, (x, y) => new { x = x, y = y });
-            decimal xbar = xList.Average();
-            decimal ybar = yList.Average();
-            decimal slope = xys.Sum(xy => (xy.x - xbar) * (xy.y - ybar)) / xList.Sum(x => (x - xbar) * (x - xbar));
-            return slope;
-        }
-
-        public static decimal GetSlopeMultiplier(decimal slope)
-        {
-            //Positive cases
-            if (slope > 0 && slope < 0.25M)
-                return 30.0M;
-            else if (slope >= 0.25M && slope < 0.5M)
-                return 20.0M;
-            else if (slope >= 0.5M && slope < 1)
-                return 10.0M;
-            else if (slope >= 1 && slope < 5)
-                return 4.0M;
-            else if (slope >= 5 && slope < 10)
-                return 1.7M;
-            else if (slope >= 10 && slope < 20)
-                return 1.0M;
-            else if (slope >= 20)
-                return 1.0M;
-
-            //Negative cases
-            else if (slope < 0 && slope > -0.25M)
-                return -30.0M;
-            else if (slope <= -0.25M && slope > -0.5M)
-                return -20.0M;
-            else if (slope <= -0.5M && slope > -1)
-                return -10.0M;
-            else if (slope <= -1 && slope > -5)
-                return -4.0M;
-            else if (slope <= -5 && slope > -10)
-                return -1.7M;
-            else if (slope <= -10 && slope > -20)
-                return -1.0M;
-            else if (slope <= -20)
-                return -1.0M;
-            else
-                return 0;
-        }
-
-        // Transform input data into normalized (or scaled) data
-        public static List<decimal> GetNormalizedData(List<decimal> input)
-        {
-            if (IsAllZeroes(input)) return input;
-
-            // Protect against divide by 0 errors
-            if (input.Count == 0)
-                return new List<decimal>();
-
-            // Estimate min and max from the input values using standard deviation
-            decimal mean = input.Sum() / input.Count;
-
-            decimal stdDev = GetStandardDeviation(input, true);
-
-            decimal setMax = input.Max();
-            decimal setMin = input.Min();
-            decimal range = setMax - setMin;
-            decimal stdDevScalar = GetStdDevScalar(range, stdDev);
-
-            decimal estMax = mean + (stdDev * stdDevScalar);
-            decimal estMin = mean - (stdDev * stdDevScalar);
-
-            List<decimal> normalized = new List<decimal>();
-
-            //below is using a difference quotient to get results for normalization
-            for (int i = 0; i < input.Count; i++)
-            {
-                decimal curScore = (input[i] - estMin) / (estMax - estMin);
-                normalized.Add(curScore);
-            }
-
-            return normalized;
-        }
-
-        public static List<decimal> GetZScores(List<decimal> input)
-        {
-            if (IsAllZeroes(input)) return input;
-
-            // Find standard deviation and compute Z Scores
-            decimal mean = input.Sum() / input.Count;
-
-            decimal stdDev = GetStandardDeviation(input, true);
-
-            decimal estMin = mean - (stdDev);
-            decimal estMax = mean + (stdDev);
-
-            decimal setMax = input.Max();
-            decimal setMin = input.Min();
-            decimal range = setMax - setMin;
-            decimal zScoreScalar = GetStdDevScalar(range, stdDev);
-
-            List<decimal> zScores = new List<decimal>();
-
-            // Normally z-score tells you how many stdDev away from the mean this value is
-            // In this case, we're finding how many (stdDev * zScoreScalar) away from the mean this value is
-            for (int i = 0; i < input.Count; i++)
-            {
-                //OR compare the range to the stdDev to decide on our Z Score multiplier
-                decimal curZ = (input[i] - mean) / (stdDev * zScoreScalar);
-                zScores.Add(curZ);
-            }
-
-            return zScores;
-        }
-
-        public static bool IsAllZeroes(List<decimal> input)
-        {
-            bool allZeroes = true;
-            foreach (decimal cur in input)
-            {
-                allZeroes = cur == 0;
-            }
-            return allZeroes;
-        }
-
-        // May not be needed anymore now that I can use Standard Deviation
-        public static decimal GetEstimatedBound(List<decimal> set, decimal setMin, decimal setMax, bool isMax)
-        {
-            decimal sum = 0;
-            for (int i = 0; i < set.Count; i++)
-                sum += set[i];
-
-            decimal mean = sum / set.Count;
-
-            decimal stdDev = GetStandardDeviation(set, true);
-
-            //decimal range = setMax - setMin;
-            //decimal expandedRange = range * 1.5M; //like an estimated std deviation
-            //decimal expander = expandedRange / 2.0M;
-            return (isMax) ? mean + stdDev : mean - stdDev;
-        }
-
-        public static decimal GetStdDevScalar(decimal range, decimal stdDev)
-        {
-            //how many stdDevs do you need to cover the entire range?
-            return stdDev == 0 ? 0 : range / stdDev;
-        }
-
-        // Return the standard deviation of an array of decimals
-        // If the second argument is True, evaluate as a sample
-        // If the second argument is False, evaluate as a population
-        public static decimal GetStandardDeviation(List<decimal> values, bool isSample)
-        {
-            // Get the mean
-            decimal sum = 0;
-            for (int i = 0; i < values.Count; i++)
-                sum += values[i];
-            decimal mean = sum / values.Count;
-
-            // Get the sum of the squares of the differences between each value and the mean
-            decimal sumOfSquares = 0;
-            for (int i = 0; i < values.Count; i++)
-                sumOfSquares += (values[i] - mean) * (values[i] - mean);
-
-            if (isSample)
-                return DecimalSqrt(sumOfSquares / (values.Count() - 1));
-            else
-                return DecimalSqrt(sumOfSquares / values.Count());
-        }
-
-        // https://stackoverflow.com/questions/4124189/performing-math-operations-on-decimal-datatype-in-c
-        // x - a number, from which we need to calculate the square root
-        // epsilon - an accuracy of calculation of the root from our number.
-        // The result of the calculations will differ from an actual value
-        // of the root on less than epslion.
-        public static decimal DecimalSqrt(decimal x, decimal epsilon = 0.0M)
-        {
-            if (x < 0) throw new Exception("EXCEPTION: Cannot calculate square root from a negative number");
-            decimal current = (decimal)Math.Sqrt((double)x), previous;
-            do
-            {
-                previous = current;
-                if (previous == 0.0M) return 0;
-                current = (previous + x / previous) / 2;
-            }
-            while (Math.Abs(previous - current) > epsilon);
-            return current;
         }
 
         public static decimal CalcEPSModifier(decimal averageEPS, decimal growthEPS)
@@ -1639,38 +1454,38 @@ namespace PT.Middleware
             // Reward cases
             if (0 < averageEPS && averageEPS <= 0.5M)
             {
-                epsModifier += averageEPS * 10 + Constants.BONUS;
+                epsModifier += averageEPS * 10 + Constants.CORE_BONUS;
             }
             else if (0.5M < averageEPS && averageEPS <= 1)
             {
-                epsModifier += averageEPS * 5 + (2 * Constants.BONUS);
+                epsModifier += averageEPS * 5 + (2 * Constants.CORE_BONUS);
             }
             else if (1 < averageEPS && averageEPS <= 2)
             {
-                epsModifier += averageEPS * 2 + (3 * Constants.BONUS);
+                epsModifier += averageEPS * 2 + (3 * Constants.CORE_BONUS);
             }
             else if (2 < averageEPS && averageEPS <= 5)
             {
-                epsModifier += averageEPS * 2 + (4 * Constants.BONUS);
+                epsModifier += averageEPS * 2 + (4 * Constants.CORE_BONUS);
             }
             else if (5 < averageEPS)
             {
-                epsModifier += Constants.HALF * averageEPS + (4 * Constants.BONUS);
+                epsModifier += Constants.HALF * averageEPS + (4 * Constants.CORE_BONUS);
             }
 
             // growthEPS score formulation
             // Reward cases
             if (0 < growthEPS && growthEPS <= 1)
             {
-                epsModifier += growthEPS * 5 + Constants.BONUS;
+                epsModifier += growthEPS * 5 + Constants.CORE_BONUS;
             }
             else if (1 < growthEPS && growthEPS <= 3)
             {
-                epsModifier += growthEPS * 3 + (2 * Constants.BONUS);
+                epsModifier += growthEPS * 3 + (2 * Constants.CORE_BONUS);
             }
             else if (3 < growthEPS)
             {
-                epsModifier += growthEPS + (3 * Constants.BONUS);
+                epsModifier += growthEPS + (3 * Constants.CORE_BONUS);
             }
             /* Penalty cases
             else if (-5 <= growthEPS && growthEPS < 0)
@@ -1689,7 +1504,7 @@ namespace PT.Middleware
             //If average PE significantly negative return penalty
             if (averagePE < -10)
             {
-                return Constants.PENALTY;
+                return Constants.CORE_PENALTY;
             }
             //If everything is 0 return 0
             if (averagePE <= 0 && growthPE <= 0)
@@ -1702,11 +1517,11 @@ namespace PT.Middleware
             // Reward cases
             if (0 < averagePE && averagePE <= 25)
             {
-                peModifier += (averagePE / 5) + (3 * Constants.BONUS);
+                peModifier += (averagePE / 5) + (3 * Constants.CORE_BONUS);
             }
             else if (25 < averagePE && averagePE <= 50)
             {
-                peModifier += (averagePE / 10) + Constants.BONUS;
+                peModifier += (averagePE / 10) + Constants.CORE_BONUS;
             }
             else if (50 < averagePE && averagePE <= 100)
             {
@@ -1726,11 +1541,11 @@ namespace PT.Middleware
             }
             else if (-100 <= growthPE && growthPE < -50)
             {
-                peModifier += (-1 * (growthPE / 10)) + Constants.BONUS;
+                peModifier += (-1 * (growthPE / 10)) + Constants.CORE_BONUS;
             }
             else if (-100 > growthPE)
             {
-                peModifier += (-1 * (growthPE / 100)) + (Constants.BONUS * 3);
+                peModifier += (-1 * (growthPE / 100)) + (Constants.CORE_BONUS * 3);
             }
             else if (0 < growthPE && growthPE <= 50)
             {
@@ -1756,15 +1571,20 @@ namespace PT.Middleware
             bool hasYield = divYield > 0;
             if (hasDivs)
             {
-                //if div rate between 0 and 0.5, add divRate * 2 + 1
-                if (0 < divRate && divRate <= 0.5M)
+                //if div rate above 0, add 1
+                if (divRate > 0)
+                {
+                    divBonus += 1;
+                }
+                //if div rate between 0 and 1.5, add divRate * 2 + 2
+                if (0.5M < divRate && divRate <= 1.5M)
                 {
                     divBonus += divRate * 2 + 1;
                 }
-                //if div rate above 0.5, add divRate * 2 + bonus
-                else if (divRate > 0.5M)
+                //else if div rate above 1.5, add divRate * 2 + bonus
+                else if (divRate > 1.5M)
                 {
-                    divBonus += divRate * (Constants.BONUS - 1) + Constants.BONUS;
+                    divBonus += divRate * (Constants.CORE_BONUS - 1) + Constants.CORE_BONUS;
                 }
             }
             if (hasYield)
@@ -1772,36 +1592,20 @@ namespace PT.Middleware
                 //if div yield is between 0 and 5, add reduced bonus
                 if (1 < divYield && divYield <= 5)
                 {
-                    divBonus += (Constants.HALF * divYield) + (Constants.BONUS / Constants.THREE);
+                    divBonus += (Constants.HALF * divYield) + (Constants.CORE_BONUS / Constants.THREE);
                 }
                 //if div yield is between 5 and 10, add divYield + bonus
                 else if (5 < divYield && divYield <= 10)
                 {
-                    divBonus += (Constants.HALF * divYield) + (Constants.BONUS / Constants.TWO);
+                    divBonus += (Constants.HALF * divYield) + (Constants.CORE_BONUS / Constants.TWO);
                 }
                 //if div yield is above 3, add divYield + 5 bonus
                 if (divYield >= 10)
                 {
-                    divBonus += (Constants.HALF * divYield) + Constants.BONUS;
+                    divBonus += (Constants.HALF * divYield) + Constants.CORE_BONUS;
                 }
             }
             return Math.Min(divBonus, 25);
-        }
-
-        /// <summary>
-        /// Calculates the percentage difference between two decimal values.
-        /// </summary>
-        /// <param name="V1">The first decimal value (old value)</param>
-        /// <param name="V2">The second decimal value (new value)</param>
-        /// <returns>The percentage difference as a decimal. Returns 0 if V1 is 0 to avoid division by zero.</returns>
-        public static decimal GetPercentDiff(decimal V1, decimal V2)
-        {
-            // Check for zero to avoid division by zero
-            if (V1 == 0) return 0m;
-
-            //https://stackoverflow.com/questions/1376507/calculating-the-percentage-difference-between-two-values
-            decimal change = ((V2 - V1) / Math.Abs(V1)) * 100; // Calculate percent difference
-            return change;
         }
 
         private static decimal CalcSmaModifier(PTHistory history)
@@ -1811,18 +1615,18 @@ namespace PT.Middleware
             // General bullish or bearish
             if (history.AveragePrice30Day > history.AveragePrice100Day + (history.AveragePrice100Day * .01M))
             {
-                smaModifier += Constants.BONUS * 2;
+                smaModifier += Constants.CORE_BONUS * 2;
             }
             else if (history.AveragePrice30Day < history.AveragePrice100Day - (history.AveragePrice100Day * .01M))
             {
-                smaModifier += Constants.PENALTY * 2;
+                smaModifier += Constants.CORE_PENALTY * 2;
             }
 
             // Bonus if current price is close enough to 100Day for likely rebound
             var percentDiff = GetPercentDiff(history.AveragePrice100Day, history.TodayVwap);
             if (-7 <= Math.Abs(percentDiff) && Math.Abs(percentDiff) <= 7)
             {
-                smaModifier += Constants.BONUS + (7 - Math.Abs(percentDiff));
+                smaModifier += Constants.CORE_BONUS + (7 - Math.Abs(percentDiff));
             }
             return smaModifier;
         }
@@ -1835,7 +1639,7 @@ namespace PT.Middleware
             {
                 nerBonus += (1.0M / netExpenseRatio) * Constants.FUND_NER_INVERSE_MULTIPLIER_PERCENT + 1;
                 nerBonus += netExpenseRatio <= Constants.FUND_NER_MINOR_LIMIT_PERCENT ?
-                    Constants.BONUS / Constants.TWO : 0;
+                    Constants.CORE_BONUS / Constants.TWO : 0;
             }
             return nerBonus;
         }
@@ -1847,27 +1651,27 @@ namespace PT.Middleware
             decimal volumeTrendingModifier = 0;
             if (0.5M < percentChange && percentChange <= 100)
             {
-                volumeTrendingModifier += percentChange < 25 ? (percentChange / 5) + Constants.BONUS :
-                    (percentChange / 20) + (Constants.BONUS * 2);
+                volumeTrendingModifier += percentChange < 25 ? (percentChange / 5) + Constants.CORE_BONUS :
+                    (percentChange / 20) + (Constants.CORE_BONUS * 2);
             }
             else if (100 < percentChange)
             {
-                volumeTrendingModifier += Constants.BONUS * 2 + 1;
+                volumeTrendingModifier += Constants.CORE_BONUS * 2 + 1;
             }
             // Penalty cases
             if (history.TodayVolUsd < history.AverageVolUsd10Day - Constants.FIFTY_THOUSAND &&
                 history.AverageVolUsd10Day < history.AverageVolUsd30Day - Constants.FIFTY_THOUSAND)
             {
-                volumeTrendingModifier += Constants.PENALTY * 2;
+                volumeTrendingModifier += Constants.CORE_PENALTY * 2;
             }
             else if (-0.5M > percentChange && percentChange >= -100)
             {
-                volumeTrendingModifier += percentChange > -25 ? (percentChange / 5) + Constants.PENALTY :
-                    (percentChange / 20) + (Constants.PENALTY * 2);
+                volumeTrendingModifier += percentChange > -25 ? (percentChange / 5) + Constants.CORE_PENALTY :
+                    (percentChange / 20) + (Constants.CORE_PENALTY * 2);
             }
             else if (-100 > percentChange)
             {
-                volumeTrendingModifier += Constants.PENALTY * 3;
+                volumeTrendingModifier += Constants.CORE_PENALTY * 3;
             }
             return volumeTrendingModifier;
         }

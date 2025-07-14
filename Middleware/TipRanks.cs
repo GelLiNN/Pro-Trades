@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using PT.Core;
 using PT.Models.RequestModels;
 using PT.Services;
 using System.Diagnostics;
@@ -135,7 +136,7 @@ namespace PT.Middleware
                 Debug.WriteLine("ERROR TipRanks.cs GetTipRanksResult for symbol " + symbol + ", message: " + e.Message);
                 return new HedgeFundsResult
                 {
-                    RatingsComposite = Constants.INVALID_COMPOSITE,
+                    RatingsComposite = Constants.CORE_INVALID_COMP,
                     RatingsBase = 0,
                     InsiderBonus = 0,
                     HoldingBonus = 0,
@@ -276,12 +277,12 @@ namespace PT.Middleware
             }
 
             bool hasBsns = bsnXList.Count > 0;
-            decimal bsnSlope = hasBsns ? Indicators.GetSlope(bsnXList, bsnYList) : 0;
-            decimal bsnSlopeMultiplier = Indicators.GetSlopeMultiplier(bsnSlope);
+            decimal bsnSlope = hasBsns ? Maths.GetSlope(bsnXList, bsnYList) : 0;
+            decimal bsnSlopeMultiplier = Maths.GetSlopeMultiplier(bsnSlope);
             decimal bsnBonus = 0;
             if (hasBsns)
             {
-                decimal bsnWeight = Constants.BONUS / 2;
+                decimal bsnWeight = Constants.CORE_BONUS / 2;
                 bsnBonus += (bsnYList[bsnYList.Count - 1] * bsnWeight) + ((decimal)bsns[^1].consensus);
                 bsnBonus += bsnSlope >= 0 ? (bsnSlope * bsnSlopeMultiplier) + bsnWeight : -(bsnSlope * bsnSlopeMultiplier) - bsnWeight;
                 bsnBonus = Math.Min(15, bsnBonus); // Limit bsn bonus to 15
@@ -350,17 +351,17 @@ namespace PT.Middleware
                 // Add holding bonuses if institutional holding percent > 0
                 if (iPercentage != null && iPercentage > 0)
                 {
-                    holdingBonus += Constants.BONUS * 2;
+                    holdingBonus += Constants.CORE_BONUS * 2;
                 }
                 // Add holding bonuses if 1mil or more holding
                 if (amountHolding >= 1000000)
                 {
-                    holdingBonus += Constants.BONUS * 2;
+                    holdingBonus += Constants.CORE_BONUS * 2;
                 }
                 // Add smaller holding bonuses if more than 0 holding
                 else if (amountHolding > 0)
                 {
-                    holdingBonus += Constants.BONUS;
+                    holdingBonus += Constants.CORE_BONUS;
                 }
             }
             // Limit holding bonus to 15
@@ -406,11 +407,11 @@ namespace PT.Middleware
             decimal trendValueBonus = 0;
             if (trendValue > 0)
             {
-                trendValueBonus = 2.0M * Constants.BONUS;
+                trendValueBonus = 2.0M * Constants.CORE_BONUS;
             }
             else if (trendValue < 0)
             {
-                trendValueBonus = -2.0M * Constants.BONUS;
+                trendValueBonus = -2.0M * Constants.CORE_BONUS;
             }
             // Limit hedge sentiment bonus to 15
             hedgeBonus += trendValueBonus;
