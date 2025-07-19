@@ -76,7 +76,9 @@ namespace PT.Models.CoreModels
 
         // Average highs, lows, and traded volume USD for different periods
         public decimal AveragePrice100Day { get; set; }
+        public decimal AveragePrice50Day { get; set; }
         public decimal AveragePrice30Day { get; set; }
+        public decimal AveragePrice20Day { get; set; }
         public decimal AverageVolUsd30Day { get; set; }
         public decimal AverageVolUsd10Day { get; set; }
         public decimal HighestHigh30Day { get; set; }
@@ -94,7 +96,8 @@ namespace PT.Models.CoreModels
         public bool Has30DayQualifiedVolume { get; set; }
         public bool Has10DayQualifiedVolume { get; set; }
         public bool Has1DayQualifiedVolume { get; set; }
-        public bool TradedForwardToday { get; set; }
+        public bool HasBullishSMA { get; set; }
+        public bool HasBearishSMA { get; set; }
 
         /// <summary>
         /// Contructor Required
@@ -112,6 +115,9 @@ namespace PT.Models.CoreModels
             Volume10XList = new List<decimal>();
             Volume10YList = new List<decimal>();
             PriceTargets = new List<PTPriceTarget>();
+
+            HasBullishSMA = false;
+            HasBearishSMA = false;
 
             HighestHigh30Day = 0;
             LowestLow30Day = 0;

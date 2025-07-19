@@ -43,7 +43,9 @@ namespace PT
         public const decimal FIFTY_THOUSAND = 50000.0M;
         public const decimal MILLION = 1000000.0M;
         public const decimal HUNDRED = 100.0M;
+        public const decimal FIFTY = 50.0M;
         public const decimal THIRTY = 30.0M;
+        public const decimal TWENTY = 20.0M;
         public const decimal TEN = 10.0M;
         public const decimal FIVE = 5.0M;
         public const decimal THREE = 3.0M;

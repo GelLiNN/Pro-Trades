@@ -38,6 +38,7 @@ namespace PT.Middleware
             try
             {
                 string responseString = rm.GetFromUri(TipRanksBaseUrl + "getData/" + symbol);
+                    //.GetAwaiter().GetResult();
 
                 TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseString);
 

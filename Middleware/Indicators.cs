@@ -40,11 +40,11 @@ namespace PT.Middleware
             // YahooQuotesApi get quote
             Snapshot? quote = YahooFinance.GetQuoteAsync(symbol).GetAwaiter().GetResult();
 
-            // get fundamentals with Alpaca price history and YahooQuotesApi quote
-            FundamentalsResult fundResult = GetFundamentalsResult(symbol, quote, ptHistory);
-
             long yahooStopMs = sw.ElapsedMilliseconds;
             long yahooMs = yahooStopMs - alpacaStopMs;
+
+            // get fundamentals with Alpaca price history and YahooQuotesApi quote
+            FundamentalsResult fundResult = GetFundamentalsResult(symbol, quote, ptHistory);
 
             decimal adxCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_ADX, history, Constants.DEFAULT_LOOKBACK_DAYS);
             decimal obvCompositeScore = GetIndicatorComposite(symbol, Constants.COMPOSITE_OBV, obvHistory, Constants.DEFAULT_LOOKBACK_DAYS);
@@ -611,8 +611,18 @@ namespace PT.Middleware
                 return new FundamentalsResult
                 {
                     FundamentalsComposite = composite,
+                    HasBullishSMA = history.HasBullishSMA,
+                    HasBearishSMA = history.HasBearishSMA,
+                    HasDividends = hasDivs,
+                    HasGoldenPath = hasGoldenPath,
+                    IsBlacklisted = volumeDisqualified,
+                    NextEarningsDate = nextEarningsDate,
+                    PrevEarningsDate = prevEarningsDate,
+                    Message = string.Empty,
                     AveragePrice100Day = history.AveragePrice100Day,
+                    AveragePrice50Day = history.AveragePrice50Day,
                     AveragePrice30Day = history.AveragePrice30Day,
+                    AveragePrice20Day = history.AveragePrice20Day,
                     DollarVolumeToday = history.TodayVolUsd,
                     DollarVolume10Day = history.AverageVolUsd10Day,
                     DollarVolume30Day = history.AverageVolUsd30Day,
@@ -626,23 +636,22 @@ namespace PT.Middleware
                     AveragePE = averagePE,
                     GrowthEPS = growthEPS,
                     GrowthPE = growthPE,
-                    HasDividends = hasDivs,
-                    HasGoldenPath = hasGoldenPath,
                     DivRate = divRate,
-                    DivYield = divYield,
-                    IsBlacklisted = volumeDisqualified,
-                    NextEarningsDate = nextEarningsDate,
-                    PrevEarningsDate = prevEarningsDate,
-                    Message = string.Empty
+                    DivYield = divYield
                 };
             }
             catch (Exception e)
             {
-                string msg = $"Indicators.cs GetFundamentals for symbol {symbol}, message: {e.Message}";
-                Debug.WriteLine($"ERROR {msg}");
+                string msg = $"ERROR: Indicators.cs GetFundamentals for symbol {symbol}, message: {e.Message}";
+                Debug.WriteLine(msg);
                 return new FundamentalsResult
                 {
                     FundamentalsComposite = Constants.CORE_INVALID_COMP,
+                    HasBullishSMA = false,
+                    HasBearishSMA = false,
+                    HasDividends = false,
+                    HasGoldenPath = false,
+                    IsBlacklisted = false,
                     DollarVolumeToday = 0.0M,
                     DollarVolume10Day = 0.0M,
                     DollarVolume30Day = 0.0M,
@@ -653,8 +662,6 @@ namespace PT.Middleware
                     AveragePE = 0.0M,
                     GrowthEPS = 0.0M,
                     GrowthPE = 0.0M,
-                    HasDividends = false,
-                    IsBlacklisted = false,
                     Message = msg
                 };
             }
@@ -1613,20 +1620,32 @@ namespace PT.Middleware
             decimal smaModifier = 0;
 
             // General bullish or bearish
-            if (history.AveragePrice30Day > history.AveragePrice100Day + (history.AveragePrice100Day * .01M))
+            if (history.HasBullishSMA)
             {
-                smaModifier += Constants.CORE_BONUS * 2;
+                smaModifier += Constants.CORE_BONUS * 2 + 1;
             }
-            else if (history.AveragePrice30Day < history.AveragePrice100Day - (history.AveragePrice100Day * .01M))
+            else if (history.HasBearishSMA)
             {
                 smaModifier += Constants.CORE_PENALTY * 2;
             }
 
-            // Bonus if current price is close enough to 100Day for likely rebound
+            // Bonus if current price is close enough to 100d SMA for likely rebound
             var percentDiff = GetPercentDiff(history.AveragePrice100Day, history.TodayVwap);
             if (-7 <= Math.Abs(percentDiff) && Math.Abs(percentDiff) <= 7)
             {
                 smaModifier += Constants.CORE_BONUS + (7 - Math.Abs(percentDiff));
+            }
+
+            // Bonus if 30d SMA is above 100d SMA
+            if (history.AveragePrice30Day > history.AveragePrice100Day)
+            {
+                smaModifier += Constants.CORE_BONUS / 2;
+            }
+
+            // Bonus if current price is above 20d SMA
+            if (history.TodayVwap > history.AveragePrice20Day + (history.AveragePrice20Day * .01M))
+            {
+                smaModifier += Constants.CORE_BONUS / 2;
             }
             return smaModifier;
         }
@@ -1635,6 +1654,7 @@ namespace PT.Middleware
         {
             if (netExpenseRatio <= 0) return 0;
             decimal nerBonus = 0;
+            nerBonus += netExpenseRatio <= 1 ? 1 : 0;
             if (0 < netExpenseRatio && netExpenseRatio <= Constants.FUND_NER_MAJOR_LIMIT_PERCENT)
             {
                 nerBonus += (1.0M / netExpenseRatio) * Constants.FUND_NER_INVERSE_MULTIPLIER_PERCENT + 1;
@@ -1683,11 +1703,11 @@ namespace PT.Middleware
             {
                 if (daysSinceSignal == 1 || daysSinceSignal == 2)
                 {
-                    timeScaledBonus = bonus * 8 + Constants.CORE_SIGNAL_MOD;
+                    timeScaledBonus = bonus * 8 + Constants.CORE_SIGNAL_MOD + 1;
                 }
                 else if (daysSinceSignal == 3)
                 {
-                    timeScaledBonus = bonus * 7 + Constants.CORE_SIGNAL_MOD;
+                    timeScaledBonus = bonus * 7 + Constants.CORE_SIGNAL_MOD + 1;
                 }
                 else if (daysSinceSignal == 4)
                 {
@@ -1695,15 +1715,15 @@ namespace PT.Middleware
                 }
                 else if (daysSinceSignal == 5)
                 {
-                    timeScaledBonus = bonus * 4 + Constants.CORE_SIGNAL_MOD;
+                    timeScaledBonus = bonus * 3 + Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 6)
                 {
-                    timeScaledBonus = bonus * 3 + 1;
+                    timeScaledBonus = bonus * 2 + 1;
                 }
                 else if (daysSinceSignal == 7)
                 {
-                    timeScaledBonus = bonus * 2 + 1;
+                    timeScaledBonus = bonus + 1;
                 }
             }
             return timeScaledBonus;
@@ -1716,27 +1736,27 @@ namespace PT.Middleware
             {
                 if (daysSinceSignal == 1 || daysSinceSignal == 2)
                 {
-                    timeScaledPenalty = penalty * 7 + Constants.CORE_SIGNAL_MOD;
+                    timeScaledPenalty = penalty * 7 - Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 3)
                 {
-                    timeScaledPenalty = penalty * 6 + Constants.CORE_SIGNAL_MOD;
+                    timeScaledPenalty = penalty * 6 - Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 4)
                 {
-                    timeScaledPenalty = penalty * 5 + Constants.CORE_SIGNAL_MOD;
+                    timeScaledPenalty = penalty * 5 - Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 5)
                 {
-                    timeScaledPenalty = penalty * 4 + Constants.CORE_SIGNAL_MOD;
+                    timeScaledPenalty = penalty * 3 - Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 6)
                 {
-                    timeScaledPenalty = penalty * 3 + 1;
+                    timeScaledPenalty = penalty + 1;
                 }
                 else if (daysSinceSignal == 7)
                 {
-                    timeScaledPenalty = penalty * 2 + 1;
+                    timeScaledPenalty = 0;
                 }
             }
             return (-1 * timeScaledPenalty);

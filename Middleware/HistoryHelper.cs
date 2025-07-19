@@ -27,7 +27,9 @@ namespace PT.Middleware
 
                 // Averages we must compute
                 decimal avgPrice100d = 0;
+                decimal avgPrice50d = 0;
                 decimal avgPrice30d = 0;
+                decimal avgPrice20d = 0;
                 decimal avgPrice10d = 0;
                 decimal avgVol30d = 0;
                 decimal avgVol10d = 0;
@@ -59,7 +61,9 @@ namespace PT.Middleware
                     var curVolUsd = ptDay.DollarVolume;
 
                     bool isLast100 = (historyData.Count - (i + 1) < 100);
+                    bool isLast50 = (historyData.Count - (i + 1) < 50);
                     bool isLast30 = (historyData.Count - (i + 1) < 30);
+                    bool isLast20 = (historyData.Count - (i + 1) < 20);
                     bool isLast10 = (historyData.Count - (i + 1) < 10);
                     bool isLast = (historyData.Count - (i + 1) == 0);
 
@@ -67,7 +71,14 @@ namespace PT.Middleware
                     {
                         avgPrice100d += curVwap;
                     }
-
+                    if (isLast50)
+                    {
+                        avgPrice50d += curVwap;
+                    }
+                    if (isLast20)
+                    {
+                        avgPrice20d += curVwap;
+                    }
                     if (isLast30)
                     {
                         avgPrice30d += curVwap;
@@ -125,15 +136,19 @@ namespace PT.Middleware
                 ptHistory.Has10DayQualifiedVolume = last30PassCount >= Constants.DEFAULT_MIN_PASS_30D_LIMIT;
                 ptHistory.Has1DayQualifiedVolume = usdVolumeQualified1d;
 
-                // Compute final averages and figures for 100d, 30d, and 10d
+                // Compute final averages and figures for 100d, 50d, 30d, 20d, 10d
                 avgPrice100d = avgPrice100d / Constants.HUNDRED;
+                avgPrice50d = avgPrice50d / Constants.FIFTY;
                 avgPrice30d = avgPrice30d / Constants.THIRTY;
+                avgPrice20d = avgPrice20d / Constants.TWENTY;
                 avgVol30d = avgVol30d / Constants.THIRTY;
                 avgPrice10d = avgPrice10d / Constants.TEN;
                 avgVol10d = avgVol10d / Constants.TEN;
 
                 ptHistory.AveragePrice100Day = avgPrice100d;
+                ptHistory.AveragePrice50Day = avgPrice50d;
                 ptHistory.AveragePrice30Day = avgPrice30d;
+                ptHistory.AveragePrice20Day = avgPrice20d;
 
                 ptHistory.AverageHigh10Day = avgHigh10d / Constants.TEN;
                 ptHistory.AverageLow10Day = avgLow10d / Constants.TEN;
@@ -141,6 +156,16 @@ namespace PT.Middleware
                 ptHistory.AverageVolUsd30Day = avgVolUsd30d / Constants.THIRTY;
                 ptHistory.AverageVolUsd10Day = avgVolUsd10d / Constants.TEN;
                 ptHistory.TodayVolUsd = lastPriceVw * lastVol;
+
+                // Get Bullish or Bearish SMA activity
+                if (ptHistory.AveragePrice20Day > ptHistory.AveragePrice50Day + (ptHistory.AveragePrice50Day * .005M))
+                {
+                    ptHistory.HasBullishSMA = true;
+                }
+                if (ptHistory.AveragePrice20Day < ptHistory.AveragePrice50Day - (ptHistory.AveragePrice50Day * .01M))
+                {
+                    ptHistory.HasBearishSMA = true;
+                }
 
                 // Make X and Y Lists
                 ptHistory.HistoricalVwapYList.Add(avgPrice30d);
