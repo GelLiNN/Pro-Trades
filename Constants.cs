@@ -36,7 +36,7 @@ namespace PT
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly string DEFAULT_RED = "Red";
         public static readonly string DEFAULT_GREEN = "Green";
-        public const int DEFAULT_HISTORY_DAYS = 375;
+        public const int DEFAULT_HISTORY_DAYS = 200; // Was 375 before 7.20.2025
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const decimal TEN_THOUSAND = 10000.0M;
         public const decimal THIRTY_THOUSAND = 30000.0M;
@@ -58,28 +58,28 @@ namespace PT
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
         public const int CORE_INVALID_COMP = -1;
-        public const decimal CORE_SIGNAL_MOD = 3.6M; // Uber bullish macros 1, Uber bearish macros 7
+        public const decimal CORE_SIGNAL_MOD = 3.8M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_HS1_MOD = CORE_BONUS * HALF;
         public const decimal CORE_HS2_MOD = 0.0M;
-        public const decimal CORE_HS3_MOD = CORE_BONUS - 1;
+        public const decimal CORE_HS3_MOD = CORE_BONUS - HALF;
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;
 
         // GRU Composites
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
-        public const int OBV_LOOKBACK_DAYS = 42;
+        public const int OBV_LOOKBACK_DAYS = 33; // Was 42 before 7.20.2025
         public const decimal FUND_NER_INVERSE_MULTIPLIER_PERCENT = 0.07M;
         public const decimal FUND_NER_MAJOR_LIMIT_PERCENT = 0.5M;
         public const decimal FUND_NER_MINOR_LIMIT_PERCENT = 0.2M;
-        public const decimal FUND_EPS_MOD_UPPER_LIMIT = 35.0M;
+        public const decimal FUND_EPS_MOD_UPPER_LIMIT = 37.0M;
         public const decimal FUND_PE_MOD_UPPER_LIMIT = 33.0M;
 
 
         // Dollar volume and price disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 900000.0M;
-        public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 700000.0M;
-        public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 400000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 650000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 375000.0M;
         public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
         public static readonly int DEFAULT_MIN_PASS_30D_LIMIT = 24;
         public static readonly int DEFAULT_MIN_PASS_10D_LIMIT = 8;

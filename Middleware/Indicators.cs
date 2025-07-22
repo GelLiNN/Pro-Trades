@@ -469,9 +469,10 @@ namespace PT.Middleware
                         peTrailing = Convert.ToDecimal(quote.TrailingPE);
                         peTrailing = peTrailing == 0 ? Convert.ToDecimal(quote.PriceEpsCurrentYear) : peTrailing;
                         peForward = Convert.ToDecimal(quote.ForwardPE);
+                        peForward = peForward == 0 ? peTrailing : peForward;
                         epsTrailing = quote.EpsTrailingTwelveMonths;
                         epsCurrentYear = quote.EpsCurrentYear;
-                        epsForward = quote.EpsForward;
+                        epsForward = quote.EpsForward == 0 ? epsCurrentYear : epsForward;
                         priceToBook = Convert.ToDecimal(quote.PriceToBook);
                         sharesOutstanding = Convert.ToDecimal(quote.SharesOutstanding);
                         divRate = quote.DividendRate;
@@ -1492,7 +1493,7 @@ namespace PT.Middleware
             }
             else if (3 < growthEPS)
             {
-                epsModifier += growthEPS + (3 * Constants.CORE_BONUS);
+                epsModifier += growthEPS + (4 * Constants.CORE_BONUS);
             }
             /* Penalty cases
             else if (-5 <= growthEPS && growthEPS < 0)
@@ -1711,11 +1712,11 @@ namespace PT.Middleware
                 }
                 else if (daysSinceSignal == 4)
                 {
-                    timeScaledBonus = bonus * 5 + Constants.CORE_SIGNAL_MOD;
+                    timeScaledBonus = bonus * 6 + Constants.CORE_SIGNAL_MOD - 1;
                 }
                 else if (daysSinceSignal == 5)
                 {
-                    timeScaledBonus = bonus * 3 + Constants.CORE_SIGNAL_MOD;
+                    timeScaledBonus = bonus * 4 + Constants.CORE_SIGNAL_MOD;
                 }
                 else if (daysSinceSignal == 6)
                 {
@@ -1752,7 +1753,7 @@ namespace PT.Middleware
                 }
                 else if (daysSinceSignal == 6)
                 {
-                    timeScaledPenalty = penalty + 1;
+                    timeScaledPenalty = penalty - 1;
                 }
                 else if (daysSinceSignal == 7)
                 {
