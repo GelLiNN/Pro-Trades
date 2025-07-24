@@ -65,7 +65,7 @@ namespace PT
         public const decimal CORE_HS3_MOD = CORE_BONUS - HALF;
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;
-        public const decimal CORE_HS6_MOD = CORE_PENALTY;
+        public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
 
         // GRU Composites
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;

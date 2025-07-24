@@ -79,9 +79,6 @@ namespace PT.Middleware
                 adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore,
                 ptHistory.PriceTargetAvgLong, ptHistory.PriceTargetAvgShort);
 
-            long coreStopMs = sw.ElapsedMilliseconds;
-            long coreMs2 = coreStopMs - tipRanksStopMs;
-
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
                 Symbol = symbol,
@@ -105,12 +102,6 @@ namespace PT.Middleware
                 RatingsComposite = hfResult.RatingsComposite,
                 ShortInterestComposite = shortResult.ShortInterestComposite,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
-                TotalTimeMS = coreStopMs,
-                AlpacaTimeMS = alpacaMs,
-                YahooTimeMS = yahooMs,
-                FinraTimeMS = finraMs,
-                TipRanksTimeMS = tipRanksMs,
-                CoreTimeMS = coreMs1 + coreMs2,
                 ScoreDate = DateTime.Now,
                 ParameterSet = paramType,
                 PriceTargets = priceTargets,
@@ -121,7 +112,17 @@ namespace PT.Middleware
             };
             scoreResult.PriceRedGreen = scoreResult.PriceLast >= scoreResult.PriceOpen ?
                 Constants.DEFAULT_GREEN : Constants.DEFAULT_RED;
+            scoreResult.HasQualifiedVolume = ptHistory.HasQualifiedVolume;
             scoreResult.CompositeScoreRank = GetCompositeScoreRank(scoreResult);
+
+            long coreStopMs = sw.ElapsedMilliseconds;
+            long coreMs2 = coreStopMs - tipRanksStopMs;
+            scoreResult.AlpacaTimeMS = alpacaMs;
+            scoreResult.YahooTimeMS = yahooMs;
+            scoreResult.FinraTimeMS = finraMs;
+            scoreResult.TipRanksTimeMS = tipRanksMs;
+            scoreResult.CoreTimeMS = coreMs1 + coreMs2;
+            scoreResult.TotalTimeMS = coreStopMs;
 
             sw.Reset();
             return scoreResult;
@@ -162,7 +163,7 @@ namespace PT.Middleware
         private static bool IsDisqualifiedPrediction(CompositeScoreResult scoreResult)
         {
             return
-                (scoreResult.Fundamentals.IsBlacklisted ||
+                (!scoreResult.HasQualifiedVolume ||
                 (scoreResult.PriceLast < Constants.DEFAULT_PENNY_PRICE_D_LIMIT || scoreResult.PriceVwap < Constants.DEFAULT_PENNY_PRICE_D_LIMIT));
         }
 
@@ -628,7 +629,6 @@ namespace PT.Middleware
                     HasBearishSMA = history.HasBearishSMA,
                     HasDividends = hasDivs,
                     HasGoldenPath = hasGoldenPath,
-                    IsBlacklisted = !history.HasQualifiedVolume,
                     NextEarningsDate = nextEarningsDate,
                     PrevEarningsDate = prevEarningsDate,
                     Message = string.Empty,
@@ -664,7 +664,6 @@ namespace PT.Middleware
                     HasBearishSMA = false,
                     HasDividends = false,
                     HasGoldenPath = false,
-                    IsBlacklisted = false,
                     DollarVolumeToday = 0.0M,
                     DollarVolume10Day = 0.0M,
                     DollarVolume30Day = 0.0M,

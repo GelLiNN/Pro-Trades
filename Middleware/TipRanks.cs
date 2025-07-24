@@ -40,6 +40,30 @@ namespace PT.Middleware
                 string responseString = rm.GetFromUri(TipRanksBaseUrl + "getData/" + symbol);
                     //.GetAwaiter().GetResult();
 
+                if (string.IsNullOrEmpty(responseString))
+                {
+                    string msg = $"WARNING TipRanks.cs GetTipRanksResult Could not fetch API for symbol {symbol}";
+                    Debug.WriteLine(msg);
+                    return new HedgeFundsResult
+                    {
+                        RatingsComposite = Constants.CORE_INVALID_COMP,
+                        RatingsBase = 0,
+                        InsiderBonus = 0,
+                        HoldingBonus = 0,
+                        HedgeSentimentBonus = 0,
+                        HedgeBsnBonus = 0,
+                        PriceTarget = 0,
+                        HedgeSentiment = 0,
+                        HedgeTrendAction = 0,
+                        HedgeTrendValue = 0,
+                        Insiders = null,
+                        Holdings = null,
+                        ThirdPartyRatings = null,
+                        ConsensusOverTime = null,
+                        ErrorMessage = msg
+                    };
+                }
+
                 TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseString);
 
                 // Filter results to the last 3 months
@@ -134,7 +158,7 @@ namespace PT.Middleware
             }
             catch (Exception e)
             {
-                Debug.WriteLine("ERROR TipRanks.cs GetTipRanksResult for symbol " + symbol + ", message: " + e.Message);
+                Debug.WriteLine("ERROR TipRanks.cs GetTipRanksResult Exception for symbol " + symbol + ", message: " + e.Message);
                 return new HedgeFundsResult
                 {
                     RatingsComposite = Constants.CORE_INVALID_COMP,

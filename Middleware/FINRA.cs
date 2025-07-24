@@ -171,12 +171,16 @@ namespace PT.Middleware
 
         public static async Task<List<FinraRecord>> GetAllShortVolume(DateTime date, RequestManager rm)
         {
+            List<FinraRecord> finraResponse = new List<FinraRecord>();
             string dateString = date.ToString("yyyyMMdd");
             string fileName = $"CNMSshvol{dateString}.txt";
             string requestUrl = $"{BaseUrl}/{fileName}";
 
             string responseStr = rm.GetFromUri(requestUrl);
-            var finraResponse = FinraResponseParser.ParseResponse(responseStr);
+            if (responseStr != string.Empty)
+            {
+                finraResponse = FinraResponseParser.ParseResponse(responseStr);
+            }
 
             return await Task.FromResult(finraResponse);
         }
@@ -184,7 +188,7 @@ namespace PT.Middleware
         public static FinraRecord? GetFromCache(string symbol, DateTime date)
         {
             List<FinraRecord> curDateRecords = FinraCache[date.Date];
-            FinraRecord curDayRecord = curDateRecords.Where(x => x.Symbol == symbol).FirstOrDefault();
+            FinraRecord? curDayRecord = curDateRecords.Where(x => x.Symbol == symbol).FirstOrDefault();
             return curDayRecord;
         }
 
@@ -208,7 +212,7 @@ namespace PT.Middleware
 
                     if (DateTime.Compare(curDate, FirstDate) >= 0)
                     {
-                        List<FinraRecord> allRecords = GetAllShortVolume(curDate, rm).Result;
+                        List<FinraRecord> allRecords = GetAllShortVolume(curDate, rm).GetAwaiter().GetResult();
 
                         if (allRecords.Count > 0)
                         {

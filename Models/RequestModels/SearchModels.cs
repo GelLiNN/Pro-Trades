@@ -10,6 +10,7 @@ namespace PT.Models.RequestModels
         public string CompositeScoreRank { get; set; }
         public decimal CompositeScoreValue { get; set; }
         public string CompositeScoreNotes { get; set; }
+        public bool HasQualifiedVolume { get; set; }
         public decimal PriceOpen { get; set; }
         public decimal PriceLast { get; set; }
         public decimal PriceVwap { get; set; }
@@ -110,7 +111,6 @@ namespace PT.Models.RequestModels
         public bool HasBearishSMA { get; set; }
         public bool HasGoldenPath { get; set; }
         public bool HasDividends { get; set; }
-        public bool IsBlacklisted { get; set; }
         public DateTime? NextEarningsDate { get; set; }
         public DateTime? PrevEarningsDate { get; set; }
         public string? Message { get; set; }

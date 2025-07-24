@@ -46,21 +46,22 @@ namespace PT.Services
                     request.Headers.Add(key, headers[key]);
                 }
             }
-            using (var response = _client.SendAsync(request).GetAwaiter().GetResult())
+
+            try
             {
-                try
+                using (var response = _client.SendAsync(request).GetAwaiter().GetResult())
                 {
                     response.EnsureSuccessStatusCode();
                     string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                     return responseBody;
                 }
-                catch (Exception ex)
-                {
-                    string err = ex.Message;
-                    _errors.Add(_errors.Count, err);
-                    //_client.Dispose();
-                    return string.Empty;
-                }
+            }
+            catch (Exception ex)
+            {
+                string err = ex.Message;
+                _errors.Add(_errors.Count, err);
+                //_client.Dispose();
+                return string.Empty;
             }
         }
 

@@ -127,27 +127,27 @@ namespace PT.Controllers
                         companyScore.CompositeScoreRank == Constants.RANK_GOOD))
                     {
                         setTotalCount++;
-                        if (companyScore.ParameterSet.Set == Constants.HS1)
+                        if (companyScore.ParameterSet.Type == Constants.HS1)
                         {
                             hs1Count++;
                         }
-                        else if (companyScore.ParameterSet.Set == Constants.HS2)
+                        else if (companyScore.ParameterSet.Type == Constants.HS2)
                         {
                             hs2Count++;
                         }
-                        else if (companyScore.ParameterSet.Set == Constants.HS3)
+                        else if (companyScore.ParameterSet.Type == Constants.HS3)
                         {
                             hs3Count++;
                         }
-                        else if (companyScore.ParameterSet.Set == Constants.HS4)
+                        else if (companyScore.ParameterSet.Type == Constants.HS4)
                         {
                             hs4Count++;
                         }
-                        else if (companyScore.ParameterSet.Set == Constants.HS5)
+                        else if (companyScore.ParameterSet.Type == Constants.HS5)
                         {
                             hs5Count++;
                         }
-                        else if (companyScore.ParameterSet.Set == Constants.HS6)
+                        else if (companyScore.ParameterSet.Type == Constants.HS6)
                         {
                             hs6Count++;
                         }
