@@ -57,7 +57,7 @@ namespace PT
         #region Core Model Constants
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
-        public const int CORE_INVALID_COMP = -1;
+        public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_SIGNAL_MOD = 3.8M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_HS1_MOD = CORE_BONUS * HALF;
@@ -65,10 +65,11 @@ namespace PT
         public const decimal CORE_HS3_MOD = CORE_BONUS - HALF;
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;
+        public const decimal CORE_HS6_MOD = CORE_PENALTY;
 
         // GRU Composites
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
-        public const int OBV_LOOKBACK_DAYS = 33; // Was 42 before 7.20.2025
+        public const int OBV_LOOKBACK_DAYS = 37; // Was 42 before 7.20.2025
         public const decimal FUND_NER_INVERSE_MULTIPLIER_PERCENT = 0.07M;
         public const decimal FUND_NER_MAJOR_LIMIT_PERCENT = 0.5M;
         public const decimal FUND_NER_MINOR_LIMIT_PERCENT = 0.2M;
@@ -77,7 +78,7 @@ namespace PT
 
 
         // Dollar volume and price disqualification limits
-        public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 900000.0M;
+        public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 875000.0M;
         public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 650000.0M;
         public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 375000.0M;
         public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
@@ -111,14 +112,19 @@ namespace PT
         public static readonly string HS3_SET = "adx_bbands_obv_macd_short_fund_hedge";
 
         public static readonly string HS4 = "HS4";
-        public static readonly string HS4_SHORT_DESCRIPTION = "Fundamentals Not Found";
-        public static readonly string HS4_LONG_DESCRIPTION = "2nd generation parameter set for defensive error cases, not well studied";
+        public static readonly string HS4_SHORT_DESCRIPTION = "Institution Driven";
+        public static readonly string HS4_LONG_DESCRIPTION = "3rd generation parameter set for fundamentals defensive cases, not well studied";
         public static readonly string HS4_SET = "adx_aroon_obv_bbands_macd_short_hedge";
 
         public static readonly string HS5 = "HS5";
         public static readonly string HS5_SHORT_DESCRIPTION = "Financial Instruments";
-        public static readonly string HS5_LONG_DESCRIPTION = "2nd generation parameter set usually for financial instruments like index funds or other defensive cases";
+        public static readonly string HS5_LONG_DESCRIPTION = "2nd generation parameter set usually for financial instruments, like index funds or hedge funds";
         public static readonly string HS5_SET = "adx_aroon_obv_bbands_macd_short_fund";
+
+        public static readonly string HS6 = "HS6";
+        public static readonly string HS6_SHORT_DESCRIPTION = "Raw Signals";
+        public static readonly string HS6_LONG_DESCRIPTION = "4th generation parameter set, Fundamentals and Ratings error case for signals-only, not well studied";
+        public static readonly string HS6_SET = "adx_aroon_obv_bbands_macd_short";
 
         // Indicator Composites
         public const string COMPOSITE_ADX = "ADX";

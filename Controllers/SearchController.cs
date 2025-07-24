@@ -76,10 +76,20 @@ namespace PT.Controllers
                 int goodCount = 0;
                 int primeCount = 0;
                 int earningsCount = 0;
+
+                int setTotalCount = 0;
+                int hs1Count = 0;
+                int hs2Count = 0;
+                int hs3Count = 0;
+                int hs4Count = 0;
+                int hs5Count = 0;
+                int hs6Count = 0;
+
                 foreach (string cacheKey in cachedSymbols)
                 {
                     CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
 
+                    //
                     if (companyScore != null && companyScore.CompositeScoreRank.StartsWith(Constants.RANK_DISQUALIFIED))
                     {
                         disqualifiedCount++;
@@ -112,6 +122,36 @@ namespace PT.Controllers
                     {
                         primeCount++;
                     }
+
+                    if (companyScore != null && (companyScore.CompositeScoreRank == Constants.RANK_PRIME ||
+                        companyScore.CompositeScoreRank == Constants.RANK_GOOD))
+                    {
+                        setTotalCount++;
+                        if (companyScore.ParameterSet.Set == Constants.HS1)
+                        {
+                            hs1Count++;
+                        }
+                        else if (companyScore.ParameterSet.Set == Constants.HS2)
+                        {
+                            hs2Count++;
+                        }
+                        else if (companyScore.ParameterSet.Set == Constants.HS3)
+                        {
+                            hs3Count++;
+                        }
+                        else if (companyScore.ParameterSet.Set == Constants.HS4)
+                        {
+                            hs4Count++;
+                        }
+                        else if (companyScore.ParameterSet.Set == Constants.HS5)
+                        {
+                            hs5Count++;
+                        }
+                        else if (companyScore.ParameterSet.Set == Constants.HS6)
+                        {
+                            hs6Count++;
+                        }
+                    }
                 }
                 return new IncidenceViewResult
                 {
@@ -133,6 +173,19 @@ namespace PT.Controllers
                     GoodIncidenceRate = ((decimal)goodCount / (decimal)scoreCount) * 100,
                     PrimeCount = primeCount,
                     PrimeIncidenceRate = ((decimal)primeCount / (decimal)scoreCount) * 100,
+
+                    HS1Count = hs1Count,
+                    HS1IncidenceRate = setTotalCount > 0 ? ((decimal)hs1Count / (decimal)setTotalCount) * 100 : 0,
+                    HS2Count = hs2Count,
+                    HS2IncidenceRate = setTotalCount > 0 ? ((decimal)hs2Count / (decimal)setTotalCount) * 100 : 0,
+                    HS3Count = hs3Count,
+                    HS3IncidenceRate = setTotalCount > 0 ? ((decimal)hs3Count / (decimal)setTotalCount) * 100 : 0,
+                    HS4Count = hs4Count,
+                    HS4IncidenceRate = setTotalCount > 0 ? ((decimal)hs4Count / (decimal)setTotalCount) * 100 : 0,
+                    HS5Count = hs5Count,
+                    HS5IncidenceRate = setTotalCount > 0 ? ((decimal)hs5Count / (decimal)setTotalCount) * 100 : 0,
+                    HS6Count = hs6Count,
+                    HS6IncidenceRate = setTotalCount > 0 ? ((decimal)hs6Count / (decimal)setTotalCount) * 100 : 0
                 };
             }
             return new IncidenceViewResult();

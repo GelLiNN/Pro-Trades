@@ -96,6 +96,7 @@ namespace PT.Models.CoreModels
         public bool Has30DayQualifiedVolume { get; set; }
         public bool Has10DayQualifiedVolume { get; set; }
         public bool Has1DayQualifiedVolume { get; set; }
+        public bool HasQualifiedVolume { get; set; }
         public bool HasBullishSMA { get; set; }
         public bool HasBearishSMA { get; set; }
 
@@ -116,6 +117,10 @@ namespace PT.Models.CoreModels
             Volume10YList = new List<decimal>();
             PriceTargets = new List<PTPriceTarget>();
 
+            Has30DayQualifiedVolume = false;
+            Has10DayQualifiedVolume = false;
+            Has1DayQualifiedVolume = false;
+            HasQualifiedVolume = false;
             HasBullishSMA = false;
             HasBearishSMA = false;
 

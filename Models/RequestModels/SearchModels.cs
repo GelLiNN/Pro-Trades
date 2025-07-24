@@ -78,6 +78,19 @@ namespace PT.Models.RequestModels
         public decimal GoodIncidenceRate { get; set; }
         public int PrimeCount { get; set; }
         public decimal PrimeIncidenceRate { get; set; }
+
+        public int HS1Count { get; set; }
+        public decimal HS1IncidenceRate { get; set; }
+        public int HS2Count { get; set; }
+        public decimal HS2IncidenceRate { get; set; }
+        public int HS3Count { get; set; }
+        public decimal HS3IncidenceRate { get; set; }
+        public int HS4Count { get; set; }
+        public decimal HS4IncidenceRate { get; set; }
+        public int HS5Count { get; set; }
+        public decimal HS5IncidenceRate { get; set; }
+        public int HS6Count { get; set; }
+        public decimal HS6IncidenceRate { get; set; }
     }
 
     public class ShortInterestResult

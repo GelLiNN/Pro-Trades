@@ -180,37 +180,44 @@ namespace PT.Middleware
             decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
         {
             decimal compositeScoreFinal = 0;
-            if (hr.RatingsComposite == Constants.CORE_INVALID_COMP)
+            if (fr.FundamentalsComposite == Constants.CORE_INVALID_COMP && hr.RatingsComposite == Constants.CORE_INVALID_COMP)
             {
-                //HS5 - FINANCIAL INSTRUMENTS
+                //HS6 - RAW SIGNALS, RatingsComposite error & FundamentalsComposite error, 4th Generation
+                compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
+                    sr.ShortInterestComposite + bbandsComposite) / 6;
+                return (compositeScoreFinal + Constants.CORE_HS6_MOD, Constants.HS4);
+            }
+            else if (hr.RatingsComposite == Constants.CORE_INVALID_COMP && fr.FundamentalsComposite != Constants.CORE_INVALID_COMP)
+            {
+                //HS5 - FINANCIAL INSTRUMENTS, RatingsComposite error, 2nd Generation
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
                 return (compositeScoreFinal + Constants.CORE_HS5_MOD, Constants.HS5);
             }
-            else if (fr.FundamentalsComposite == Constants.CORE_INVALID_COMP)
+            else if (fr.FundamentalsComposite == Constants.CORE_INVALID_COMP && hr.RatingsComposite != Constants.CORE_INVALID_COMP)
             {
-                //HS4 - FUNDAMENTALS NOT FOUND
+                //HS4 - INSTITUTION DRIVEN, FundamentalsComposite error, 3rd Generation
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + bbandsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal + Constants.CORE_HS4_MOD, Constants.HS4);
             }
             else if (bbandsComposite > aroonComposite && aroonComposite < obvComposite)
             {
-                //HS3 - BBANDS AROON SWAP
+                //HS3 - BBANDS AROON SWAP, 3rd Generation
                 compositeScoreFinal = (adxComposite + bbandsComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal + Constants.CORE_HS3_MOD, Constants.HS3); 
             }
             else if (bbandsComposite > obvComposite && obvComposite < aroonComposite)
             {
-                //HS2 - BBANDS OBV SWAP
+                //HS2 - BBANDS OBV SWAP, 2nd Generation
                 compositeScoreFinal = (adxComposite + aroonComposite + bbandsComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal + Constants.CORE_HS2_MOD, Constants.HS2);
             }
             else
             {
-                //HS1 - PURE FORM
+                //HS1 - PURE FORM, Original
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 return (compositeScoreFinal + Constants.CORE_HS1_MOD, Constants.HS1);
@@ -242,8 +249,8 @@ namespace PT.Middleware
             notes += (sr != null && sr.ShortInterestComposite != Constants.CORE_INVALID_COMP && sr.ShortInterestComposite <= 33) ? "long-, " : "";
 
             notes += (macdComposite >= 95) ? "macd++, " : (macdComposite >= Constants.CORE_PRIME_GATE) ? "macd+, " : (macdComposite <= 33) ? "macd-, " : "";
-            notes += (adxComposite == 100) ? "adx++, " : (adxComposite >= Constants.CORE_PRIME_GATE) ? "adx+, " : (adxComposite <= 33) ? "adx-, " : "";
-            notes += (obvComposite == 100) ? "obv++, " : (obvComposite >= Constants.CORE_PRIME_GATE) ? "obv+, " : (obvComposite <= 33) ? "obv-, " : "";
+            notes += (adxComposite >= 95) ? "adx++, " : (adxComposite >= Constants.CORE_PRIME_GATE) ? "adx+, " : (adxComposite <= 33) ? "adx-, " : "";
+            notes += (obvComposite >= 95) ? "obv++, " : (obvComposite >= Constants.CORE_PRIME_GATE) ? "obv+, " : (obvComposite <= 33) ? "obv-, " : "";
             notes += (aroonComposite >= 95) ? "aroon++, " : (aroonComposite >= Constants.CORE_PRIME_GATE) ? "aroon+, " : (aroonComposite <= 33) ? "aroon-, " : "";
             notes += (bbandsComposite >= 90) ? "bbands++, " : (bbandsComposite >= Constants.CORE_PRIME_GATE) ? "bbands+, " : (bbandsComposite <= 33) ? "bbands-, " : "";
             notes += $"TL: ${Math.Round(targetL, 2)}, TS: ${Math.Round(targetS, 2)}";
@@ -301,6 +308,16 @@ namespace PT.Middleware
                     ShortDescription = Constants.HS5_SHORT_DESCRIPTION,
                     LongDescription = Constants.HS5_LONG_DESCRIPTION,
                     Set = Constants.HS5_SET
+                };
+            }
+            else if (typeName == Constants.HS5)
+            {
+                return new ParameterSetType
+                {
+                    Type = Constants.HS6,
+                    ShortDescription = Constants.HS6_SHORT_DESCRIPTION,
+                    LongDescription = Constants.HS6_LONG_DESCRIPTION,
+                    Set = Constants.HS6_SET
                 };
             }
             return null;
@@ -601,12 +618,7 @@ namespace PT.Middleware
                 composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives
 
-                // disqualify if less than USD volume multiplicative from constants
-                var disqualifyingLimit = Constants.DEFAULT_VOLUME_USD_1D_LIMIT;
-
-                bool volumeDisqualified = !(history.Has1DayQualifiedVolume && history.Has10DayQualifiedVolume && history.Has30DayQualifiedVolume);
                 decimal volUsdAvg = (history.TodayVolUsd + history.AverageVolUsd10Day + history.AverageVolUsd30Day) / 3.0M;
-
                 bool hasDivs = divRate > 0 && divYield > 0;
 
                 return new FundamentalsResult
@@ -616,7 +628,7 @@ namespace PT.Middleware
                     HasBearishSMA = history.HasBearishSMA,
                     HasDividends = hasDivs,
                     HasGoldenPath = hasGoldenPath,
-                    IsBlacklisted = volumeDisqualified,
+                    IsBlacklisted = !history.HasQualifiedVolume,
                     NextEarningsDate = nextEarningsDate,
                     PrevEarningsDate = prevEarningsDate,
                     Message = string.Empty,
@@ -1655,7 +1667,7 @@ namespace PT.Middleware
         {
             if (netExpenseRatio <= 0) return 0;
             decimal nerBonus = 0;
-            nerBonus += netExpenseRatio <= 1 ? 1 : 0;
+            nerBonus += netExpenseRatio < 1 ? Constants.CORE_BONUS / Constants.TWO : 0;
             if (0 < netExpenseRatio && netExpenseRatio <= Constants.FUND_NER_MAJOR_LIMIT_PERCENT)
             {
                 nerBonus += (1.0M / netExpenseRatio) * Constants.FUND_NER_INVERSE_MULTIPLIER_PERCENT + 1;

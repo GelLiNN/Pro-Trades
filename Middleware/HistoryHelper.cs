@@ -136,6 +136,10 @@ namespace PT.Middleware
                 ptHistory.Has10DayQualifiedVolume = last30PassCount >= Constants.DEFAULT_MIN_PASS_30D_LIMIT;
                 ptHistory.Has1DayQualifiedVolume = usdVolumeQualified1d;
 
+                // Find out if this asset is volume disqualified
+                ptHistory.HasQualifiedVolume = ptHistory.Has1DayQualifiedVolume &&
+                    ptHistory.Has10DayQualifiedVolume && ptHistory.Has30DayQualifiedVolume;
+
                 // Compute final averages and figures for 100d, 50d, 30d, 20d, 10d
                 avgPrice100d = avgPrice100d / Constants.HUNDRED;
                 avgPrice50d = avgPrice50d / Constants.FIFTY;
