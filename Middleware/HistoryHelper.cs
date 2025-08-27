@@ -153,6 +153,7 @@ namespace PT.Middleware
                 ptHistory.AveragePrice50Day = avgPrice50d;
                 ptHistory.AveragePrice30Day = avgPrice30d;
                 ptHistory.AveragePrice20Day = avgPrice20d;
+                ptHistory.AveragePrice10Day = avgPrice10d;
 
                 ptHistory.AverageHigh10Day = avgHigh10d / Constants.TEN;
                 ptHistory.AverageLow10Day = avgLow10d / Constants.TEN;

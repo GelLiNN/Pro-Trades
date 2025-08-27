@@ -79,6 +79,7 @@ namespace PT.Models.CoreModels
         public decimal AveragePrice50Day { get; set; }
         public decimal AveragePrice30Day { get; set; }
         public decimal AveragePrice20Day { get; set; }
+        public decimal AveragePrice10Day { get; set; }
         public decimal AverageVolUsd30Day { get; set; }
         public decimal AverageVolUsd10Day { get; set; }
         public decimal HighestHigh30Day { get; set; }
@@ -87,6 +88,7 @@ namespace PT.Models.CoreModels
         public decimal AverageLow10Day { get; set; }
         public decimal TodayOpen { get; set; }
         public decimal TodayClose { get; set; }
+        public decimal TodayPostMarket { get; set; }
         public decimal TodayLow { get; set; }
         public decimal TodayHigh { get; set; }
         public decimal TodayVwap { get; set; }

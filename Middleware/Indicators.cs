@@ -14,7 +14,6 @@ namespace PT.Middleware
     public static class Indicators
     {
         //TODO: move to Core/Predictor.cs, Core/Maths.cs, and Core/GRU.cs
-        //TODO: add version numbers 1.0 in comments to each Indicator Composite Function
         public static CompositeScoreResult GetCompositeScoreResult(string symbol, RequestManager rm)
         {
             Stopwatch sw = Stopwatch.StartNew();
@@ -87,13 +86,14 @@ namespace PT.Middleware
                 CompositeScoreValue = finalResult.cs,
                 CompositeScoreNotes = compositeScoreNotes,
                 PriceOpen = ptHistory.TodayOpen,
-                PriceLast = quote?.RegularMarketPrice ?? ptHistory.TodayClose,
+                PriceLast = quote?.PostMarketPrice ?? quote?.RegularMarketPrice ?? ptHistory.TodayClose,
                 PriceVwap = ptHistory.PriceHistory[0].PriceVwap,
                 PriceBuyTarget = buyTarget,
                 PriceSellTarget = ptHistory.PriceTargetProLong,
                 PriceSellTargetShort = ptHistory.PriceTargetProShort,
                 PriceTargetHedgeFunds = hfResult.PriceTarget,
                 PriceHistoryDays = history.Count(),
+                PercentDiffFromBookValue = fundResult.PercentDiffFromBookValue,
                 ADXComposite = adxCompositeScore,
                 OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
@@ -466,24 +466,29 @@ namespace PT.Middleware
                 decimal avgVolumeSlope = GetSlope(history.HistoricalVolAvgXList, history.HistoricalVolAvgYList);
 
                 // Collect values from YahooFinance
-                decimal peTrailing = 0.0M;
-                decimal peForward = 0.0M;
-                decimal epsTrailing = 0.0M;
-                decimal epsCurrentYear = 0.0M;
-                decimal epsForward = 0.0M;
-                decimal priceToBook = 1.0M;
-                decimal sharesOutstanding = -1.0M;
-                decimal divRate = 0.0M;
-                decimal divYield = 0.0M;
-                decimal netAssets = -1.0M; // TODO: use to boost HS5
-                decimal netExpenseRatio = 1.0M;// TODO: use to boost HS5
+                decimal peTrailing = 0;
+                decimal peForward = 0;
+                decimal epsTrailing = 0;
+                decimal epsCurrentYear = 0;
+                decimal epsForward = 0;
+                decimal priceToBook = 1;
+                decimal bookValue = 0;
+                decimal marketCap = 0;
+                decimal sharesOutstanding = -1;
+                decimal divRate = 0;
+                decimal divYield = 0;
+                decimal postMarketPrice = 0;
+                decimal netAssets = -1; // TODO: use to boost HS5
+                decimal netExpenseRatio = 1;// TODO: use to boost HS5
                 DateTime? nextEarningsDate = null;
                 DateTime? prevEarningsDate = null;
+                string? parseMessage = null;
 
                 try
                 {
                     if (quote != null)
                     {
+                        //bookvalue, marketcap, postmarketprice
                         peTrailing = Convert.ToDecimal(quote.TrailingPE);
                         peTrailing = peTrailing == 0 ? Convert.ToDecimal(quote.PriceEpsCurrentYear) : peTrailing;
                         peForward = Convert.ToDecimal(quote.ForwardPE);
@@ -492,46 +497,68 @@ namespace PT.Middleware
                         epsCurrentYear = quote.EpsCurrentYear;
                         epsForward = quote.EpsForward == 0 ? epsCurrentYear : epsForward;
                         priceToBook = Convert.ToDecimal(quote.PriceToBook);
+                        bookValue = Convert.ToDecimal(quote.BookValue);
+                        marketCap = Convert.ToDecimal(quote.MarketCap);
                         sharesOutstanding = Convert.ToDecimal(quote.SharesOutstanding);
                         divRate = quote.DividendRate;
                         divYield = Convert.ToDecimal(quote.DividendYield);
                         netAssets = Convert.ToDecimal(quote.NetAssets);
                         netExpenseRatio = Convert.ToDecimal(quote.NetExpenseRatio);
+                        postMarketPrice = quote.PostMarketPrice;
                         nextEarningsDate = quote.EarningsTimestampStart.ToDateTimeUtc();
                         prevEarningsDate = quote.EarningsTimestamp.ToDateTimeUtc();
                     }
                 }
-                catch (Exception e) { /*do nothing*/ }
+                catch (Exception e)
+                {
+                    parseMessage = $"Unable to parse Yahoo Finance for statistics for symbol {symbol}";
+                }
 
-                // Get base value starting with 1Mil USD bonus, then function of price-to-book percentage
+                // Get stats for PTHistory
+                history.TodayPostMarket = postMarketPrice > 0 ? postMarketPrice : history.TodayClose;
+
+                // Get base value starting with 1Mil USD bonus
                 decimal baseValue = history.TodayVolUsd >= Constants.MILLION ? Constants.CORE_BONUS : 0;
                 decimal bookValuePrice = 0;
+                decimal bookValuePriceDiffPercent = 0;
                 if (priceToBook > 0 && history.TodayVwap > 0)
                 {
+                    // Get base value as gated function of price-to-book percentage diff
                     bookValuePrice = history.TodayVwap * (1 / priceToBook);
-                    decimal bookValuePriceDiffPercent = GetPercentDiff(history.TodayVwap, bookValuePrice);
-                    baseValue = bookValuePriceDiffPercent * 100;
+                    bookValuePriceDiffPercent = GetPercentDiff(history.TodayVwap, bookValuePrice) * 100;
+                    baseValue = bookValuePriceDiffPercent > 0 ? bookValuePriceDiffPercent : 0;
+                    if (baseValue >= 0)
+                    {
+                        baseValue = Constants.CORE_BONUS; // base undervalued bonus
+                    }
                     if (baseValue >= 10)
                     {
-                        baseValue += Constants.CORE_BONUS + 1; //more than 10% undervalued bonus
+                        baseValue += Constants.CORE_BONUS + 1; // more than 10% undervalued bonus
                     }
-                    else if (baseValue <= 0)
+                    if (baseValue >= -10)
                     {
-                        //pi pity points with vwap slope bonus
-                        baseValue = Constants.CORE_BONUS + (vwapSlope > 0.5M ? Constants.CORE_BONUS : 0);
+                        baseValue += Constants.CORE_BONUS * Constants.HALF; // less than 10% overvalued bonus
                     }
-                    baseValue = Math.Min(baseValue, 30);
+                    if (priceToBook <= 2.5M)
+                    {
+                        baseValue += Constants.CORE_BONUS;
+                    }
                 }
-                else
+                // Supplement base value with VWAP slope bonus
+                baseValue += vwapSlope > 0.33M ? Constants.CORE_BONUS + 1 : 0;
+                if (baseValue < Constants.CORE_BONUS)
                 {
-                    //pi pity points
                     baseValue = Constants.CORE_BONUS;
                 }
+                // Apply gate to base value
+                baseValue = Math.Min(30, baseValue);
 
                 // Calculate net asset value if unavailable
-                if (netAssets < 0 || netAssets == 0)
+                if ((netAssets < 0 || netAssets == 0) && sharesOutstanding > 0)
                 {
-                    netAssets = bookValuePrice * sharesOutstanding;
+                    // Otherwise get net asset value from bookValue from Yahoo
+                    netAssets = bookValue > 0 ?
+                        bookValue * sharesOutstanding : bookValuePrice * sharesOutstanding;
                 }
 
                 // Fair value price bonus
@@ -540,16 +567,16 @@ namespace PT.Middleware
                 if (netAssets > 0 && sharesOutstanding > 0)
                 {
                     fairValuePrice = netAssets / sharesOutstanding;
-                    decimal avgPrice30d = history.HistoricalVwapYList[0];
-                    if (avgPrice30d < fairValuePrice)
+                    decimal avgPrice10d = history.AveragePrice10Day;
+                    if (avgPrice10d < fairValuePrice)
                     {
                         fairValuePriceBonus = 2 * Constants.CORE_BONUS + 1;
                     }
-                    else if (avgPrice30d / fairValuePrice <= 3)
+                    else if (avgPrice10d / fairValuePrice <= 3)
                     {
                         fairValuePriceBonus = Constants.CORE_BONUS + 1;
                     }
-                    else if (avgPrice30d / fairValuePrice <= 7)
+                    else if (avgPrice10d / fairValuePrice <= 7)
                     {
                         fairValuePriceBonus = Constants.CORE_BONUS * Constants.HALF;
                     }
@@ -629,13 +656,16 @@ namespace PT.Middleware
                     HasBearishSMA = history.HasBearishSMA,
                     HasDividends = hasDivs,
                     HasGoldenPath = hasGoldenPath,
+                    MarketCap = marketCap > 0 ? marketCap : sharesOutstanding * history.TodayVwap,
+                    PriceToBook = priceToBook,
+                    PriceToEarnings = peTrailing,
                     NextEarningsDate = nextEarningsDate,
                     PrevEarningsDate = prevEarningsDate,
-                    Message = string.Empty,
                     AveragePrice100Day = history.AveragePrice100Day,
                     AveragePrice50Day = history.AveragePrice50Day,
                     AveragePrice30Day = history.AveragePrice30Day,
                     AveragePrice20Day = history.AveragePrice20Day,
+                    AveragePrice10Day = history.AveragePrice10Day,
                     DollarVolumeToday = history.TodayVolUsd,
                     DollarVolume10Day = history.AverageVolUsd10Day,
                     DollarVolume30Day = history.AverageVolUsd30Day,
@@ -645,12 +675,14 @@ namespace PT.Middleware
                     VwapSlope = vwapSlope,
                     FairValuePrice = fairValuePrice,
                     BookValuePrice = bookValuePrice,
+                    PercentDiffFromBookValue = -1 * bookValuePriceDiffPercent,
                     AverageEPS = averageEPS,
                     AveragePE = averagePE,
                     GrowthEPS = growthEPS,
                     GrowthPE = growthPE,
                     DivRate = divRate,
-                    DivYield = divYield
+                    DivYield = divYield,
+                    Message = parseMessage ?? string.Empty
                 };
             }
             catch (Exception e)

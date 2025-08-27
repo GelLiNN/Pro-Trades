@@ -19,6 +19,7 @@ namespace PT.Models.RequestModels
         public decimal PriceSellTarget { get; set; }
         public decimal PriceSellTargetShort { get; set; }
         public decimal PriceTargetHedgeFunds { get; set; }
+        public decimal PercentDiffFromBookValue { get; set; }
         public int PriceHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
         public decimal OBVComposite { get; set; }
@@ -111,13 +112,16 @@ namespace PT.Models.RequestModels
         public bool HasBearishSMA { get; set; }
         public bool HasGoldenPath { get; set; }
         public bool HasDividends { get; set; }
+        public decimal MarketCap { get; set; }
+        public decimal PriceToBook { get; set; }
+        public decimal PriceToEarnings { get; set; }
         public DateTime? NextEarningsDate { get; set; }
         public DateTime? PrevEarningsDate { get; set; }
-        public string? Message { get; set; }
         public decimal AveragePrice100Day { get; set; }
         public decimal AveragePrice50Day { get; set; }
         public decimal AveragePrice30Day { get; set; }
         public decimal AveragePrice20Day { get; set; }
+        public decimal AveragePrice10Day { get; set; }
         public decimal DollarVolumeToday { get; set; }
         public decimal DollarVolume10Day { get; set; }
         public decimal DollarVolume30Day { get; set; }
@@ -127,12 +131,14 @@ namespace PT.Models.RequestModels
         public decimal VwapSlope { get; set; }
         public decimal FairValuePrice { get; set; }
         public decimal BookValuePrice { get; set; }
+        public decimal PercentDiffFromBookValue { get; set; }
         public decimal AverageEPS { get; set; }
         public decimal AveragePE { get; set; }
         public decimal GrowthEPS { get; set; }
         public decimal GrowthPE { get; set; }
         public decimal DivRate { get; set; }
         public decimal DivYield { get; set; }
+        public string? Message { get; set; }
     }
 
     /*

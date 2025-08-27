@@ -36,7 +36,7 @@ namespace PT
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly string DEFAULT_RED = "Red";
         public static readonly string DEFAULT_GREEN = "Green";
-        public const int DEFAULT_HISTORY_DAYS = 200; // Was 375 before 7.20.2025
+        public const int DEFAULT_HISTORY_DAYS = 277; // Was 375 before 7.20.2025, trying 277
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const decimal TEN_THOUSAND = 10000.0M;
         public const decimal THIRTY_THOUSAND = 30000.0M;
@@ -55,6 +55,7 @@ namespace PT
         public const decimal TARGET_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
         #region Core Model Constants
+        //TODO: if 82.9 or higher round up to 83.0 Prime
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
@@ -64,12 +65,12 @@ namespace PT
         public const decimal CORE_HS2_MOD = 0.0M;
         public const decimal CORE_HS3_MOD = CORE_BONUS - HALF;
         public const decimal CORE_HS4_MOD = 0.0M;
-        public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;
+        public const decimal CORE_HS5_MOD = CORE_BONUS * HALF + 1;
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
 
         // GRU Composites
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
-        public const int OBV_LOOKBACK_DAYS = 37; // Was 42 before 7.20.2025
+        public const int OBV_LOOKBACK_DAYS = 37; // Was 42 before 7.20.2025, trying 37
         public const decimal FUND_NER_INVERSE_MULTIPLIER_PERCENT = 0.07M;
         public const decimal FUND_NER_MAJOR_LIMIT_PERCENT = 0.5M;
         public const decimal FUND_NER_MINOR_LIMIT_PERCENT = 0.2M;
