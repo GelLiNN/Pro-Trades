@@ -525,11 +525,11 @@ namespace PT.Middleware
                 {
                     // Get base value as gated function of price-to-book percentage diff
                     bookValuePrice = history.TodayVwap * (1 / priceToBook);
-                    bookValuePriceDiffPercent = GetPercentDiff(history.TodayVwap, bookValuePrice) * 100;
+                    bookValuePriceDiffPercent = GetPercentDiff(history.TodayVwap, bookValuePrice);
                     baseValue = bookValuePriceDiffPercent > 0 ? bookValuePriceDiffPercent : 0;
                     if (baseValue >= 0)
                     {
-                        baseValue = Constants.CORE_BONUS; // base undervalued bonus
+                        baseValue = Constants.CORE_BONUS - 1; // base undervalued bonus
                     }
                     if (baseValue >= 10)
                     {
@@ -545,7 +545,7 @@ namespace PT.Middleware
                     }
                 }
                 // Supplement base value with VWAP slope bonus
-                baseValue += vwapSlope > 0.33M ? Constants.CORE_BONUS + 1 : 0;
+                baseValue += vwapSlope > 0.33M ? Constants.CORE_BONUS : 0;
                 if (baseValue < Constants.CORE_BONUS)
                 {
                     baseValue = Constants.CORE_BONUS;
@@ -570,11 +570,11 @@ namespace PT.Middleware
                     decimal avgPrice10d = history.AveragePrice10Day;
                     if (avgPrice10d < fairValuePrice)
                     {
-                        fairValuePriceBonus = 2 * Constants.CORE_BONUS + 1;
+                        fairValuePriceBonus = 2 * Constants.CORE_BONUS;
                     }
                     else if (avgPrice10d / fairValuePrice <= 3)
                     {
-                        fairValuePriceBonus = Constants.CORE_BONUS + 1;
+                        fairValuePriceBonus = Constants.CORE_BONUS;
                     }
                     else if (avgPrice10d / fairValuePrice <= 7)
                     {
@@ -846,12 +846,16 @@ namespace PT.Middleware
 
             HashSet<string> dates = new HashSet<string>();
             Queue<decimal> obvValueYList = new Queue<decimal>();
+            Queue<decimal> obvSmaValueYList = new Queue<decimal>();
 
             int daysCalculated = 0;
             decimal obvSum = 0;
-            bool obvHasBuySignal = false;
-            bool obvHasSellSignal = false;
-            int daysSinceSignal = -1;
+            bool obvHasBuySignal1 = false;
+            bool obvHasSellSignal1 = false;
+            bool obvHasBuySignal2 = false;
+            bool obvHasSellSignal2 = false;
+            int daysSinceSignal1 = -1;
+            int daysSinceSignal2 = -1;
 
             for (int i = results.Count - daysToCalculate; i < results.Count; i++)
             {
@@ -864,27 +868,48 @@ namespace PT.Middleware
                     if (!dates.Contains(obvDate))
                     {
                         decimal obvValue = Convert.ToDecimal(result.Obv);
+                        decimal obvSmaValue = Convert.ToDecimal(result.ObvSma);
                         decimal prevObvValue = Convert.ToDecimal(prevResult.Obv);
+                        decimal prevObvSmaValue = Convert.ToDecimal(prevResult.ObvSma);
 
                         obvValueYList.Enqueue(obvValue);
+                        obvSmaValueYList.Enqueue(obvSmaValue);
                         obvSum += obvValue;
 
                         //Get buy and sell signals
+                        //Buy signal 1 when OBV value crosses negative to positive
                         bool obvCurrentIsNegative = obvValue < 0;
                         bool obvPrevIsNegative = prevObvValue < 0;
                         if (!obvCurrentIsNegative && obvPrevIsNegative)
                         {
                             //Cancel the previous sell signal if buy signal is most recent
-                            obvHasBuySignal = true;
-                            obvHasSellSignal = false; 
-                            daysSinceSignal = daysToCalculate - daysCalculated;
+                            obvHasBuySignal1 = true;
+                            obvHasSellSignal1 = false; 
+                            daysSinceSignal1 = daysToCalculate - daysCalculated;
                         }
                         else if (obvCurrentIsNegative && !obvPrevIsNegative)
                         {
                             //Cancel the previous buy signal if sell signal is most recent
-                            obvHasSellSignal = true;
-                            obvHasBuySignal = false;
-                            daysSinceSignal = daysToCalculate - daysCalculated;
+                            obvHasSellSignal1 = true;
+                            obvHasBuySignal1 = false;
+                            daysSinceSignal1 = daysToCalculate - daysCalculated;
+                        }
+                        //Buy signal 2 when OBV value crosses above or below SMA value
+                        bool obvCurrentIsHigherThanSma = obvValue < obvSmaValue;
+                        bool obvPrevIsHigherThanSma = prevObvValue < prevObvSmaValue;
+                        if (obvCurrentIsHigherThanSma && !obvPrevIsHigherThanSma)
+                        {
+                            //Cancel the previous sell signal if buy signal is most recent
+                            obvHasBuySignal2 = true;
+                            obvHasSellSignal2 = false;
+                            daysSinceSignal2 = daysToCalculate - daysCalculated;
+                        }
+                        else if (!obvCurrentIsHigherThanSma && obvPrevIsHigherThanSma)
+                        {
+                            //Cancel the previous buy signal if sell signal is most recent
+                            obvHasSellSignal2 = true;
+                            obvHasBuySignal2 = false;
+                            daysSinceSignal2 = daysToCalculate - daysCalculated;
                         }
 
                         dates.Add(obvDate);
@@ -901,6 +926,8 @@ namespace PT.Middleware
 
             List<decimal> obvYList = obvValueYList.ToList();
             decimal obvSlope = GetSlope(obvXList, obvYList);
+            List<decimal> obvSmaYList = obvSmaValueYList.ToList();
+            decimal obvSmaSlope = GetSlope(obvXList, obvSmaYList);
 
             List<decimal> zScores = GetZScores(obvYList);
             decimal zScoreSlope = GetSlope(obvXList, zScores);
@@ -910,10 +937,13 @@ namespace PT.Middleware
             decimal normalizedSlope = GetSlope(obvXList, normalizedScores);
             decimal normalizedSlopeMultiplier = GetSlopeMultiplier(normalizedSlope);
 
+            //Figures for OBV composite calculations
+            decimal lastObv = obvYList[obvYList.Count - 1];
+            decimal lastObvSma = obvSmaYList[obvSmaYList.Count - 1];
             decimal obvAverage = obvSum / daysCalculated;
 
+            //OBV base value function
             decimal baseValue = 0;
-
             //Start with the average of the 2 most recent OBV Normalized Scores
             //Only allow positive normalizedScoreBase, divide by 4 instead of 2 (which would be classic mean)
             decimal normalizedScoreBase =
@@ -930,11 +960,20 @@ namespace PT.Middleware
             //Cap base value at 42 obviously
             baseValue = Math.Min(baseValue, 42.0M);
 
-            //Add bonus if average OBV is greater than 0
-            decimal obvAverageBonus = obvAverage > 0 ? Constants.CORE_BONUS * 2 : 0;
+            //Add OBV average bonuses comparing last OBV values to averages
+            decimal obvAverageBonus = obvAverage > 0 ? Constants.CORE_BONUS : 0;
+            decimal obvHigherThan7dAvgBonus = lastObv > obvAverage ? Constants.CORE_BONUS * 2 : 0;
+            decimal obvHigherThanSmaBonus = lastObv > lastObvSma ? Constants.CORE_BONUS * 2 : 0;
+            obvAverageBonus += obvHigherThan7dAvgBonus + obvHigherThanSmaBonus;
 
-            //Add bonus if OBV slope positive
-            decimal obvSlopeBonus = obvSlope > 0 ? Constants.CORE_BONUS * 3 : 0;
+            //Add bonuses if last OBV or OBV sum are greater than 1mil
+            decimal obvLastGatedBonus = lastObv > Constants.MILLION ? Constants.CORE_BONUS : 0;
+            decimal obvSumGatedBonus = obvSum > Constants.MILLION ? Constants.CORE_BONUS : 0;
+            decimal obvGateBonus = obvLastGatedBonus + obvSumGatedBonus;
+
+            //Add bonus if OBV slopes positive
+            decimal obvSlopeBonus = obvSlope > 0 ? Constants.CORE_BONUS * 2 : 0;
+            obvSlopeBonus += obvSmaSlope > 0 ? Constants.CORE_BONUS * 2 : 0;
 
             //Add Zscore slope bonus
             decimal zScoreSlopeBonus = 0;
@@ -951,19 +990,24 @@ namespace PT.Middleware
                 normalizedSlopeBonus += Constants.CORE_BONUS;
 
             //Get time-scaled buy and sell signal bonus and penalty
-            decimal buySignalBonus = CalcTimeScaledBuySignalBonus(obvHasBuySignal, Constants.CORE_BONUS, daysSinceSignal);
-            decimal sellSignalPenalty = CalcTimeScaledSellSignalPenalty(obvHasSellSignal, Constants.CORE_BONUS, daysSinceSignal);
+            decimal buySignal1Bonus = CalcTimeScaledBuySignalBonus(obvHasBuySignal1, Constants.CORE_BONUS, daysSinceSignal1);
+            decimal sellSignal1Penalty = CalcTimeScaledSellSignalPenalty(obvHasSellSignal1, Constants.CORE_BONUS, daysSinceSignal1);
+            decimal buySignal2Bonus = CalcTimeScaledBuySignalBonus(obvHasBuySignal2, Constants.CORE_BONUS, daysSinceSignal2);
+            decimal sellSignal2Penalty = CalcTimeScaledSellSignalPenalty(obvHasSellSignal2, Constants.CORE_BONUS * Constants.HALF, daysSinceSignal2);
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
             composite += baseValue;
             composite += obvAverageBonus;
             composite += obvSlopeBonus;
+            composite += obvGateBonus;
             composite += zScoreSlopeBonus;
             composite += normalizedSlopeBonus;
-            composite = Math.Min(composite, 75);
-            composite += buySignalBonus;
-            composite += composite > 50 ? sellSignalPenalty : 0;
+            composite = Math.Min(composite, 70);
+            composite += buySignal1Bonus;
+            composite += buySignal2Bonus;
+            composite += composite > 50 ? sellSignal1Penalty : 0;
+            composite += composite > 60 ? sellSignal2Penalty : 0;
 
             composite = Math.Max(composite, 0); //limit OBV composite at 0, no negatives
             return Math.Min(composite, 100); //cap OBV composite at 100, no extra weight

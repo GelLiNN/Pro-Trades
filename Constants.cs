@@ -68,15 +68,14 @@ namespace PT
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF + 1;
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
 
-        // GRU Composites
+        // GRU composite gate constants
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
-        public const int OBV_LOOKBACK_DAYS = 37; // Was 42 before 7.20.2025, trying 37
+        public const int OBV_LOOKBACK_DAYS = 42; // Was 42 before 7.20.2025, tried 37 until 9.4.2025
         public const decimal FUND_NER_INVERSE_MULTIPLIER_PERCENT = 0.07M;
         public const decimal FUND_NER_MAJOR_LIMIT_PERCENT = 0.5M;
         public const decimal FUND_NER_MINOR_LIMIT_PERCENT = 0.2M;
         public const decimal FUND_EPS_MOD_UPPER_LIMIT = 37.0M;
         public const decimal FUND_PE_MOD_UPPER_LIMIT = 33.0M;
-
 
         // Dollar volume and price disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 875000.0M;
