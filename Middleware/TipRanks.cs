@@ -81,6 +81,9 @@ namespace PT.Middleware
                     .Where(x => DateTime.Compare(x.date, startDate) > 0)
                     .ToList();
 
+                string sector = string.IsNullOrEmpty(trResponse.portfolioHoldingData.sectorId) ?
+                    "Not Found" : trResponse.portfolioHoldingData.sectorId;
+
                 // Average hedge fund ratings will form score base
                 decimal averageRating = GetAverageRating(ratings, trResponse);
                 decimal ratingsBase = (averageRating / 6.5M) * 100; // Get score using the average rating as a percentage of (max rating + 1.5)
@@ -149,6 +152,7 @@ namespace PT.Middleware
                     HedgeSentiment = Convert.ToDecimal(trResponse.hedgeFundData.sentiment),
                     HedgeTrendAction = Convert.ToDecimal(trResponse.hedgeFundData.trendAction),
                     HedgeTrendValue = Convert.ToDecimal(trResponse.hedgeFundData.trendValue),
+                    Sector = sector,
                     Insiders = insiders,
                     Holdings = holdings,
                     ThirdPartyRatings = ratings,
@@ -171,6 +175,7 @@ namespace PT.Middleware
                     HedgeSentiment = 0,
                     HedgeTrendAction = 0,
                     HedgeTrendValue = 0,
+                    Sector = "Not Found",
                     Insiders = null,
                     Holdings = null,
                     ThirdPartyRatings = null,

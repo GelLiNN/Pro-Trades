@@ -1,4 +1,4 @@
-﻿using static PT.Models.RequestModels.TipRanksDataResponse;
+using static PT.Models.RequestModels.TipRanksDataResponse;
 
 namespace PT.Models.RequestModels
 {
@@ -682,6 +682,9 @@ namespace PT.Models.RequestModels
 
         // hedge trend values mean something WRT the trend value above
         public decimal HedgeTrendValue { get; set; }
+
+        // Sector
+        public string Sector { get; set; }
 
         // list of insider purchases with dates, ranks, names
         public List<Insider> Insiders { get; set; }

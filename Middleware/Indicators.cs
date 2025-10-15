@@ -83,15 +83,16 @@ namespace PT.Middleware
                 Symbol = symbol,
                 Name = quote?.LongName,
                 Exchange = quote?.FullExchangeName,
+                Sector = hfResult.Sector,
                 CompositeScoreValue = finalResult.cs,
                 CompositeScoreNotes = compositeScoreNotes,
-                PriceOpen = ptHistory.TodayOpen,
-                PriceLast = quote?.PostMarketPrice ?? quote?.RegularMarketPrice ?? ptHistory.TodayClose,
-                PriceVwap = ptHistory.PriceHistory[0].PriceVwap,
-                PriceBuyTarget = buyTarget,
-                PriceSellTarget = ptHistory.PriceTargetProLong,
-                PriceSellTargetShort = ptHistory.PriceTargetProShort,
-                PriceTargetHedgeFunds = hfResult.PriceTarget,
+                PriceOpen = ptHistory.TodayOpen.ToString("C2"),
+                PriceClose = ptHistory.TodayClose.ToString("C2"),
+                PriceVwap = ptHistory.PriceHistory[0].PriceVwap.ToString("C2"),
+                PriceBuyTarget = buyTarget.ToString("C2"),
+                PriceSellTarget = ptHistory.PriceTargetProLong.ToString("C2"),
+                PriceSellTargetShort = ptHistory.PriceTargetProShort.ToString("C2"),
+                PriceTargetHedgeFunds = hfResult.PriceTarget.ToString("C2"),
                 PriceHistoryDays = history.Count(),
                 PercentDiffFromBookValue = fundResult.PercentDiffFromBookValue,
                 ADXComposite = adxCompositeScore,
@@ -110,7 +111,9 @@ namespace PT.Middleware
                 HedgeFunds = hfResult,
                 DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks"
             };
-            scoreResult.PriceRedGreen = scoreResult.PriceLast >= scoreResult.PriceOpen ?
+            decimal priceLast = quote?.PostMarketPrice ?? quote?.RegularMarketPrice ?? ptHistory.TodayClose;
+            scoreResult.PriceLast = priceLast.ToString("C2");
+            scoreResult.PriceRedGreen = priceLast >= ptHistory.TodayOpen ?
                 Constants.DEFAULT_GREEN : Constants.DEFAULT_RED;
             scoreResult.HasQualifiedVolume = ptHistory.HasQualifiedVolume;
             scoreResult.CompositeScoreRank = GetCompositeScoreRank(scoreResult);
@@ -139,7 +142,7 @@ namespace PT.Middleware
             bool earningsDuringAttrition = scoreResult.Fundamentals.NextEarningsDate > today &&
                 scoreResult.Fundamentals.NextEarningsDate < nextFriday;
 
-            // This is where blacklisting happens, right now only from bad dollar volume throughput
+            // This is where blacklisting happens from bad dollar volume throughput or penny price limit
             string rank = string.Empty;
             if (IsDisqualifiedPrediction(scoreResult))
                 rank = Constants.RANK_DISQUALIFIED;
@@ -156,6 +159,7 @@ namespace PT.Middleware
             else if (scoreResult.CompositeScoreValue >= Constants.CORE_PRIME_GATE)
                 rank = Constants.RANK_PRIME;
 
+            // Earnings scheduled for the period during attrition are ranked parallel
             rank += earningsDuringAttrition ? Constants.RANK_E : string.Empty;
             return rank;
         }
@@ -164,7 +168,8 @@ namespace PT.Middleware
         {
             return
                 (!scoreResult.HasQualifiedVolume ||
-                (scoreResult.PriceLast < Constants.DEFAULT_PENNY_PRICE_D_LIMIT || scoreResult.PriceVwap < Constants.DEFAULT_PENNY_PRICE_D_LIMIT));
+                (Convert.ToDecimal(scoreResult.PriceLast.Substring(1)) < Constants.DEFAULT_PENNY_PRICE_D_LIMIT ||
+                Convert.ToDecimal(scoreResult.PriceVwap.Substring(1)) < Constants.DEFAULT_PENNY_PRICE_D_LIMIT));
         }
 
         private static bool IsShortPrediction(CompositeScoreResult scoreResult)
@@ -992,8 +997,8 @@ namespace PT.Middleware
             //Get time-scaled buy and sell signal bonus and penalty
             decimal buySignal1Bonus = CalcTimeScaledBuySignalBonus(obvHasBuySignal1, Constants.CORE_BONUS, daysSinceSignal1);
             decimal sellSignal1Penalty = CalcTimeScaledSellSignalPenalty(obvHasSellSignal1, Constants.CORE_BONUS, daysSinceSignal1);
-            decimal buySignal2Bonus = CalcTimeScaledBuySignalBonus(obvHasBuySignal2, Constants.CORE_BONUS, daysSinceSignal2);
-            decimal sellSignal2Penalty = CalcTimeScaledSellSignalPenalty(obvHasSellSignal2, Constants.CORE_BONUS * Constants.HALF, daysSinceSignal2);
+            decimal buySignal2Bonus = CalcTimeScaledBuySignalBonus(obvHasBuySignal2, Constants.CORE_BONUS * Constants.HALF, daysSinceSignal2);
+            decimal sellSignal2Penalty = CalcTimeScaledSellSignalPenalty(obvHasSellSignal2, Constants.CORE_BONUS * Constants.THIRD, daysSinceSignal2);
 
             //calculate composite score based on the following values and weighted multipliers
             decimal composite = 0;
@@ -1003,7 +1008,8 @@ namespace PT.Middleware
             composite += obvGateBonus;
             composite += zScoreSlopeBonus;
             composite += normalizedSlopeBonus;
-            composite = Math.Min(composite, 70);
+            composite = Math.Min(composite, 60);
+            composite += composite == 60 ? Constants.CORE_BONUS : 0;
             composite += buySignal1Bonus;
             composite += buySignal2Bonus;
             composite += composite > 50 ? sellSignal1Penalty : 0;

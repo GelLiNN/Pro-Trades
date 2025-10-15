@@ -52,6 +52,7 @@ namespace PT
         public const decimal TWO = 2.0M;
         public const decimal FIB = 0.618M;
         public const decimal HALF = 0.5M;
+        public const decimal THIRD = 0.3333333M;
         public const decimal TARGET_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
         #region Core Model Constants
@@ -61,11 +62,11 @@ namespace PT
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_SIGNAL_MOD = 3.8M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_PRIME_GATE = 83.0M;
-        public const decimal CORE_HS1_MOD = CORE_BONUS * HALF;
+        public const decimal CORE_HS1_MOD = CORE_BONUS * HALF - HALF;
         public const decimal CORE_HS2_MOD = 0.0M;
-        public const decimal CORE_HS3_MOD = CORE_BONUS - HALF;
+        public const decimal CORE_HS3_MOD = CORE_BONUS - 1;
         public const decimal CORE_HS4_MOD = 0.0M;
-        public const decimal CORE_HS5_MOD = CORE_BONUS * HALF + 1;
+        public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
 
         // GRU composite gate constants

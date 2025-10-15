@@ -7,18 +7,20 @@ namespace PT.Models.RequestModels
         public string? Symbol { get; set; }
         public string? Name { get; set; }
         public string? Exchange { get; set; }
+        public string? Sector { get; set; }
         public string CompositeScoreRank { get; set; }
         public decimal CompositeScoreValue { get; set; }
         public string CompositeScoreNotes { get; set; }
         public bool HasQualifiedVolume { get; set; }
-        public decimal PriceOpen { get; set; }
-        public decimal PriceLast { get; set; }
-        public decimal PriceVwap { get; set; }
+        public string PriceOpen { get; set; }
+        public string PriceClose { get; set; }
+        public string PriceLast { get; set; }
+        public string PriceVwap { get; set; }
         public string PriceRedGreen { get; set; }
-        public decimal PriceBuyTarget { get; set; }
-        public decimal PriceSellTarget { get; set; }
-        public decimal PriceSellTargetShort { get; set; }
-        public decimal PriceTargetHedgeFunds { get; set; }
+        public string PriceBuyTarget { get; set; }
+        public string PriceSellTarget { get; set; }
+        public string PriceSellTargetShort { get; set; }
+        public string PriceTargetHedgeFunds { get; set; }
         public decimal PercentDiffFromBookValue { get; set; }
         public int PriceHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
