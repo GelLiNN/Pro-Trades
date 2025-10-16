@@ -78,12 +78,28 @@ namespace PT.Middleware
                 adxCompositeScore, obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore,
                 ptHistory.PriceTargetAvgLong, ptHistory.PriceTargetAvgShort);
 
+            bool notFound = hfResult.Description.Equals("Not Found");
+
+            string minDescription = notFound ? hfResult.Description :
+                hfResult.Description.Substring(0, Math.Min(300, hfResult.Description.Length));
+
+            if (!notFound)
+            {
+                int lastSpaceIndex = minDescription.LastIndexOf(' ');
+                if (lastSpaceIndex != -1) // if a space was found
+                {
+                    minDescription = minDescription.Substring(0, lastSpaceIndex);
+                }
+                minDescription += minDescription.EndsWith('.') ? ".." : "...";
+            }
+
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
                 Symbol = symbol,
                 Name = quote?.LongName,
                 Exchange = quote?.FullExchangeName,
-                Sector = hfResult.Sector,
+                AssetType = fundResult.AssetType,
+                AssetSector = hfResult.Sector,
                 CompositeScoreValue = finalResult.cs,
                 CompositeScoreNotes = compositeScoreNotes,
                 PriceOpen = ptHistory.TodayOpen.ToString("C2"),
@@ -104,7 +120,8 @@ namespace PT.Middleware
                 ShortInterestComposite = shortResult.ShortInterestComposite,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
                 ScoreDate = DateTime.Now,
-                ParameterSet = paramType,
+                ParameterSet = paramType.Type,
+                AssetDescription = minDescription,
                 PriceTargets = priceTargets,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
@@ -487,6 +504,8 @@ namespace PT.Middleware
                 decimal netExpenseRatio = 1;// TODO: use to boost HS5
                 DateTime? nextEarningsDate = null;
                 DateTime? prevEarningsDate = null;
+                string? assetName = null;
+                string? assetType = null;
                 string? parseMessage = null;
 
                 try
@@ -512,6 +531,8 @@ namespace PT.Middleware
                         postMarketPrice = quote.PostMarketPrice;
                         nextEarningsDate = quote.EarningsTimestampStart.ToDateTimeUtc();
                         prevEarningsDate = quote.EarningsTimestamp.ToDateTimeUtc();
+                        assetName = !string.IsNullOrWhiteSpace(quote.LongName) ? quote.LongName : quote.ShortName;
+                        assetType = quote.TypeDisp;
                     }
                 }
                 catch (Exception e)
@@ -656,6 +677,8 @@ namespace PT.Middleware
 
                 return new FundamentalsResult
                 {
+                    AssetName = assetName ?? "Not Found",
+                    AssetType = assetType ?? "Not Found",
                     FundamentalsComposite = composite,
                     HasBullishSMA = history.HasBullishSMA,
                     HasBearishSMA = history.HasBearishSMA,

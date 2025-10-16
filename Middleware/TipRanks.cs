@@ -56,6 +56,8 @@ namespace PT.Middleware
                         HedgeSentiment = 0,
                         HedgeTrendAction = 0,
                         HedgeTrendValue = 0,
+                        Sector = "Not Found",
+                        Description = "Not Found",
                         Insiders = null,
                         Holdings = null,
                         ThirdPartyRatings = null,
@@ -81,8 +83,11 @@ namespace PT.Middleware
                     .Where(x => DateTime.Compare(x.date, startDate) > 0)
                     .ToList();
 
-                string sector = string.IsNullOrEmpty(trResponse.portfolioHoldingData.sectorId) ?
+                // Other custom data extractions
+                string sector = string.IsNullOrWhiteSpace(trResponse.portfolioHoldingData.sectorId) ?
                     "Not Found" : trResponse.portfolioHoldingData.sectorId;
+                string description = string.IsNullOrWhiteSpace(trResponse.description) ?
+                    "Not Found" : trResponse.description;
 
                 // Average hedge fund ratings will form score base
                 decimal averageRating = GetAverageRating(ratings, trResponse);
@@ -142,6 +147,8 @@ namespace PT.Middleware
 
                 return new HedgeFundsResult
                 {
+                    Sector = sector.Substring(0, 1).ToUpper() + sector.Substring(1),
+                    Description = description,
                     RatingsComposite = ratingsComposite,
                     RatingsBase = ratingsBase,
                     InsiderBonus = insiderBonus,
@@ -152,7 +159,6 @@ namespace PT.Middleware
                     HedgeSentiment = Convert.ToDecimal(trResponse.hedgeFundData.sentiment),
                     HedgeTrendAction = Convert.ToDecimal(trResponse.hedgeFundData.trendAction),
                     HedgeTrendValue = Convert.ToDecimal(trResponse.hedgeFundData.trendValue),
-                    Sector = sector,
                     Insiders = insiders,
                     Holdings = holdings,
                     ThirdPartyRatings = ratings,
@@ -176,6 +182,7 @@ namespace PT.Middleware
                     HedgeTrendAction = 0,
                     HedgeTrendValue = 0,
                     Sector = "Not Found",
+                    Description = "Not Found",
                     Insiders = null,
                     Holdings = null,
                     ThirdPartyRatings = null,

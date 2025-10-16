@@ -7,7 +7,8 @@ namespace PT.Models.RequestModels
         public string? Symbol { get; set; }
         public string? Name { get; set; }
         public string? Exchange { get; set; }
-        public string? Sector { get; set; }
+        public string? AssetType { get; set; }
+        public string? AssetSector { get; set; }
         public string CompositeScoreRank { get; set; }
         public decimal CompositeScoreValue { get; set; }
         public string CompositeScoreNotes { get; set; }
@@ -38,7 +39,9 @@ namespace PT.Models.RequestModels
         public long TipRanksTimeMS { get; set; }
         public long CoreTimeMS { get; set; }
         public DateTime ScoreDate { get; set; }
-        public ParameterSetType ParameterSet { get; set; }
+        public string? ParameterSet { get; set; }
+        public string? AssetDescription { get; set; }
+        //public ParameterSetType ParameterSet { get; set; }
         public List<PTPriceTarget> PriceTargets { get; set; }
         public ShortInterestResult ShortInterest { get; set; }
         public FundamentalsResult Fundamentals { get; set; }
@@ -109,6 +112,8 @@ namespace PT.Models.RequestModels
 
     public class FundamentalsResult
     {
+        public string AssetName { get; set; }
+        public string AssetType { get; set; }
         public decimal FundamentalsComposite { get; set; }
         public bool HasBullishSMA { get; set; }
         public bool HasBearishSMA { get; set; }

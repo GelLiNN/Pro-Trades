@@ -653,6 +653,12 @@ namespace PT.Models.RequestModels
 
     public class HedgeFundsResult
     {
+        // Sector
+        public string Sector { get; set; }
+
+        // Description
+        public string Description { get; set; }
+
         // ratings composite score
         public decimal RatingsComposite { get; set; }
 
@@ -682,9 +688,6 @@ namespace PT.Models.RequestModels
 
         // hedge trend values mean something WRT the trend value above
         public decimal HedgeTrendValue { get; set; }
-
-        // Sector
-        public string Sector { get; set; }
 
         // list of insider purchases with dates, ranks, names
         public List<Insider> Insiders { get; set; }
