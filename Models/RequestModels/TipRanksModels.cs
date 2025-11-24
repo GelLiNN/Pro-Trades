@@ -653,6 +653,9 @@ namespace PT.Models.RequestModels
 
     public class HedgeFundsResult
     {
+        // Name
+        public string Name { get; set; }
+
         // Sector
         public string Sector { get; set; }
 
@@ -661,6 +664,9 @@ namespace PT.Models.RequestModels
 
         // ratings composite score
         public decimal RatingsComposite { get; set; }
+
+        // TipRanks score
+        public decimal TipRanksScore { get; set; }
 
         // price target
         public decimal PriceTarget { get; set; }

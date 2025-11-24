@@ -93,10 +93,13 @@ namespace PT.Middleware
                 minDescription += minDescription.EndsWith('.') ? ".." : "...";
             }
 
+            string? assetName = string.IsNullOrWhiteSpace(quote?.LongName) ?
+                hfResult.Name : quote?.LongName;
+
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
                 Symbol = symbol,
-                Name = quote?.LongName,
+                Name = assetName,
                 Exchange = quote?.FullExchangeName,
                 AssetType = fundResult.AssetType,
                 AssetSector = hfResult.Sector,
@@ -668,6 +671,8 @@ namespace PT.Middleware
                 composite += volumeTrendingModifier > 0 ? volumeTrendingModifier : 0;
                 // Give back half the PE penalty if composite is below fair
                 composite += composite < 60 && peModifier < 0 ? (-0.5M * peModifier) : 0;
+                // For handicapped mode
+                //composite += Constants.FUND_HANDICAP;
 
                 composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives

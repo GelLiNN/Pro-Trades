@@ -60,11 +60,11 @@ namespace PT
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
-        public const decimal CORE_SIGNAL_MOD = 3.8M; // Uber bullish macros 1, Uber bearish macros 7
+        public const decimal CORE_SIGNAL_MOD = 3.9M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_HS1_MOD = CORE_BONUS * HALF - HALF;
-        public const decimal CORE_HS2_MOD = 0.0M;
-        public const decimal CORE_HS3_MOD = CORE_BONUS - 1;
+        public const decimal CORE_HS2_MOD = HALF; // 0 or 0.5 default, handicapped mode 1
+        public const decimal CORE_HS3_MOD = CORE_BONUS - HALF; // CORE_BONUS - 1 default, handicapped mode CORE_BONUS - half
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
@@ -77,6 +77,7 @@ namespace PT
         public const decimal FUND_NER_MINOR_LIMIT_PERCENT = 0.2M;
         public const decimal FUND_EPS_MOD_UPPER_LIMIT = 37.0M;
         public const decimal FUND_PE_MOD_UPPER_LIMIT = 33.0M;
+        public const int FUND_HANDICAP = 21; // For when YahooQuotesApi is broken
 
         // Dollar volume and price disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 875000.0M;

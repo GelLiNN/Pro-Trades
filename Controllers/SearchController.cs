@@ -414,13 +414,13 @@ namespace PT.Controllers
         [HttpGet("api/search/GetAllCompanies")]
         public CompaniesListYF GetAllCompaniesYF()
         {
-            return Companies.GetAllCompaniesAsync(_rm).Result;
+            return AssetAggregator.GetAllCompaniesAsync(_rm).Result;
         }
 
         [HttpGet("api/search/GetScreenedCompaniesYF/{screenId}")]
         public CompaniesListYF GetScreenedCompaniesYF(string screenId)
         {
-            CompaniesListYF companies = Companies.GetAllCompaniesAsync(_rm).Result;
+            CompaniesListYF companies = AssetAggregator.GetAllCompaniesAsync(_rm).Result;
             return YahooFinance.GetScreenedCompaniesAsync(companies, screenId).Result;
         }
 

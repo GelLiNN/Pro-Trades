@@ -147,9 +147,11 @@ namespace PT.Middleware
 
                 return new HedgeFundsResult
                 {
+                    Name = trResponse.companyFullName,
                     Sector = sector.Substring(0, 1).ToUpper() + sector.Substring(1),
                     Description = description,
                     RatingsComposite = ratingsComposite,
+                    TipRanksScore = Convert.ToDecimal(trResponse.tipranksStockScore.score),
                     RatingsBase = ratingsBase,
                     InsiderBonus = insiderBonus,
                     HoldingBonus = holdingBonus,

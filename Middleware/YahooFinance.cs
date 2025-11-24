@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
 using NodaTime;
 using PT.Models.RequestModels;
 using PT.Services;
@@ -102,7 +101,7 @@ namespace PT.Middleware
             return await Task.FromResult(companyStat);
         }
 
-        // With YahooQuotesApi
+        // With YahooQuotesApi (fixed since YahooQuotesApi 7.0.5)
         public static async Task<Snapshot?> GetQuoteAsync(string symbol)
         {
             Snapshot? quote = null;
@@ -111,9 +110,11 @@ namespace PT.Middleware
                 // You could query multiple symbols with multiple fields through the following steps:
                 YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-                Dictionary<string, Snapshot?> securities = await yahooQuotes.GetSnapshotAsync(new[] { symbol });
-
-                quote = securities[symbol] ?? throw new ArgumentException($"YahooQuotesApi GetSnapshotAsync: Unknown symbol {symbol}");
+                quote = await yahooQuotes.GetSnapshotAsync(symbol);
+                if (quote == null)
+                {
+                    throw new ArgumentException($"YahooQuotesApi GetSnapshotAsync: Unknown symbol {symbol}");
+                }
             }
             catch (Exception e)
             {

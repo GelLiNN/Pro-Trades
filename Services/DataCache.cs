@@ -238,7 +238,7 @@ namespace PT.Services
             {
                 // Use DefaultCacheLimit from custom config
                 int limit = Program.Config.GetValue<int>("Custom:DefaultCacheLimit");
-                ScrapedSymbols = Companies.GetRandomizedCompanySymbols(_rm, limit);
+                ScrapedSymbols = AssetAggregator.GetRandomizedCompanySymbols(_rm, limit);
 
                 foreach (var scrapedSymbol in ScrapedSymbols)
                 {

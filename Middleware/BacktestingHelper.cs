@@ -26,7 +26,7 @@ namespace PT.Middleware
             };
 
             // Get randomized set of companies to backtest with
-            var scrapedSymbols = Companies.GetRandomizedCompanySymbols(rm, 300);
+            var scrapedSymbols = AssetAggregator.GetRandomizedCompanySymbols(rm, 300);
             foreach (var symbol in scrapedSymbols)
             {
                 // Alpaca API price history

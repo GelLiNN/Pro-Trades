@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Newtonsoft.Json.Linq;
 using PT.Models.RequestModels;
 using PT.Services;
@@ -155,7 +155,7 @@ namespace PT.Middleware
                 SymbolsToCompanies = new Dictionary<string, CompanyFMP>()
             };
 
-            string nasdaqData = rm.GetFromUri(Companies.NasdaqSymbolsUri);
+            string nasdaqData = rm.GetFromUri(AssetAggregator.NasdaqSymbolsUri);
             string[] nasdaqDataLines = nasdaqData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             for (int i = 1; i < nasdaqDataLines.Length - 1; i++) //trim first and last row
             {
@@ -182,7 +182,7 @@ namespace PT.Middleware
                 }
             }
 
-            string otcMarketsData = rm.GetFromUri(Companies.OtcMarketsUri);
+            string otcMarketsData = rm.GetFromUri(AssetAggregator.OtcMarketsUri);
             string[] otcMarketsDataLines = otcMarketsData.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             for (int k = 1; k < otcMarketsDataLines.Length; k++) //trim first row
             {
