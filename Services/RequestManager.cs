@@ -98,12 +98,17 @@ namespace PT.Services
             //options.SetPreference("javascript.enabled", true);
             //options.SetPreference("network.http.accept.default", "application/json");
             //options.AddArgument("--headless=new");
+            //options.AddArgument("--disable-gpu");
+            //options.AddArgument("--window-size=1920,1080");
             //options.AddAdditionalOption("useAutomationExtension", false);
             //options.AddArgument("--disable-blink-features=AutomationControlled");
             //FirefoxDriver fDriver = new FirefoxDriver();
             ChromeDriver cDriver = new ChromeDriver();
             try
             {
+                // Clear navigator.webdriver
+                //((IJavaScriptExecutor)cDriver).ExecuteScript(
+                //    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
                 cDriver.Navigate().GoToUrl(uri);
 
                 // Find the <pre> tag in the body to get the JSON
