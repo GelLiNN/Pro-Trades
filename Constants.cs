@@ -64,7 +64,7 @@ namespace PT
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_HS1_MOD = CORE_BONUS * HALF - HALF;
         public const decimal CORE_HS2_MOD = HALF; // 0 or 0.5 default, handicapped mode 1
-        public const decimal CORE_HS3_MOD = CORE_BONUS - HALF; // CORE_BONUS - 1 default, handicapped mode CORE_BONUS - half
+        public const decimal CORE_HS3_MOD = CORE_BONUS - 1; // CORE_BONUS - 1 default, handicapped mode CORE_BONUS - half
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;

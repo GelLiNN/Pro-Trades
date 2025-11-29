@@ -37,10 +37,26 @@ namespace PT.Middleware
 
             try
             {
-                string responseString = rm.GetFromUri(TipRanksBaseUrl + "getData/" + symbol);
-                    //.GetAwaiter().GetResult();
+                TipRanksDataResponse? trResponse = rm.ScrapeFromTipRanksUri(TipRanksBaseUrl + "getData/" + symbol);
 
-                if (string.IsNullOrEmpty(responseString))
+                // OLD
+                //Dictionary<string, string> headers = new();
+                //headers.Add("Cookie", @"__cf_bm=3.Zb.tnW0m3kurXX1tnWG0vFPeOkGfxYiCWTKk9tVfA-1764367228-1.0.1.1-boj7o.sokeuUaSJAgtiTnUL1E3TF9ABmx03Wejjb3nrNxDHrH4eq91tDdJOpOWN1IfopanjjWn3CNUTZ_QjsDfCE1bMxST264IILOFhqVPQ; personal-message=none; tipranks-experiments=%7b%22Experiments%22%3a%5b%7b%22Name%22%3a%22general_A%22%2c%22Variant%22%3a%22v3%22%2c%22SendAnalytics%22%3afalse%7d%2c%7b%22Name%22%3a%22general_B%22%2c%22Variant%22%3a%22v3%22%2c%22SendAnalytics%22%3afalse%7d%2c%7b%22Name%22%3a%22general_C%22%2c%22Variant%22%3a%22v3%22%2c%22SendAnalytics%22%3afalse%7d%5d%7d; tipranks-experiments-slim=general_A%3av3%7cgeneral_B%3av3%7cgeneral_C%3av3; tr-experiments-version=1.14; tr-plan-id=0; tr-plan-name=free");
+                //headers.Add("Accept", @"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                //headers.Add("Accept-Encoding", @"gzip, deflate, br, zstd");
+                //headers.Add("Accept-Language", @"en-US,en;q=0.5");
+                //headers.Add("Connection", @"keep-alive");
+                //headers.Add("Host", @"www.tipranks.com");
+                //headers.Add("Priority", @"u=0, i");
+                //headers.Add("Sec-Fetch-Dest", @"document");
+                //headers.Add("Sec-Fetch-Mode", @"navigate");
+                //headers.Add("Sec-Fetch-Size", @"none");
+                //headers.Add("Sec-Fetch-User", @"?1");
+                //headers.Add("Upgrade-Insecure-Requests", @"1");
+                //headers.Add("User-Agent", @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.360");
+                //string responseStr = rm.GetFromUri(TipRanksBaseUrl + "getData/" + symbol, headers);
+
+                if (trResponse == null)
                 {
                     string msg = $"WARNING TipRanks.cs GetTipRanksResult Could not fetch API for symbol {symbol}";
                     Debug.WriteLine(msg);
@@ -65,108 +81,110 @@ namespace PT.Middleware
                         ErrorMessage = msg
                     };
                 }
-
-                TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseString);
-
-                // Filter results to the last 3 months
-                DateTime startDate = DateTime.Now.AddMonths(-3);
-                List<Insider> insiders = trResponse.insiders
-                    .Where(x => DateTime.Compare(x.rDate, startDate) > 0)
-                    .ToList();
-                List<BestConsensusOverTime> bsns = trResponse.bestConsensusOverTime
-                    .Where(x => DateTime.Compare(x.date, startDate) > 0)
-                    .ToList();
-                List<Expert> ratings = trResponse.experts
-                    .Where(x => DateTime.Compare(x.ratings.FirstOrDefault().date, startDate) > 0 && x.rankings.FirstOrDefault().stars > 0)
-                    .ToList();
-                List<HoldingsByTime> holdings = trResponse.hedgeFundData.holdingsByTime
-                    .Where(x => DateTime.Compare(x.date, startDate) > 0)
-                    .ToList();
-
-                // Other custom data extractions
-                string sector = string.IsNullOrWhiteSpace(trResponse.portfolioHoldingData.sectorId) ?
-                    "Not Found" : trResponse.portfolioHoldingData.sectorId;
-                string description = string.IsNullOrWhiteSpace(trResponse.description) ?
-                    "Not Found" : trResponse.description;
-
-                // Average hedge fund ratings will form score base
-                decimal averageRating = GetAverageRating(ratings, trResponse);
-                decimal ratingsBase = (averageRating / 6.5M) * 100; // Get score using the average rating as a percentage of (max rating + 1.5)
-
-                decimal bsnBonus = GetBsnBonus(bsns);
-
-                // Add price target bonus 5 if the target is more than 5% greater than last price
-                // Add price target bonus 10 if the target is more than 10% greater than last price
-                // Add price target bonus -10 if the target is less than last price
-                decimal priceTargetBonus = 0;
-                decimal priceTarget = 0;
-                decimal lastPrice = Convert.ToDecimal(trResponse.prices[trResponse.prices.Length - 1].p);
-                if (trResponse.portfolioHoldingData.bestPriceTarget != null)
-                {
-                    priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.bestPriceTarget);
-                }
-                else if (trResponse.portfolioHoldingData.priceTarget != null)
-                {
-                    priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.priceTarget);
-                }
-                else if (bsns.Count > 0)
-                {
-                    priceTarget = Convert.ToDecimal(bsns[bsns.Count - 1].priceTarget);
-                }
                 else
                 {
-                    var chicken = "nuggets"; // Find some other way to get price target
+                    // Filter results to the last 3 months
+                    DateTime startDate = DateTime.Now.AddMonths(-3);
+                    List<Insider> insiders = trResponse.insiders
+                        .Where(x => DateTime.Compare(x.rDate, startDate) > 0)
+                        .ToList();
+                    List<BestConsensusOverTime> bsns = trResponse.bestConsensusOverTime
+                        .Where(x => DateTime.Compare(x.date, startDate) > 0)
+                        .ToList();
+                    List<Expert> ratings = trResponse.experts
+                        .Where(x => DateTime.Compare(x.ratings.FirstOrDefault().date, startDate) > 0 && x.rankings.FirstOrDefault().stars > 0)
+                        .ToList();
+                    List<HoldingsByTime> holdings = trResponse.hedgeFundData.holdingsByTime
+                        .Where(x => DateTime.Compare(x.date, startDate) > 0)
+                        .ToList();
+
+                    // Other custom data extractions
+                    string sector = string.IsNullOrWhiteSpace(trResponse.portfolioHoldingData.sectorId) ?
+                        "Not Found" : trResponse.portfolioHoldingData.sectorId;
+                    string description = string.IsNullOrWhiteSpace(trResponse.description) ?
+                        "Not Found" : trResponse.description;
+
+                    // Average hedge fund ratings will form score base
+                    decimal averageRating = GetAverageRating(ratings, trResponse);
+                    decimal ratingsBase = (averageRating / 7.0M) * 100; // Get score using the average rating as a percentage of (max rating + 2)
+                    ratingsBase = Math.Min(ratingsBase, 55);
+                    ratingsBase += ratingsBase == 55 ? Constants.CORE_BONUS : 0;
+
+                    decimal bsnBonus = GetBsnBonus(bsns);
+
+                    // Add price target bonus 5 if the target is more than 5% greater than last price
+                    // Add price target bonus 10 if the target is more than 10% greater than last price
+                    // Add price target bonus -10 if the target is less than last price
+                    decimal priceTargetBonus = 0;
+                    decimal priceTarget = 0;
+                    decimal lastPrice = Convert.ToDecimal(trResponse.prices[trResponse.prices.Length - 1].p);
+                    if (trResponse.portfolioHoldingData.bestPriceTarget != null)
+                    {
+                        priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.bestPriceTarget);
+                    }
+                    else if (trResponse.portfolioHoldingData.priceTarget != null)
+                    {
+                        priceTarget = Convert.ToDecimal(trResponse.portfolioHoldingData.priceTarget);
+                    }
+                    else if (bsns.Count > 0)
+                    {
+                        priceTarget = Convert.ToDecimal(bsns[bsns.Count - 1].priceTarget);
+                    }
+                    else
+                    {
+                        var chicken = "nuggets"; // Find some other way to get price target
+                    }
+
+                    // Protect against failure to get price target
+                    if (priceTarget != 0)
+                    {
+                        // Formulate price target bonus
+                        decimal diff = priceTarget - lastPrice;
+                        decimal percentChange = (diff / Math.Abs(lastPrice)) * 100;
+                        priceTargetBonus += percentChange >= 5 ? 5 : 0;
+                        priceTargetBonus += percentChange >= 10 ? 5 + Math.Min(15, diff) : 0;
+                        priceTargetBonus += percentChange < 0 ? -15 : 0;
+                    }
+
+                    // Other bonuses for recent insider buy-ins, institutional holdings, and hedge funds
+                    decimal insiderBonus = GetInsiderBonus(insiders);
+                    decimal holdingBonus = GetHoldingBonus(holdings);
+                    decimal hedgeSentimentBonus = GetHedgeSentimentBonus(trResponse.hedgeFundData);
+
+                    decimal ratingsComposite = 0;
+                    ratingsComposite += ratingsBase;
+                    ratingsComposite += bsnBonus; // Add bsn bonus from above
+                    ratingsComposite += priceTargetBonus; // Add price target bonus from above
+                    ratingsComposite += insiderBonus; // Add insider bonus from above
+                    ratingsComposite += holdingBonus; // Add holding bonus from above
+                    ratingsComposite += hedgeSentimentBonus; // Add hedge sentiment bonus from above
+
+                    ratingsComposite = Math.Min(ratingsComposite, 100); // cap composite at 100, no extra weight
+                    ratingsComposite = Math.Max(ratingsComposite, 0); // limit composite at 0, no negatives
+
+                    return new HedgeFundsResult
+                    {
+                        Name = trResponse.companyFullName,
+                        Sector = sector.Substring(0, 1).ToUpper() + sector.Substring(1),
+                        Description = description,
+                        RatingsComposite = ratingsComposite,
+                        TipRanksScore = Convert.ToDecimal(trResponse.tipranksStockScore.score),
+                        RatingsBase = ratingsBase,
+                        InsiderBonus = insiderBonus,
+                        HoldingBonus = holdingBonus,
+                        HedgeSentimentBonus = hedgeSentimentBonus,
+                        HedgeBsnBonus = bsnBonus,
+                        PriceTarget = priceTarget,
+                        HedgeSentiment = Convert.ToDecimal(trResponse.hedgeFundData.sentiment),
+                        HedgeTrendAction = Convert.ToDecimal(trResponse.hedgeFundData.trendAction),
+                        HedgeTrendValue = Convert.ToDecimal(trResponse.hedgeFundData.trendValue),
+                        Insiders = insiders,
+                        Holdings = holdings,
+                        ThirdPartyRatings = ratings,
+                        ConsensusOverTime = bsns,
+                        ErrorMessage = string.Empty
+                    };
                 }
-                
-                // Protect against failure to get price target
-                if (priceTarget != 0)
-                {
-                    // Formulate price target bonus
-                    decimal diff = priceTarget - lastPrice;
-                    decimal percentChange = (diff / Math.Abs(lastPrice)) * 100;
-                    priceTargetBonus += percentChange >= 5 ? 5 : 0;
-                    priceTargetBonus += percentChange >= 10 ? 5 + Math.Min(20, diff) : 0;
-                    priceTargetBonus += percentChange < 0 ? -15 : 0;
-                }
-
-                // Other bonuses for recent insider buy-ins, institutional holdings, and hedge funds
-                decimal insiderBonus = GetInsiderBonus(insiders);
-                decimal holdingBonus = GetHoldingBonus(holdings);
-                decimal hedgeSentimentBonus = GetHedgeSentimentBonus(trResponse.hedgeFundData);
-
-                decimal ratingsComposite = 0;
-                ratingsComposite += ratingsBase;
-                ratingsComposite += bsnBonus; // Add bsn bonus from above
-                ratingsComposite += priceTargetBonus; // Add price target bonus from above
-                ratingsComposite += insiderBonus; // Add insider bonus from above
-                ratingsComposite += holdingBonus; // Add holding bonus from above
-                ratingsComposite += hedgeSentimentBonus; // Add hedge sentiment bonus from above
-
-                ratingsComposite = Math.Min(ratingsComposite, 100); // cap composite at 100, no extra weight
-                ratingsComposite = Math.Max(ratingsComposite, 0); // limit composite at 0, no negatives
-
-                return new HedgeFundsResult
-                {
-                    Name = trResponse.companyFullName,
-                    Sector = sector.Substring(0, 1).ToUpper() + sector.Substring(1),
-                    Description = description,
-                    RatingsComposite = ratingsComposite,
-                    TipRanksScore = Convert.ToDecimal(trResponse.tipranksStockScore.score),
-                    RatingsBase = ratingsBase,
-                    InsiderBonus = insiderBonus,
-                    HoldingBonus = holdingBonus,
-                    HedgeSentimentBonus = hedgeSentimentBonus,
-                    HedgeBsnBonus = bsnBonus,
-                    PriceTarget = priceTarget,
-                    HedgeSentiment = Convert.ToDecimal(trResponse.hedgeFundData.sentiment),
-                    HedgeTrendAction = Convert.ToDecimal(trResponse.hedgeFundData.trendAction),
-                    HedgeTrendValue = Convert.ToDecimal(trResponse.hedgeFundData.trendValue),
-                    Insiders = insiders,
-                    Holdings = holdings,
-                    ThirdPartyRatings = ratings,
-                    ConsensusOverTime = bsns,
-                    ErrorMessage = string.Empty
-                };
             }
             catch (Exception e)
             {

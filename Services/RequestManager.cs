@@ -1,6 +1,11 @@
-using System.Net;
-using System.Text;
 using Newtonsoft.Json;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Firefox;
+using PT.Models.RequestModels;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace PT.Services
 {
@@ -15,15 +20,35 @@ namespace PT.Services
         public HashSet<Guid> _concurrentRequests;
         public Dictionary<int, string> _errors;
         public HttpClient _client { get; private set; }
+        //public FirefoxDriver Driver { get; private set; }
 
         public RequestManager()
         {
+            // Custom stuff
             _errors = new Dictionary<int, string>();
             _concurrentRequests = new HashSet<Guid>();
+
+            // HttpClient initialization, optional handler with a cookie container
+            //var handler = new HttpClientHandler
+            //{
+            //    UseCookies = false
+            //};
             _client = new HttpClient();
-            
             int timeoutMins = Program.Config.GetValue<int>("Custom:WebRequestTimeoutMinutes");
             _client.Timeout = TimeSpan.FromMinutes(timeoutMins);
+
+            // Selenium ChromeDriver initialization
+            // Configure Chrome options
+            //var options = new ChromeOptions();
+            //options.AddArgument("--headless"); // Run in headless mode
+            //options.AddArgument("--disable-gpu"); // Recommended for Windows
+            //options.AddArgument("--window-size=1920,1080"); // Set a virtual window size
+            //options.AddArgument("--disable-blink-features=AutomationControlled");
+            //_driver = new ChromeDriver();
+
+            //var options = new FirefoxOptions();
+            //options.AddArgument("--headless");
+            //Driver = new FirefoxDriver(options);
         }
 
         /// <summary>
@@ -45,6 +70,7 @@ namespace PT.Services
                 {
                     request.Headers.Add(key, headers[key]);
                 }
+                //request.Headers.Referrer = new Uri("https://www.tipranks.com");
             }
 
             try
@@ -62,6 +88,38 @@ namespace PT.Services
                 _errors.Add(_errors.Count, err);
                 //_client.Dispose();
                 return string.Empty;
+            }
+        }
+
+        public TipRanksDataResponse? ScrapeFromTipRanksUri(string uri)
+        {
+            //var options = new FirefoxOptions();
+            //var options = new ChromeOptions();
+            //options.SetPreference("javascript.enabled", true);
+            //options.SetPreference("network.http.accept.default", "application/json");
+            //options.AddArgument("--headless=new");
+            //options.AddAdditionalOption("useAutomationExtension", false);
+            //options.AddArgument("--disable-blink-features=AutomationControlled");
+            //FirefoxDriver fDriver = new FirefoxDriver();
+            ChromeDriver cDriver = new ChromeDriver();
+            try
+            {
+                cDriver.Navigate().GoToUrl(uri);
+
+                // Find the <pre> tag in the body to get the JSON
+                string pageSrc = cDriver.PageSource;
+                var preElement = cDriver.FindElement(By.TagName("pre"));
+                string responseStr = preElement.Text;
+                cDriver.Close();
+                TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseStr);
+                return trResponse;
+            }
+            catch (Exception ex)
+            {
+                cDriver.Close();
+                string err = ex.Message;
+                _errors.Add(_errors.Count, err);
+                return null;
             }
         }
 
