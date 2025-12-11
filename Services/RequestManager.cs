@@ -54,16 +54,16 @@ namespace PT.Services
             //Driver = new FirefoxDriver(options);
 
             // Init hidden Chrome process first
-            var psi = new ProcessStartInfo
+            /*var psi = new ProcessStartInfo
             {
                 FileName = @"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
                 Arguments = @"--remote-debugging-port=9222 " +
                 @"--user-data-dir=C:\Temp\PlaywrightProfile " +
                 @"--disable-gpu --disable-software-rasterizer --disable-dev-shm-usage",
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
             };
-            Process.Start(psi);
+            Process.Start(psi);*/
         }
 
         /// <summary>
@@ -114,6 +114,8 @@ namespace PT.Services
             //options.SetPreference("network.http.accept.default", "application/json");
             //options.AddArgument("--headless=new");
             options.AddArgument("--disable-gpu");
+            options.AddArgument("--disable-software-rasterizer");
+            options.AddArgument("--disable-dev-shm-usage");
             options.AddArgument("--window-size=1,1");
             //options.AddAdditionalOption("useAutomationExtension", false);
             //options.AddArgument("--disable-blink-features=AutomationControlled");
