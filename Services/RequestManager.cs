@@ -1,13 +1,8 @@
-using Microsoft.Playwright;
 using Newtonsoft.Json;
 using OpenQA.Selenium;
-using OpenQA.Selenium.BiDi.Communication;
 using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.Firefox;
 using PT.Models.RequestModels;
-using System.Diagnostics;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Text;
 
 namespace PT.Services
@@ -23,7 +18,7 @@ namespace PT.Services
         public HashSet<Guid> _concurrentRequests;
         public Dictionary<int, string> _errors;
         public HttpClient _client { get; private set; }
-        //public FirefoxDriver Driver { get; private set; }
+        public ChromeDriver Driver { get; private set; }
 
         public RequestManager()
         {
@@ -40,30 +35,25 @@ namespace PT.Services
             int timeoutMins = Program.Config.GetValue<int>("Custom:WebRequestTimeoutMinutes");
             _client.Timeout = TimeSpan.FromMinutes(timeoutMins);
 
-            // Selenium ChromeDriver initialization
-            // Configure Chrome options
-            //var options = new ChromeOptions();
-            //options.AddArgument("--headless"); // Run in headless mode
-            //options.AddArgument("--disable-gpu"); // Recommended for Windows
-            //options.AddArgument("--window-size=1920,1080"); // Set a virtual window size
-            //options.AddArgument("--disable-blink-features=AutomationControlled");
-            //_driver = new ChromeDriver();
+            Driver = GetNewChromeDriver();
 
+            // Selenium FireFoxDriver initialization
             //var options = new FirefoxOptions();
-            //options.AddArgument("--headless");
-            //Driver = new FirefoxDriver(options);
+            //options.AddArgument("--disable-gpu");
+            //options.AddArgument("--width=100");
+            //options.AddArgument("--height=100");
+            //options.PageLoadStrategy = PageLoadStrategy.Eager;
+            //options.SetPreference("permissions.default.image", 2);
+            //options.SetPreference("browser.cache.disk.enable", false);
+            //options.SetPreference("browser.cache.memory.enable", false);
+            //options.SetPreference("dom.webnotifications.enabled", false);
+            //options.SetPreference("dom.push.enabled", false);
 
-            // Init hidden Chrome process first
-            /*var psi = new ProcessStartInfo
-            {
-                FileName = @"C:\Program Files\Google\Chrome\Application\chrome.exe",
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                Arguments = @"--remote-debugging-port=9222 " +
-                @"--user-data-dir=C:\Temp\PlaywrightProfile " +
-                @"--disable-gpu --disable-software-rasterizer --disable-dev-shm-usage",
-            };
-            Process.Start(psi);*/
+            //var fds = FirefoxDriverService.CreateDefaultService();
+            //Driver = new FirefoxDriver(options);
+            //var processId = fds.ProcessId;
+            //var process = Process.GetProcessById(processId);
+            //ShowWindow(process.MainWindowHandle, SW_MINIMIZE);
         }
 
         /// <summary>
@@ -85,7 +75,6 @@ namespace PT.Services
                 {
                     request.Headers.Add(key, headers[key]);
                 }
-                //request.Headers.Referrer = new Uri("https://www.tipranks.com");
             }
 
             try
@@ -103,138 +92,6 @@ namespace PT.Services
                 _errors.Add(_errors.Count, err);
                 //_client.Dispose();
                 return string.Empty;
-            }
-        }
-
-        public TipRanksDataResponse? ScrapeTipRanksUriSelenium(string uri)
-        {
-            //var options = new FirefoxOptions();
-            var options = new ChromeOptions();
-            //options.SetPreference("javascript.enabled", true);
-            //options.SetPreference("network.http.accept.default", "application/json");
-            //options.AddArgument("--headless=new");
-            options.AddArgument("--disable-gpu");
-            options.AddArgument("--disable-software-rasterizer");
-            options.AddArgument("--disable-dev-shm-usage");
-            options.AddArgument("--window-size=1,1");
-            //options.AddAdditionalOption("useAutomationExtension", false);
-            //options.AddArgument("--disable-blink-features=AutomationControlled");
-            //FirefoxDriver fDriver = new FirefoxDriver();
-            ChromeDriver cDriver = new ChromeDriver(options);
-            try
-            {
-                // Clear navigator.webdriver
-                //((IJavaScriptExecutor)cDriver).ExecuteScript(
-                //    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
-                cDriver.Navigate().GoToUrl(uri);
-                //cDriver.Manage().Window.Minimize();
-
-                // Find the <pre> tag in the body to get the JSON
-                string pageSrc = cDriver.PageSource;
-                var preElement = cDriver.FindElement(By.TagName("pre"));
-                string responseStr = preElement.Text;
-                cDriver.Close();
-                TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseStr);
-                return trResponse;
-            }
-            catch (Exception ex)
-            {
-                cDriver.Close();
-                string err = ex.Message;
-                _errors.Add(_errors.Count, err);
-                return null;
-            }
-        }
-
-        public TipRanksDataResponse? ScrapeTipRanksUriPlaywright1(string uri)
-        {
-            // Initialize Playwright
-            using var playwright = Playwright.CreateAsync().GetAwaiter().GetResult();
-
-            // Launch a headless Chromium browser
-            var browser = playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
-            {
-                Headless = false, // Set to false for debugging
-                Args = new[]
-                {
-                    "--disable-gpu",                       // disable GPU acceleration
-                    "--disable-software-rasterizer",       // disable software rasterizer
-                    "--disable-dev-shm-usage",             // avoid shared memory issues
-                    "--disable-extensions",                // disable extensions
-                    "--disable-background-networking",     // reduce background tasks
-                    "--disable-background-timer-throttling",
-                    "--disable-renderer-backgrounding",
-                    "--mute-audio"                         // disable audio
-                }
-                //SlowMo = 50 // Optional: slows actions for visibility
-            }).GetAwaiter().GetResult();
-            /*var browser = playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
-            {
-                Headless = true,
-                Args = new[] { "--headless=new" } // stealthier headless mode
-            }).GetAwaiter().GetResult();*/
-            try
-            {
-                // Create a new browser page
-                var page = browser.NewPageAsync().GetAwaiter().GetResult();
-                page.SetViewportSizeAsync(1, 1).GetAwaiter().GetResult();
-                // Navigate to target website
-                page.GotoAsync(uri).GetAwaiter().GetResult();
-                /*page.GotoAsync(uri, new PageGotoOptions
-                {
-                    WaitUntil = WaitUntilState.NetworkIdle,
-                    Timeout = 20000 // 20 seconds
-                }).GetAwaiter().GetResult();*/
-
-                // Extract page title
-                //string htmlContent = page.ContentAsync().GetAwaiter().GetResult();
-                string? jsonContent = page.TextContentAsync("pre").GetAwaiter().GetResult();
-                TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(jsonContent);
-                browser.DisposeAsync().GetAwaiter().GetResult();
-                return trResponse;
-            }
-            catch (Exception ex)
-            {
-                browser.DisposeAsync().GetAwaiter().GetResult();
-                string err = ex.Message;
-                _errors.Add(_errors.Count, err);
-                return null;
-            }
-        }
-
-        public TipRanksDataResponse? ScrapeTipRanksUriPlaywright2(string uri)
-        {
-            // Initialize Playwright
-            using var playwright = Playwright.CreateAsync().GetAwaiter().GetResult();
-
-            // Launch a headless Chromium browser
-            var browser = playwright.Chromium.ConnectOverCDPAsync("http://localhost:9222").GetAwaiter().GetResult();
-            try
-            {
-                // Create a new browser page
-                var page = browser.NewPageAsync().GetAwaiter().GetResult();
-                page.SetViewportSizeAsync(1, 1).GetAwaiter().GetResult();
-                // Navigate to target website
-                page.GotoAsync(uri).GetAwaiter().GetResult();
-                /*page.GotoAsync(uri, new PageGotoOptions
-                {
-                    WaitUntil = WaitUntilState.NetworkIdle,
-                    Timeout = 20000 // 20 seconds
-                }).GetAwaiter().GetResult();*/
-
-                // Extract page title
-                //string htmlContent = page.ContentAsync().GetAwaiter().GetResult();
-                string? jsonContent = page.TextContentAsync("pre").GetAwaiter().GetResult();
-                TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(jsonContent);
-                browser.DisposeAsync().GetAwaiter().GetResult();
-                return trResponse;
-            }
-            catch (Exception ex)
-            {
-                browser.DisposeAsync().GetAwaiter().GetResult();
-                string err = ex.Message;
-                _errors.Add(_errors.Count, err);
-                return null;
             }
         }
 
@@ -322,6 +179,48 @@ namespace PT.Services
                 responseString += "{ Exception: " + we.Message + ", StackTrace: " + we.StackTrace + "}";
             }
             return responseString;
+        }
+
+        public TipRanksDataResponse? ScrapeTipRanksUriSelenium(string uri)
+        {
+            try
+            {
+                Driver.Navigate().GoToUrl(uri);
+                string pageSrc = Driver.PageSource;
+
+                // Chrome: Find the <pre> tag in the body to get the JSON
+                var jsonElement = Driver.FindElement(By.TagName("pre"));
+
+                // Firefox: Find the div id 'json' to get 
+                //var jsonElement = Driver.FindElement(By.Id("json"));
+
+                string responseStr = jsonElement.Text;
+                //fDriver.Close();
+                TipRanksDataResponse trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseStr);
+                return trResponse;
+            }
+            catch (Exception ex)
+            {
+                //Driver.Close();
+                //Driver = GetNewChromeDriver();
+                string err = ex.Message;
+                _errors.Add(_errors.Count, err);
+                return null;
+            }
+        }
+
+        private ChromeDriver GetNewChromeDriver()
+        {
+            // Selenium ChromeDriver initialization
+            var options = new ChromeOptions();
+            //options.SetPreference("javascript.enabled", true);
+            //options.SetPreference("network.http.accept.default", "application/json");
+            //options.AddArgument("--headless=new");
+            options.AddArgument("--disable-gpu");
+            options.AddArgument("--disable-software-rasterizer");
+            options.AddArgument("--disable-dev-shm-usage");
+            options.AddArgument("--window-size=1,1");
+            return new ChromeDriver(options);
         }
     }
 }

@@ -38,7 +38,6 @@ namespace PT.Middleware
             try
             {
                 TipRanksDataResponse? trResponse = rm.ScrapeTipRanksUriSelenium(TipRanksBaseUrl + "getData/" + symbol);
-                //TipRanksDataResponse? trResponse = rm.ScrapeTipRanksUriPlaywright2(TipRanksBaseUrl + "getData/" + symbol);
 
                 // OLD
                 //Dictionary<string, string> headers = new();
