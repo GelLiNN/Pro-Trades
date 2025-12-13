@@ -1,10 +1,10 @@
 using PT.Models.CoreModels;
 using PT.Models.RequestModels;
 using PT.Services;
-using static PT.Core.Maths;
 using Skender.Stock.Indicators;
 using System.Diagnostics;
 using YahooQuotesApi;
+using static PT.Core.Maths;
 
 namespace PT.Middleware
 {
@@ -70,7 +70,8 @@ namespace PT.Middleware
             var paramType = GetParameterType(finalResult.hs);
 
             // Price targets for buy, sell, and short
-            decimal buyTarget = HistoryHelper.GetPriceBuyTarget(ptHistory);
+            decimal priceLast = quote?.PostMarketPrice ?? quote?.RegularMarketPrice ?? ptHistory.TodayClose;
+            decimal buyTarget = HistoryHelper.GetPriceBuyTarget(ptHistory, priceLast);
             HistoryHelper.ComputePriceSellTargets(fundResult, ptHistory);
             List<PTPriceTarget> priceTargets = ptHistory.PriceTargets.OrderByDescending(x => x.TargetPrice).ToList();
 
@@ -108,12 +109,15 @@ namespace PT.Middleware
                 PriceOpen = ptHistory.TodayOpen.ToString("C2"),
                 PriceClose = ptHistory.TodayClose.ToString("C2"),
                 PriceVwap = ptHistory.PriceHistory[0].PriceVwap.ToString("C2"),
+                PriceLast = priceLast.ToString("C2"),
                 PriceBuyTarget = buyTarget.ToString("C2"),
                 PriceSellTarget = ptHistory.PriceTargetProLong.ToString("C2"),
                 PriceSellTargetShort = ptHistory.PriceTargetProShort.ToString("C2"),
                 PriceTargetHedgeFunds = hfResult.PriceTarget.ToString("C2"),
-                PriceHistoryDays = history.Count(),
-                PercentDiffFromBookValue = fundResult.PercentDiffFromBookValue,
+                PriceFairValue = fundResult.FairValuePrice.ToString("C2"),
+                RPriceToEarnings = fundResult.AveragePE,
+                RPriceToBook = fundResult.PriceToBook,
+                GRUHistoryDays = history.Count(),
                 ADXComposite = adxCompositeScore,
                 OBVComposite = obvCompositeScore,
                 AROONComposite = aroonCompositeScore,
@@ -131,11 +135,19 @@ namespace PT.Middleware
                 HedgeFunds = hfResult,
                 DataProviders = "YahooFinance, Alpaca, FINRA, TipRanks"
             };
-            decimal priceLast = quote?.PostMarketPrice ?? quote?.RegularMarketPrice ?? ptHistory.TodayClose;
-            scoreResult.PriceLast = priceLast.ToString("C2");
             scoreResult.PriceRedGreen = priceLast >= ptHistory.TodayOpen ?
                 Constants.DEFAULT_GREEN : Constants.DEFAULT_RED;
-            scoreResult.HasQualifiedVolume = ptHistory.HasQualifiedVolume;
+            scoreResult.QualifiedVolume = ptHistory.QualifiedVolume;
+
+            decimal postCompositeMod = 0;
+            postCompositeMod += scoreResult.Fundamentals.BookValuePrice <= 0 &&
+                scoreResult.RPriceToBook <= 0 && scoreResult.RPriceToEarnings <= 0 ? Constants.CORE_PENALTY - 1 : 0;
+            postCompositeMod += scoreResult.Fundamentals.BookValuePrice > 0 &&
+                (scoreResult.Fundamentals.PriceToFairValue > 0 && scoreResult.Fundamentals.PriceToFairValue < 2.0M) &&
+                (scoreResult.RPriceToBook > 0 && scoreResult.RPriceToBook < 2.5M) &&
+                (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? Constants.HALF : 0;
+            scoreResult.CompositeScoreValue += postCompositeMod;
+
             scoreResult.CompositeScoreRank = GetCompositeScoreRank(scoreResult);
 
             long coreStopMs = sw.ElapsedMilliseconds;
@@ -187,7 +199,7 @@ namespace PT.Middleware
         private static bool IsDisqualifiedPrediction(CompositeScoreResult scoreResult)
         {
             return
-                (!scoreResult.HasQualifiedVolume ||
+                (!scoreResult.QualifiedVolume ||
                 (Convert.ToDecimal(scoreResult.PriceLast.Substring(1)) < Constants.DEFAULT_PENNY_PRICE_D_LIMIT ||
                 Convert.ToDecimal(scoreResult.PriceVwap.Substring(1)) < Constants.DEFAULT_PENNY_PRICE_D_LIMIT));
         }
@@ -458,7 +470,6 @@ namespace PT.Middleware
                         //https://www.investopedia.com/investing/timing-trades-with-commodity-channel-index/
                         //https://www.alphavantage.co/query?function=CCI&symbol=MSFT&interval=daily&time_period=10&apikey=
                         break;
-
                 }
             }
             catch (Exception e)
@@ -496,13 +507,15 @@ namespace PT.Middleware
                 decimal epsTrailing = 0;
                 decimal epsCurrentYear = 0;
                 decimal epsForward = 0;
-                decimal priceToBook = 1;
+                decimal priceToBook = 0;
                 decimal bookValue = 0;
                 decimal marketCap = 0;
                 decimal sharesOutstanding = -1;
                 decimal divRate = 0;
                 decimal divYield = 0;
                 decimal postMarketPrice = 0;
+                decimal fiftyTwoWeekLow = 0;
+                decimal fiftyTwoWeekHigh = 0;
                 decimal netAssets = -1; // TODO: use to boost HS5
                 decimal netExpenseRatio = 1;// TODO: use to boost HS5
                 DateTime? nextEarningsDate = null;
@@ -515,7 +528,6 @@ namespace PT.Middleware
                 {
                     if (quote != null)
                     {
-                        //bookvalue, marketcap, postmarketprice
                         peTrailing = Convert.ToDecimal(quote.TrailingPE);
                         peTrailing = peTrailing == 0 ? Convert.ToDecimal(quote.PriceEpsCurrentYear) : peTrailing;
                         peForward = Convert.ToDecimal(quote.ForwardPE);
@@ -532,6 +544,8 @@ namespace PT.Middleware
                         netAssets = Convert.ToDecimal(quote.NetAssets);
                         netExpenseRatio = Convert.ToDecimal(quote.NetExpenseRatio);
                         postMarketPrice = quote.PostMarketPrice;
+                        fiftyTwoWeekLow = quote.FiftyTwoWeekLow;
+                        fiftyTwoWeekHigh = quote.FiftyTwoWeekHigh;
                         nextEarningsDate = quote.EarningsTimestampStart.ToDateTimeUtc();
                         prevEarningsDate = quote.EarningsTimestamp.ToDateTimeUtc();
                         assetName = !string.IsNullOrWhiteSpace(quote.LongName) ? quote.LongName : quote.ShortName;
@@ -546,8 +560,10 @@ namespace PT.Middleware
                 // Get stats for PTHistory
                 history.TodayPostMarket = postMarketPrice > 0 ? postMarketPrice : history.TodayClose;
 
-                // Get base value starting with 1Mil USD bonus
+                // Get base value starting with 1Mil USD bonus and VWAP slope bonus
                 decimal baseValue = history.TodayVolUsd >= Constants.MILLION ? Constants.CORE_BONUS : 0;
+                baseValue += vwapSlope > 0.33M ? Constants.CORE_BONUS : 0;
+
                 decimal bookValuePrice = 0;
                 decimal bookValuePriceDiffPercent = 0;
                 if (priceToBook > 0 && history.TodayVwap > 0)
@@ -555,7 +571,7 @@ namespace PT.Middleware
                     // Get base value as gated function of price-to-book percentage diff
                     bookValuePrice = history.TodayVwap * (1 / priceToBook);
                     bookValuePriceDiffPercent = GetPercentDiff(history.TodayVwap, bookValuePrice);
-                    baseValue = bookValuePriceDiffPercent > 0 ? bookValuePriceDiffPercent : 0;
+                    baseValue += bookValuePriceDiffPercent > 0 ? bookValuePriceDiffPercent : 0;
                     if (baseValue >= 0)
                     {
                         baseValue = Constants.CORE_BONUS - 1; // base undervalued bonus
@@ -568,13 +584,11 @@ namespace PT.Middleware
                     {
                         baseValue += Constants.CORE_BONUS * Constants.HALF; // less than 10% overvalued bonus
                     }
-                    if (priceToBook <= 2.5M)
+                    if (priceToBook <= 2.5M) // PB less than 2.5 Bonus
                     {
                         baseValue += Constants.CORE_BONUS;
                     }
                 }
-                // Supplement base value with VWAP slope bonus
-                baseValue += vwapSlope > 0.33M ? Constants.CORE_BONUS : 0;
                 if (baseValue < Constants.CORE_BONUS)
                 {
                     baseValue = Constants.CORE_BONUS;
@@ -599,28 +613,30 @@ namespace PT.Middleware
                     decimal avgPrice10d = history.AveragePrice10Day;
                     if (avgPrice10d < fairValuePrice)
                     {
-                        fairValuePriceBonus = 2 * Constants.CORE_BONUS;
+                        fairValuePriceBonus = Constants.CORE_BONUS + 1;
                     }
                     else if (avgPrice10d / fairValuePrice <= 3)
                     {
-                        fairValuePriceBonus = Constants.CORE_BONUS;
+                        fairValuePriceBonus = Constants.CORE_BONUS - Constants.HALF;
                     }
                     else if (avgPrice10d / fairValuePrice <= 7)
                     {
-                        fairValuePriceBonus = Constants.CORE_BONUS * Constants.HALF;
+                        fairValuePriceBonus = Constants.CORE_BONUS * Constants.HALF - Constants.HALF;
                     }
                 }
 
                 // Calculate figures for EPS bonus and PE bonus
                 decimal averageEPS = 0.0M, growthEPS = 0.0M, averagePE = 0.0M, growthPE = 0.0M;
-                averageEPS = (epsForward + epsTrailing + epsCurrentYear) / 3;
+                averageEPS = epsForward > 0 ? (epsForward + epsTrailing + epsCurrentYear) / 3 : (epsTrailing + epsCurrentYear) / 2;
+                epsForward = epsForward == 0 ? epsCurrentYear - (Math.Abs(epsCurrentYear) * .02M) : epsForward;
                 growthEPS = epsForward - epsTrailing;
 
-                averagePE = (peForward + peTrailing) / 2;
+                averagePE = peForward > 0 ? (peForward + peTrailing) / 2 : peTrailing;
+                peForward = peForward == 0 ? peTrailing - (Math.Abs(peTrailing) * .02M) : peTrailing;
                 growthPE = peForward - peTrailing;
 
                 // Get EPS activity modifier
-                decimal epsModifier = CalcEPSModifier(averageEPS, growthEPS);
+                decimal epsModifier = CalcEPSModifier(averageEPS, growthEPS, epsTrailing);
 
                 // Get PE ratio activity modifier
                 decimal peModifier = CalcPEModifier(averagePE, growthPE);
@@ -644,7 +660,7 @@ namespace PT.Middleware
                     && history.AverageVolUsd10Day > (history.AverageVolUsd30Day + Constants.THIRTY_THOUSAND);
                 if (hasGoldenPath)
                 {
-                    goldenPathBonus += Constants.CORE_BONUS * 2 + 1;
+                    goldenPathBonus += Constants.CORE_BONUS * 2;
                 }
 
                 // Get normalized price slope and volume slope bonus
@@ -677,7 +693,17 @@ namespace PT.Middleware
                 composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives
 
-                decimal volUsdAvg = (history.TodayVolUsd + history.AverageVolUsd10Day + history.AverageVolUsd30Day) / 3.0M;
+                // Custom fair value after GRU comp
+                decimal customFairValue = CalcCustomFairValue(history.TodayVwap, fairValuePrice, bookValuePrice,
+                    fiftyTwoWeekLow, averagePE, epsTrailing, composite);
+                decimal priceToFairValue = history.TodayVwap / customFairValue;
+
+                // Final GRU gates
+                composite += composite > 60 && priceToFairValue > 5 ? Constants.CORE_PENALTY * 2 : 0;
+                composite += composite > 60 && priceToFairValue > 10 ? Constants.CORE_PENALTY : 0;
+                composite += composite < 80 && priceToBook < 2.5M && priceToFairValue < 2.0M ? Constants.CORE_BONUS * 2 : 0;
+
+                decimal volUsdAvg = (history.TodayVolUsd + history.AverageVolUsd10Day + history.AverageVolUsd30Day) / Constants.THREE;
                 bool hasDivs = divRate > 0 && divYield > 0;
 
                 return new FundamentalsResult
@@ -685,13 +711,17 @@ namespace PT.Middleware
                     AssetName = assetName ?? "Not Found",
                     AssetType = assetType ?? "Not Found",
                     FundamentalsComposite = composite,
-                    HasBullishSMA = history.HasBullishSMA,
-                    HasBearishSMA = history.HasBearishSMA,
+                    IsBullishSMA = history.IsBullishSMA,
+                    IsBearishSMA = history.IsBearishSMA,
+                    IsAboveSMABand = history.IsAboveSMABand,
+                    IsBelowSMABand = history.IsBelowSMABand,
                     HasDividends = hasDivs,
                     HasGoldenPath = hasGoldenPath,
                     MarketCap = marketCap > 0 ? marketCap : sharesOutstanding * history.TodayVwap,
                     PriceToBook = priceToBook,
                     PriceToEarnings = peTrailing,
+                    PriceToFairValue = priceToFairValue,
+                    EarningsPerShare = epsTrailing,
                     NextEarningsDate = nextEarningsDate,
                     PrevEarningsDate = prevEarningsDate,
                     AveragePrice100Day = history.AveragePrice100Day,
@@ -706,9 +736,8 @@ namespace PT.Middleware
                     VolumeSlope = volumeSlope,
                     PriceSlope = priceSlope,
                     VwapSlope = vwapSlope,
-                    FairValuePrice = fairValuePrice,
                     BookValuePrice = bookValuePrice,
-                    PercentDiffFromBookValue = -1 * bookValuePriceDiffPercent,
+                    FairValuePrice = customFairValue,
                     AverageEPS = averageEPS,
                     AveragePE = averagePE,
                     GrowthEPS = growthEPS,
@@ -725,8 +754,10 @@ namespace PT.Middleware
                 return new FundamentalsResult
                 {
                     FundamentalsComposite = Constants.CORE_INVALID_COMP,
-                    HasBullishSMA = false,
-                    HasBearishSMA = false,
+                    IsBullishSMA = false,
+                    IsBearishSMA = false,
+                    IsAboveSMABand = false,
+                    IsBelowSMABand = false,
                     HasDividends = false,
                     HasGoldenPath = false,
                     DollarVolumeToday = 0.0M,
@@ -1569,11 +1600,17 @@ namespace PT.Middleware
             return source.Skip(Math.Max(0, source.Count() - N));
         }
 
-        public static decimal CalcEPSModifier(decimal averageEPS, decimal growthEPS)
+        public static decimal CalcEPSModifier(decimal averageEPS, decimal growthEPS, decimal trailingEps)
         {
             decimal epsModifier = 0;
 
-            //If everything is negative return base
+            // trailingEPS base
+            if (trailingEps > 0)
+            {
+                epsModifier += Constants.CORE_BONUS * 2 - 1;
+            }
+
+            //If calculating figures negative return base
             if (averageEPS <= 0 && growthEPS <= 0)
             {
                 return epsModifier;
@@ -1734,7 +1771,7 @@ namespace PT.Middleware
                     divBonus += (Constants.HALF * divYield) + Constants.CORE_BONUS;
                 }
             }
-            return Math.Min(divBonus, 25);
+            return Math.Min(divBonus, 20);
         }
 
         private static decimal CalcSmaModifier(PTHistory history)
@@ -1742,17 +1779,25 @@ namespace PT.Middleware
             decimal smaModifier = 0;
 
             // General bullish or bearish
-            if (history.HasBullishSMA)
+            if (history.IsBullishSMA)
             {
-                smaModifier += Constants.CORE_BONUS * 2 + 1;
+                smaModifier += Constants.CORE_BONUS + 1;
             }
-            else if (history.HasBearishSMA)
+            else if (history.IsBearishSMA)
             {
-                smaModifier += Constants.CORE_PENALTY * 2;
+                smaModifier += Constants.CORE_PENALTY - 1;
+            }
+            if (history.IsAboveSMABand)
+            {
+                smaModifier += Constants.CORE_BONUS + 1;
+            }
+            else if (history.IsBelowSMABand)
+            {
+                smaModifier += Constants.CORE_PENALTY;
             }
 
-            // Bonus if current price is close enough to 100d SMA for likely rebound
-            var percentDiff = GetPercentDiff(history.AveragePrice100Day, history.TodayVwap);
+                // Bonus if current price is close enough to 100d SMA for likely rebound
+                var percentDiff = GetPercentDiff(history.AveragePrice100Day, history.TodayVwap);
             if (-7 <= Math.Abs(percentDiff) && Math.Abs(percentDiff) <= 7)
             {
                 smaModifier += Constants.CORE_BONUS + (7 - Math.Abs(percentDiff));
@@ -1816,6 +1861,47 @@ namespace PT.Middleware
                 volumeTrendingModifier += Constants.CORE_PENALTY * 3;
             }
             return volumeTrendingModifier;
+        }
+
+        private static decimal CalcCustomFairValue(decimal tvwp, decimal fvp, decimal bvp, decimal ftlp, decimal ape, decimal epst, decimal fcs)
+        {
+            // Custom fair value
+            decimal customFairValue = 0;
+            decimal customFairValueCount = 0;
+            bool shouldUseBookValue = fvp != 0 || bvp != 0;
+            if (shouldUseBookValue)
+            {
+                if (fvp != 0)
+                {
+                    customFairValue += fvp;
+                    customFairValueCount++;
+                }
+                if (bvp != 0)
+                {
+                    customFairValue += bvp;
+                    customFairValueCount++;
+                }
+            }
+            else
+            {
+                if (ftlp != 0)
+                {
+                    customFairValue += ftlp;
+                    customFairValueCount++;
+                }
+                if (ape > 0)
+                {
+                    customFairValue = tvwp / (ape / Constants.FIVE);
+                    customFairValue += epst > 0 ? customFairValue * Constants.THIRD + epst : 0;
+                    customFairValueCount++;
+                }
+            }
+
+            customFairValue = customFairValue / customFairValueCount;
+            customFairValue += fcs >= 75 ? customFairValue * Constants.THIRD :
+                fcs >= 60 ? customFairValue * Constants.FIFTH : customFairValue * 0.1M;
+
+            return customFairValue;
         }
 
         private static decimal CalcTimeScaledBuySignalBonus(bool hasBuySignal, decimal bonus, int daysSinceSignal)

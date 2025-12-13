@@ -12,7 +12,6 @@ namespace PT.Models.RequestModels
         public string CompositeScoreRank { get; set; }
         public decimal CompositeScoreValue { get; set; }
         public string CompositeScoreNotes { get; set; }
-        public bool HasQualifiedVolume { get; set; }
         public string PriceOpen { get; set; }
         public string PriceClose { get; set; }
         public string PriceLast { get; set; }
@@ -22,8 +21,10 @@ namespace PT.Models.RequestModels
         public string PriceSellTarget { get; set; }
         public string PriceSellTargetShort { get; set; }
         public string PriceTargetHedgeFunds { get; set; }
-        public decimal PercentDiffFromBookValue { get; set; }
-        public int PriceHistoryDays { get; set; }
+        public string PriceFairValue { get; set; }
+        public decimal RPriceToEarnings { get; set; }
+        public decimal RPriceToBook { get; set; }
+        public int GRUHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
         public decimal OBVComposite { get; set; }
         public decimal AROONComposite { get; set; }
@@ -33,14 +34,15 @@ namespace PT.Models.RequestModels
         public decimal ShortInterestComposite { get; set; }
         public decimal FundamentalsComposite { get; set; }
         public long TotalTimeMS { get; set; }
+        public DateTime ScoreDate { get; set; }
+        public string? ParameterSet { get; set; }
+        public string? AssetDescription { get; set; }
+        public bool QualifiedVolume { get; set; }
         public long AlpacaTimeMS { get; set; }
         public long YahooTimeMS { get; set; }
         public long FinraTimeMS { get; set; }
         public long TipRanksTimeMS { get; set; }
         public long CoreTimeMS { get; set; }
-        public DateTime ScoreDate { get; set; }
-        public string? ParameterSet { get; set; }
-        public string? AssetDescription { get; set; }
         //public ParameterSetType ParameterSet { get; set; }
         public List<PTPriceTarget> PriceTargets { get; set; }
         public ShortInterestResult ShortInterest { get; set; }
@@ -115,13 +117,17 @@ namespace PT.Models.RequestModels
         public string AssetName { get; set; }
         public string AssetType { get; set; }
         public decimal FundamentalsComposite { get; set; }
-        public bool HasBullishSMA { get; set; }
-        public bool HasBearishSMA { get; set; }
+        public bool IsBullishSMA { get; set; }
+        public bool IsBearishSMA { get; set; }
+        public bool IsAboveSMABand { get; set; }
+        public bool IsBelowSMABand { get; set; }
         public bool HasGoldenPath { get; set; }
         public bool HasDividends { get; set; }
         public decimal MarketCap { get; set; }
         public decimal PriceToBook { get; set; }
         public decimal PriceToEarnings { get; set; }
+        public decimal PriceToFairValue { get; set; }
+        public decimal EarningsPerShare { get; set; }
         public DateTime? NextEarningsDate { get; set; }
         public DateTime? PrevEarningsDate { get; set; }
         public decimal AveragePrice100Day { get; set; }
@@ -136,9 +142,8 @@ namespace PT.Models.RequestModels
         public decimal VolumeSlope { get; set; }
         public decimal PriceSlope { get; set; }
         public decimal VwapSlope { get; set; }
-        public decimal FairValuePrice { get; set; }
         public decimal BookValuePrice { get; set; }
-        public decimal PercentDiffFromBookValue { get; set; }
+        public decimal FairValuePrice { get; set; }
         public decimal AverageEPS { get; set; }
         public decimal AveragePE { get; set; }
         public decimal GrowthEPS { get; set; }

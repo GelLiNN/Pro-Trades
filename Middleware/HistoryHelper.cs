@@ -132,13 +132,13 @@ namespace PT.Middleware
                 }
 
                 // Get Volume USD qualifying results
-                ptHistory.Has30DayQualifiedVolume = last10PassCount >= Constants.DEFAULT_MIN_PASS_10D_LIMIT;
-                ptHistory.Has10DayQualifiedVolume = last30PassCount >= Constants.DEFAULT_MIN_PASS_30D_LIMIT;
-                ptHistory.Has1DayQualifiedVolume = usdVolumeQualified1d;
+                ptHistory.QualifiedVolume30Day = last10PassCount >= Constants.DEFAULT_MIN_PASS_10D_LIMIT;
+                ptHistory.QualifiedVolume10Day = last30PassCount >= Constants.DEFAULT_MIN_PASS_30D_LIMIT;
+                ptHistory.QualifiedVolumeToday = usdVolumeQualified1d;
 
                 // Find out if this asset is volume disqualified
-                ptHistory.HasQualifiedVolume = ptHistory.Has1DayQualifiedVolume &&
-                    ptHistory.Has10DayQualifiedVolume && ptHistory.Has30DayQualifiedVolume;
+                ptHistory.QualifiedVolume = ptHistory.QualifiedVolumeToday &&
+                    ptHistory.QualifiedVolume10Day && ptHistory.QualifiedVolume30Day;
 
                 // Compute final averages and figures for 100d, 50d, 30d, 20d, 10d
                 avgPrice100d = avgPrice100d / Constants.HUNDRED;
@@ -165,11 +165,21 @@ namespace PT.Middleware
                 // Get Bullish or Bearish SMA activity
                 if (ptHistory.AveragePrice20Day > ptHistory.AveragePrice50Day + (ptHistory.AveragePrice50Day * .005M))
                 {
-                    ptHistory.HasBullishSMA = true;
+                    ptHistory.IsBullishSMA = true;
                 }
                 if (ptHistory.AveragePrice20Day < ptHistory.AveragePrice50Day - (ptHistory.AveragePrice50Day * .01M))
                 {
-                    ptHistory.HasBearishSMA = true;
+                    ptHistory.IsBearishSMA = true;
+                }
+                if (ptHistory.TodayVwap > ptHistory.AveragePrice50Day + (ptHistory.AveragePrice50Day * .005M) &&
+                    ptHistory.TodayVwap > ptHistory.AveragePrice20Day + (ptHistory.AveragePrice20Day * .005M))
+                {
+                    ptHistory.IsAboveSMABand = true;
+                }
+                if (ptHistory.TodayVwap < ptHistory.AveragePrice50Day - (ptHistory.AveragePrice50Day * .01M) &&
+                    ptHistory.TodayVwap < ptHistory.AveragePrice20Day - (ptHistory.AveragePrice20Day * .01M))
+                {
+                    ptHistory.IsBelowSMABand = true;
                 }
 
                 // Make X and Y Lists
@@ -278,11 +288,16 @@ namespace PT.Middleware
             return backtestingSupportedTarget;
         }
 
-        public static decimal GetPriceBuyTarget(PTHistory history)
+        public static decimal GetPriceBuyTarget(PTHistory history, decimal priceLast)
         {
             PTDay yDay = history.PriceHistory[1];
             PTDay tDay = history.PriceHistory[0];
-            return (yDay.PriceVwap + yDay.PriceCandleMean + tDay.PriceLow + yDay.PriceLow) / 4.0M;
+            decimal buyTargetOld = (yDay.PriceVwap + yDay.PriceCandleMean + tDay.PriceLow + yDay.PriceLow) / 4.0M;
+
+            priceLast = priceLast - (priceLast * 0.005M);
+            decimal buyTargetNew = (tDay.PriceLow + tDay.PriceVwap + priceLast) / 3.0M;
+            buyTargetNew = Math.Min(priceLast, buyTargetNew);
+            return buyTargetNew;
         }
 
         public static void ComputePriceSellTargets(FundamentalsResult fundResult, PTHistory history)

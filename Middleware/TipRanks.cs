@@ -106,9 +106,9 @@ namespace PT.Middleware
 
                     // Average hedge fund ratings will form score base
                     decimal averageRating = GetAverageRating(ratings, trResponse);
-                    decimal ratingsBase = (averageRating / 7.0M) * 100; // Get score using the average rating as a percentage of (max rating + 2)
-                    ratingsBase = Math.Min(ratingsBase, 55);
-                    ratingsBase += ratingsBase == 55 ? Constants.CORE_BONUS : 0;
+                    decimal ratingsBase = (averageRating / 8.0M) * 100; // Get score using the average rating as a percentage of (max rating + 3)
+                    ratingsBase = Math.Min(ratingsBase, 50);
+                    ratingsBase += ratingsBase == 50 ? Constants.CORE_BONUS : 0;
 
                     decimal bsnBonus = GetBsnBonus(bsns);
 

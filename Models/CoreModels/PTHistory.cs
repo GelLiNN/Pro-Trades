@@ -95,12 +95,16 @@ namespace PT.Models.CoreModels
         public decimal TodayVolUsd { get; set; }
 
         // Track specific counts of volume USD going below threshold
-        public bool Has30DayQualifiedVolume { get; set; }
-        public bool Has10DayQualifiedVolume { get; set; }
-        public bool Has1DayQualifiedVolume { get; set; }
-        public bool HasQualifiedVolume { get; set; }
-        public bool HasBullishSMA { get; set; }
-        public bool HasBearishSMA { get; set; }
+        public bool QualifiedVolume30Day { get; set; }
+        public bool QualifiedVolume10Day { get; set; }
+        public bool QualifiedVolumeToday { get; set; }
+        public bool QualifiedVolume { get; set; }
+
+        // Track SMA support structure
+        public bool IsBullishSMA { get; set; }
+        public bool IsBearishSMA { get; set; }
+        public bool IsAboveSMABand { get; set; }
+        public bool IsBelowSMABand { get; set; }
 
         /// <summary>
         /// Contructor Required
@@ -119,12 +123,12 @@ namespace PT.Models.CoreModels
             Volume10YList = new List<decimal>();
             PriceTargets = new List<PTPriceTarget>();
 
-            Has30DayQualifiedVolume = false;
-            Has10DayQualifiedVolume = false;
-            Has1DayQualifiedVolume = false;
-            HasQualifiedVolume = false;
-            HasBullishSMA = false;
-            HasBearishSMA = false;
+            QualifiedVolume30Day = false;
+            QualifiedVolume10Day = false;
+            QualifiedVolumeToday = false;
+            QualifiedVolume = false;
+            IsBullishSMA = false;
+            IsBearishSMA = false;
 
             HighestHigh30Day = 0;
             LowestLow30Day = 0;
