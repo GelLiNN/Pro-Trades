@@ -139,13 +139,16 @@ namespace PT.Middleware
                 Constants.DEFAULT_GREEN : Constants.DEFAULT_RED;
             scoreResult.QualifiedVolume = ptHistory.QualifiedVolume;
 
-            decimal postCompositeMod = 0;
-            postCompositeMod += scoreResult.Fundamentals.BookValuePrice <= 0 &&
-                scoreResult.RPriceToBook <= 0 && scoreResult.RPriceToEarnings <= 0 ? Constants.CORE_PENALTY - 1 : 0;
-            postCompositeMod += scoreResult.Fundamentals.BookValuePrice > 0 &&
-                (scoreResult.Fundamentals.PriceToFairValue > 0 && scoreResult.Fundamentals.PriceToFairValue < 2.0M) &&
-                (scoreResult.RPriceToBook > 0 && scoreResult.RPriceToBook < 2.5M) &&
-                (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? Constants.HALF : 0;
+            decimal postCompositeMod = 0; // Only if HS1, HS2, HS3
+            if (paramType.Type == Constants.HS1 || paramType.Type == Constants.HS2 || paramType.Type == Constants.HS3)
+            {
+                postCompositeMod += scoreResult.Fundamentals.BookValuePrice <= 0 &&
+                    scoreResult.RPriceToBook <= 0 && scoreResult.RPriceToEarnings <= 0 ? Constants.CORE_PENALTY - 1 : 0;
+                postCompositeMod += scoreResult.Fundamentals.BookValuePrice > 0 &&
+                    (scoreResult.Fundamentals.PriceToFairValue > 0 && scoreResult.Fundamentals.PriceToFairValue < 2.0M) &&
+                    (scoreResult.RPriceToBook > 0 && scoreResult.RPriceToBook < 2.5M) &&
+                    (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? Constants.HALF : 0;
+            }
             scoreResult.CompositeScoreValue += postCompositeMod;
 
             scoreResult.CompositeScoreRank = GetCompositeScoreRank(scoreResult);
@@ -660,7 +663,7 @@ namespace PT.Middleware
                     && history.AverageVolUsd10Day > (history.AverageVolUsd30Day + Constants.THIRTY_THOUSAND);
                 if (hasGoldenPath)
                 {
-                    goldenPathBonus += Constants.CORE_BONUS * 2;
+                    goldenPathBonus += Constants.CORE_BONUS * 2 - 1;
                 }
 
                 // Get normalized price slope and volume slope bonus
@@ -681,12 +684,12 @@ namespace PT.Middleware
                 composite += goldenPathBonus;
                 composite += epsModifier;
                 composite += divBonus;
-                composite += composite >= 60 && smaModifier < 0 ? smaModifier : 0;
+                composite += composite >= 50 && smaModifier < 0 ? smaModifier : 0;
                 composite += smaModifier > 0 ? smaModifier : 0;
-                composite += composite >= 60 && volumeTrendingModifier < 0 ? volumeTrendingModifier : 0;
+                composite += composite >= 50 && volumeTrendingModifier < 0 ? volumeTrendingModifier : 0;
                 composite += volumeTrendingModifier > 0 ? volumeTrendingModifier : 0;
                 // Give back half the PE penalty if composite is below fair
-                composite += composite < 60 && peModifier < 0 ? (-0.5M * peModifier) : 0;
+                composite += composite < 50 && peModifier < 0 ? (-0.5M * peModifier) : 0;
                 // For handicapped mode
                 //composite += Constants.FUND_HANDICAP;
 
@@ -699,8 +702,8 @@ namespace PT.Middleware
                 decimal priceToFairValue = history.TodayVwap / customFairValue;
 
                 // Final GRU gates
-                composite += composite > 60 && priceToFairValue > 5 ? Constants.CORE_PENALTY * 2 : 0;
-                composite += composite > 60 && priceToFairValue > 10 ? Constants.CORE_PENALTY : 0;
+                composite += composite > 50 && priceToFairValue > 5 ? Constants.CORE_PENALTY * 2 : 0;
+                composite += composite > 50 && priceToFairValue > 10 ? Constants.CORE_PENALTY : 0;
                 composite += composite < 80 && priceToBook < 2.5M && priceToFairValue < 2.0M ? Constants.CORE_BONUS : 0;
 
                 decimal volUsdAvg = (history.TodayVolUsd + history.AverageVolUsd10Day + history.AverageVolUsd30Day) / Constants.THREE;
@@ -1778,26 +1781,26 @@ namespace PT.Middleware
         {
             decimal smaModifier = 0;
 
-            // General bullish or bearish
+            // General bullish or bearish depending on SMA band conditions
             if (history.IsBullishSMA)
             {
-                smaModifier += Constants.CORE_BONUS + 1;
+                smaModifier += Constants.CORE_BONUS + Constants.HALF;
             }
             else if (history.IsBearishSMA)
             {
-                smaModifier += Constants.CORE_PENALTY - 1;
+                smaModifier += Constants.CORE_PENALTY - Constants.HALF;
             }
             if (history.IsAboveSMABand)
             {
-                smaModifier += Constants.CORE_BONUS + 1;
+                smaModifier += Constants.CORE_BONUS + Constants.HALF;
             }
             else if (history.IsBelowSMABand)
             {
-                smaModifier += Constants.CORE_PENALTY;
+                smaModifier += Constants.CORE_PENALTY - Constants.HALF;
             }
 
-                // Bonus if current price is close enough to 100d SMA for likely rebound
-                var percentDiff = GetPercentDiff(history.AveragePrice100Day, history.TodayVwap);
+            // Bonus if current price is close enough to 100d SMA for likely rebound
+            var percentDiff = GetPercentDiff(history.AveragePrice100Day, history.TodayVwap);
             if (-7 <= Math.Abs(percentDiff) && Math.Abs(percentDiff) <= 7)
             {
                 smaModifier += Constants.CORE_BONUS + (7 - Math.Abs(percentDiff));
@@ -1806,7 +1809,7 @@ namespace PT.Middleware
             // Bonus if 30d SMA is above 100d SMA
             if (history.AveragePrice30Day > history.AveragePrice100Day)
             {
-                smaModifier += Constants.CORE_BONUS / 2;
+                smaModifier += Constants.HALF;
             }
 
             // Bonus if current price is above 20d SMA

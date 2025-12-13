@@ -61,10 +61,10 @@ namespace PT
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
-        public const decimal CORE_SIGNAL_MOD = 3.7M; // Uber bullish macros 1, Uber bearish macros 7
+        public const decimal CORE_SIGNAL_MOD = 3.5M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_PRIME_GATE = 83.0M;
-        public const decimal CORE_HS1_MOD = FIFTH;
-        public const decimal CORE_HS2_MOD = 0; // 0 or 0.5 default, handicapped mode 1
+        public const decimal CORE_HS1_MOD = 0; // 0 or 0.2 default, handicapped mode CORE_BONUS * half
+        public const decimal CORE_HS2_MOD = -1 * HALF; // -.5, 0, 0.5 default, handicapped mode 1
         public const decimal CORE_HS3_MOD = CORE_BONUS - 1; // CORE_BONUS - 1 default, handicapped mode CORE_BONUS - half
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;
