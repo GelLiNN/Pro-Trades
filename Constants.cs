@@ -63,8 +63,8 @@ namespace PT
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_SIGNAL_MOD = 3.7M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_PRIME_GATE = 83.0M;
-        public const decimal CORE_HS1_MOD = HALF;
-        public const decimal CORE_HS2_MOD = HALF; // 0 or 0.5 default, handicapped mode 1
+        public const decimal CORE_HS1_MOD = FIFTH;
+        public const decimal CORE_HS2_MOD = 0; // 0 or 0.5 default, handicapped mode 1
         public const decimal CORE_HS3_MOD = CORE_BONUS - 1; // CORE_BONUS - 1 default, handicapped mode CORE_BONUS - half
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;

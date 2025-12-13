@@ -701,7 +701,7 @@ namespace PT.Middleware
                 // Final GRU gates
                 composite += composite > 60 && priceToFairValue > 5 ? Constants.CORE_PENALTY * 2 : 0;
                 composite += composite > 60 && priceToFairValue > 10 ? Constants.CORE_PENALTY : 0;
-                composite += composite < 80 && priceToBook < 2.5M && priceToFairValue < 2.0M ? Constants.CORE_BONUS * 2 : 0;
+                composite += composite < 80 && priceToBook < 2.5M && priceToFairValue < 2.0M ? Constants.CORE_BONUS : 0;
 
                 decimal volUsdAvg = (history.TodayVolUsd + history.AverageVolUsd10Day + history.AverageVolUsd30Day) / Constants.THREE;
                 bool hasDivs = divRate > 0 && divYield > 0;
