@@ -89,7 +89,7 @@ namespace PT.Middleware
                         HitPriceClose = curHist.Close,
                         TurnoutDate = turnoutHist5.Date,
                         TurnoutPrice = turnoutHist5.High,
-                        TurnoutPercentChange = (turnoutHist5.High - curHist.Close) / curHist.Close * Constants.HUNDRED,
+                        TurnoutPercentChange = (turnoutHist5.High - curHist.Close) / curHist.Close * Constants.ONE_HUNDRED,
                     };
                     if (hit.TurnoutPercentChange >= 0)
                     {

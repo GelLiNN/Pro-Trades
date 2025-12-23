@@ -26,6 +26,7 @@ namespace PT.Middleware
                 Stack<PTDay> historyStack = new();
 
                 // Averages we must compute
+                decimal avgPrice200d = 0;
                 decimal avgPrice100d = 0;
                 decimal avgPrice50d = 0;
                 decimal avgPrice30d = 0;
@@ -60,6 +61,7 @@ namespace PT.Middleware
                     var curVol = ptDay.Volume;
                     var curVolUsd = ptDay.DollarVolume;
 
+                    bool isLast200 = (historyData.Count - (i + 1) < 200);
                     bool isLast100 = (historyData.Count - (i + 1) < 100);
                     bool isLast50 = (historyData.Count - (i + 1) < 50);
                     bool isLast30 = (historyData.Count - (i + 1) < 30);
@@ -67,6 +69,10 @@ namespace PT.Middleware
                     bool isLast10 = (historyData.Count - (i + 1) < 10);
                     bool isLast = (historyData.Count - (i + 1) == 0);
 
+                    if (isLast200)
+                    {
+                        avgPrice200d += curVwap;
+                    }
                     if (isLast100)
                     {
                         avgPrice100d += curVwap;
@@ -141,7 +147,8 @@ namespace PT.Middleware
                     ptHistory.QualifiedVolume10Day && ptHistory.QualifiedVolume30Day;
 
                 // Compute final averages and figures for 100d, 50d, 30d, 20d, 10d
-                avgPrice100d = avgPrice100d / Constants.HUNDRED;
+                avgPrice200d = avgPrice200d / Constants.TWO_HUNDRED;
+                avgPrice100d = avgPrice100d / Constants.ONE_HUNDRED;
                 avgPrice50d = avgPrice50d / Constants.FIFTY;
                 avgPrice30d = avgPrice30d / Constants.THIRTY;
                 avgPrice20d = avgPrice20d / Constants.TWENTY;
@@ -149,6 +156,7 @@ namespace PT.Middleware
                 avgPrice10d = avgPrice10d / Constants.TEN;
                 avgVol10d = avgVol10d / Constants.TEN;
 
+                ptHistory.AveragePrice200Day = avgPrice200d;
                 ptHistory.AveragePrice100Day = avgPrice100d;
                 ptHistory.AveragePrice50Day = avgPrice50d;
                 ptHistory.AveragePrice30Day = avgPrice30d;
@@ -180,6 +188,10 @@ namespace PT.Middleware
                     ptHistory.TodayVwap < ptHistory.AveragePrice20Day - (ptHistory.AveragePrice20Day * .01M))
                 {
                     ptHistory.IsBelowSMABand = true;
+                }
+                if (!ptHistory.IsAboveSMABand && !ptHistory.IsBelowSMABand)
+                {
+                    ptHistory.IsInsideSmaBand = true;
                 }
 
                 // Make X and Y Lists
@@ -259,11 +271,11 @@ namespace PT.Middleware
 
             ptDay.TradedForward = vwap > open;
             ptDay.TradedForwardChange = vwap - open;
-            ptDay.TradedForwardChangePercent = ((vwap - open) / open) * Constants.HUNDRED;
+            ptDay.TradedForwardChangePercent = ((vwap - open) / open) * Constants.ONE_HUNDRED;
 
             ptDay.ClosedGreen = close >= open;
             ptDay.PriceChange = close - open;
-            ptDay.PriceChangePercent = ((close - open) / open) * Constants.HUNDRED;
+            ptDay.PriceChangePercent = ((close - open) / open) * Constants.ONE_HUNDRED;
 
             return (curHistoryObj, ptDay);
         }

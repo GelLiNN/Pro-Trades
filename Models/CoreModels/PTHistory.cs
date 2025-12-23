@@ -75,6 +75,7 @@ namespace PT.Models.CoreModels
         public decimal PriceTargetAvgShort { get; set; }
 
         // Average highs, lows, and traded volume USD for different periods
+        public decimal AveragePrice200Day { get; set; }
         public decimal AveragePrice100Day { get; set; }
         public decimal AveragePrice50Day { get; set; }
         public decimal AveragePrice30Day { get; set; }
@@ -105,6 +106,7 @@ namespace PT.Models.CoreModels
         public bool IsBearishSMA { get; set; }
         public bool IsAboveSMABand { get; set; }
         public bool IsBelowSMABand { get; set; }
+        public bool IsInsideSmaBand { get; set; }
 
         /// <summary>
         /// Contructor Required
@@ -129,6 +131,9 @@ namespace PT.Models.CoreModels
             QualifiedVolume = false;
             IsBullishSMA = false;
             IsBearishSMA = false;
+            IsAboveSMABand = false;
+            IsBelowSMABand = false;
+            IsInsideSmaBand = false;
 
             HighestHigh30Day = 0;
             LowestLow30Day = 0;

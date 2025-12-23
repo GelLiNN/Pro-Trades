@@ -36,13 +36,19 @@ namespace PT
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly string DEFAULT_RED = "Red";
         public static readonly string DEFAULT_GREEN = "Green";
-        public const int DEFAULT_HISTORY_DAYS = 277; // Was 375 before 7.20.2025, trying 277
+        public const int DEFAULT_HISTORY_DAYS = 300; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 300
         public const int DEFAULT_LOOKBACK_DAYS = 7;
+        public const decimal TARGET_AVG_WEEK_DIFF_PERCENT = 0.03M;
+
+        // Numbers
         public const decimal TEN_THOUSAND = 10000.0M;
         public const decimal THIRTY_THOUSAND = 30000.0M;
         public const decimal FIFTY_THOUSAND = 50000.0M;
+        public const decimal TEN_BILLION = 10000000000.0M;
+        public const decimal ONE_BILLION = 1000000000.0M;
         public const decimal MILLION = 1000000.0M;
-        public const decimal HUNDRED = 100.0M;
+        public const decimal ONE_HUNDRED = 100.0M;
+        public const decimal TWO_HUNDRED = 200.0M;
         public const decimal FIFTY = 50.0M;
         public const decimal THIRTY = 30.0M;
         public const decimal TWENTY = 20.0M;
@@ -54,16 +60,15 @@ namespace PT
         public const decimal HALF = 0.5M;
         public const decimal THIRD = 0.3333333M;
         public const decimal FIFTH = 0.2M;
-        public const decimal TARGET_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
         #region Core Model Constants
         //TODO: if 82.9 or higher round up to 83.0 Prime
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
-        public const decimal CORE_SIGNAL_MOD = 3.5M; // Uber bullish macros 1, Uber bearish macros 7
+        public const decimal CORE_SIGNAL_MOD = 3.7M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_PRIME_GATE = 83.0M;
-        public const decimal CORE_HS1_MOD = 0; // 0 or 0.2 default, handicapped mode CORE_BONUS * half
+        public const decimal CORE_HS1_MOD = THIRD; // 0 or 0.2 default, handicapped mode CORE_BONUS * half
         public const decimal CORE_HS2_MOD = -1 * HALF; // -.5, 0, 0.5 default, handicapped mode 1
         public const decimal CORE_HS3_MOD = CORE_BONUS - 1; // CORE_BONUS - 1 default, handicapped mode CORE_BONUS - half
         public const decimal CORE_HS4_MOD = 0.0M;

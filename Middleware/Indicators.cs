@@ -137,7 +137,9 @@ namespace PT.Middleware
             };
             scoreResult.PriceRedGreen = priceLast >= ptHistory.TodayOpen ?
                 Constants.DEFAULT_GREEN : Constants.DEFAULT_RED;
-            scoreResult.QualifiedVolume = ptHistory.QualifiedVolume;
+            scoreResult.IsQualifiedVolume = ptHistory.QualifiedVolume;
+            scoreResult.IsLongTermBullish = ptHistory.TodayVwap >= ptHistory.AveragePrice200Day;
+            scoreResult.IsShortTermBullish = ptHistory.IsBullishSMA;
 
             decimal postCompositeMod = 0; // Only if HS1, HS2, HS3
             if (paramType.Type == Constants.HS1 || paramType.Type == Constants.HS2 || paramType.Type == Constants.HS3)
@@ -148,6 +150,11 @@ namespace PT.Middleware
                     (scoreResult.Fundamentals.PriceToFairValue > 0 && scoreResult.Fundamentals.PriceToFairValue < 2.0M) &&
                     (scoreResult.RPriceToBook > 0 && scoreResult.RPriceToBook < 2.5M) &&
                     (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? Constants.HALF : 0;
+            } // HS5 with gate
+            else if (paramType.Type == Constants.HS5)
+            {
+                postCompositeMod += scoreResult.IsLongTermBullish && scoreResult.IsShortTermBullish ?
+                    Constants.CORE_BONUS : 0;
             }
             scoreResult.CompositeScoreValue += postCompositeMod;
 
@@ -202,7 +209,7 @@ namespace PT.Middleware
         private static bool IsDisqualifiedPrediction(CompositeScoreResult scoreResult)
         {
             return
-                (!scoreResult.QualifiedVolume ||
+                (!scoreResult.IsQualifiedVolume ||
                 (Convert.ToDecimal(scoreResult.PriceLast.Substring(1)) < Constants.DEFAULT_PENNY_PRICE_D_LIMIT ||
                 Convert.ToDecimal(scoreResult.PriceVwap.Substring(1)) < Constants.DEFAULT_PENNY_PRICE_D_LIMIT));
         }
@@ -567,12 +574,24 @@ namespace PT.Middleware
                 decimal baseValue = history.TodayVolUsd >= Constants.MILLION ? Constants.CORE_BONUS : 0;
                 baseValue += vwapSlope > 0.33M ? Constants.CORE_BONUS : 0;
 
+                // Get net expense ratio bonus to supplement HS5 financial instruments
+                decimal netExpenseRatioBonus = CalcNetExpenseRatioBonus(netExpenseRatio);
+
                 decimal bookValuePrice = 0;
                 decimal bookValuePriceDiffPercent = 0;
-                if (priceToBook > 0 && history.TodayVwap > 0)
+                // HS5 or error case book value custom
+                if (netAssets > 0 && netExpenseRatio > 0 && sharesOutstanding == 0)
                 {
-                    // Get base value as gated function of price-to-book percentage diff
-                    bookValuePrice = history.TodayVwap * (1 / priceToBook);
+                    // Weighted Average 52 week low (2X) with 100d SMA
+                    bookValuePrice = (fiftyTwoWeekLow * 2 + history.AveragePrice200Day) / Constants.THREE;
+                    // Cost adjustment for this year net ETF fee, from net expense ratio
+                    bookValuePrice = bookValuePrice - (netExpenseRatio / Constants.ONE_HUNDRED * bookValuePrice);
+                }
+                bool canGetBaseValue = (bookValuePrice > 0 || priceToBook > 0) && history.TodayVwap > 0;
+                if (canGetBaseValue)
+                {
+                    // Get base value as gated function of price-to-book percentage diff, or custom HS5
+                    bookValuePrice = bookValuePrice == 0 ? history.TodayVwap * (1 / priceToBook) : bookValuePrice;
                     bookValuePriceDiffPercent = GetPercentDiff(history.TodayVwap, bookValuePrice);
                     baseValue += bookValuePriceDiffPercent > 0 ? bookValuePriceDiffPercent : 0;
                     if (baseValue >= 0)
@@ -594,10 +613,9 @@ namespace PT.Middleware
                 }
                 if (baseValue < Constants.CORE_BONUS)
                 {
-                    baseValue = Constants.CORE_BONUS;
+                    baseValue = Constants.CORE_BONUS; // Pity points
                 }
-                // Apply gate to base value
-                baseValue = Math.Min(30, baseValue);
+                baseValue = Math.Min(30, baseValue); // Apply gate to base value
 
                 // Calculate net asset value if unavailable
                 if ((netAssets < 0 || netAssets == 0) && sharesOutstanding > 0)
@@ -626,6 +644,16 @@ namespace PT.Middleware
                     {
                         fairValuePriceBonus = Constants.CORE_BONUS * Constants.HALF - Constants.HALF;
                     }
+                } // HS5 fair value custom
+                else if (netAssets > 0 && netExpenseRatio > 0 && bookValuePrice > 0)
+                {
+                    fairValuePrice = bookValuePrice;
+                    fairValuePrice += netAssets >= Constants.TEN_BILLION ?
+                        fairValuePrice / Constants.ONE_HUNDRED : 0;
+                    fairValuePriceBonus += netAssets >= Constants.TEN_BILLION ?
+                        Constants.CORE_BONUS : 0;
+                    fairValuePriceBonus += netAssets >= Constants.ONE_BILLION ?
+                        Constants.CORE_BONUS * Constants.HALF : 0;
                 }
 
                 // Calculate figures for EPS bonus and PE bonus
@@ -652,9 +680,6 @@ namespace PT.Middleware
 
                 // Get dividend bonus
                 decimal divBonus = CalcDividendBonus(divRate, divYield);
-
-                // Get net expense ratio bonus to supplement HS5 financial instruments
-                decimal netExpenseRatioBonus = CalcNetExpenseRatioBonus(netExpenseRatio);
 
                 // Get golden path bonus if todays dollar is volume geater than the 10d avg
                 // dollar volume, and if 10d avg dollar volume is greater than the 30d avg dollar volume
@@ -690,6 +715,8 @@ namespace PT.Middleware
                 composite += volumeTrendingModifier > 0 ? volumeTrendingModifier : 0;
                 // Give back half the PE penalty if composite is below fair
                 composite += composite < 50 && peModifier < 0 ? (-0.5M * peModifier) : 0;
+                // Add bonus if composite below fair and price inside SMA band
+                composite += composite < 50 && history.IsInsideSmaBand ? Constants.CORE_BONUS + 1 : 0;
                 // For handicapped mode
                 //composite += Constants.FUND_HANDICAP;
 
@@ -704,7 +731,9 @@ namespace PT.Middleware
                 // Final GRU gates
                 composite += composite > 50 && priceToFairValue > 5 ? Constants.CORE_PENALTY * 2 : 0;
                 composite += composite > 50 && priceToFairValue > 10 ? Constants.CORE_PENALTY : 0;
-                composite += composite < 80 && priceToBook < 2.5M && priceToFairValue < 2.0M ? Constants.CORE_BONUS : 0;
+                composite += composite < 50 && priceToBook < 2.5M && priceToFairValue < 2.0M ? Constants.CORE_BONUS : 0;
+                composite += composite < 50 && priceToFairValue < 1.5M ? Constants.CORE_BONUS : 0;
+                composite += composite < 50 && priceToFairValue < 1.0M ? Constants.CORE_BONUS : 0;
 
                 decimal volUsdAvg = (history.TodayVolUsd + history.AverageVolUsd10Day + history.AverageVolUsd30Day) / Constants.THREE;
                 bool hasDivs = divRate > 0 && divYield > 0;
@@ -727,6 +756,7 @@ namespace PT.Middleware
                     EarningsPerShare = epsTrailing,
                     NextEarningsDate = nextEarningsDate,
                     PrevEarningsDate = prevEarningsDate,
+                    AveragePrice200Day = history.AveragePrice200Day,
                     AveragePrice100Day = history.AveragePrice100Day,
                     AveragePrice50Day = history.AveragePrice50Day,
                     AveragePrice30Day = history.AveragePrice30Day,
@@ -1784,19 +1814,19 @@ namespace PT.Middleware
             // General bullish or bearish depending on SMA band conditions
             if (history.IsBullishSMA)
             {
-                smaModifier += Constants.CORE_BONUS + Constants.HALF;
+                smaModifier += Constants.CORE_BONUS + Constants.THIRD;
             }
             else if (history.IsBearishSMA)
             {
-                smaModifier += Constants.CORE_PENALTY - Constants.HALF;
+                smaModifier += Constants.CORE_PENALTY - Constants.THIRD;
             }
             if (history.IsAboveSMABand)
             {
-                smaModifier += Constants.CORE_BONUS + Constants.HALF;
+                smaModifier += Constants.CORE_BONUS + Constants.THIRD;
             }
             else if (history.IsBelowSMABand)
             {
-                smaModifier += Constants.CORE_PENALTY - Constants.HALF;
+                smaModifier += Constants.CORE_PENALTY - Constants.THIRD;
             }
 
             // Bonus if current price is close enough to 100d SMA for likely rebound
@@ -1836,25 +1866,30 @@ namespace PT.Middleware
 
         private static decimal CalcVolumeTrendingModifier(PTHistory history)
         {
-            // Add positive fractional bonus if today dollar volume is greater than 30d average dollar volume, negative otherwise
-            decimal percentChange = GetPercentDiff(history.AverageVolUsd30Day, history.TodayVolUsd);
+            // TODO: bring golden path into this GRU helper function
             decimal volumeTrendingModifier = 0;
-            if (0.5M < percentChange && percentChange <= 100)
+
+            // Add positive fractional bonus if today dollar volume is greater than 10d average dollar volume
+            // TODO: try using 5d average dollar volume vs 15d average dollar volume
+            decimal volUsdAnchorNew = (history.TodayVolUsd + history.AverageVolUsd10Day) / Constants.TWO;
+            decimal volUsdAnchorOld = (history.AverageVolUsd10Day + history.AverageVolUsd30Day) / Constants.TWO;
+            decimal percentChange = GetPercentDiff(volUsdAnchorOld, volUsdAnchorNew);
+            if (1 < percentChange && percentChange <= 100)
             {
-                volumeTrendingModifier += percentChange < 25 ? (percentChange / 5) + Constants.CORE_BONUS :
+                volumeTrendingModifier += percentChange < 25 ? (percentChange / 5) + Constants.CORE_BONUS:
                     (percentChange / 20) + (Constants.CORE_BONUS * 2);
             }
             else if (100 < percentChange)
             {
-                volumeTrendingModifier += Constants.CORE_BONUS * 2 + 1;
+                volumeTrendingModifier += Constants.CORE_BONUS * 2;
             }
-            // Penalty cases
+            // Penalty cases (like inverse golden path)
             if (history.TodayVolUsd < history.AverageVolUsd10Day - Constants.FIFTY_THOUSAND &&
                 history.AverageVolUsd10Day < history.AverageVolUsd30Day - Constants.FIFTY_THOUSAND)
             {
                 volumeTrendingModifier += Constants.CORE_PENALTY * 2;
             }
-            else if (-0.5M > percentChange && percentChange >= -100)
+            else if (-1 > percentChange && percentChange >= -100)
             {
                 volumeTrendingModifier += percentChange > -25 ? (percentChange / 5) + Constants.CORE_PENALTY :
                     (percentChange / 20) + (Constants.CORE_PENALTY * 2);
@@ -1868,7 +1903,6 @@ namespace PT.Middleware
 
         private static decimal CalcCustomFairValue(decimal tvwp, decimal fvp, decimal bvp, decimal ftlp, decimal ape, decimal epst, decimal fcs)
         {
-            // Custom fair value
             decimal customFairValue = 0;
             decimal customFairValueCount = 0;
             bool shouldUseBookValue = fvp != 0 || bvp != 0;

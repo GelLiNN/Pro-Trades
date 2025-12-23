@@ -37,7 +37,9 @@ namespace PT.Models.RequestModels
         public DateTime ScoreDate { get; set; }
         public string? ParameterSet { get; set; }
         public string? AssetDescription { get; set; }
-        public bool QualifiedVolume { get; set; }
+        public bool IsQualifiedVolume { get; set; }
+        public bool IsLongTermBullish { get; set; }
+        public bool IsShortTermBullish { get; set; }
         public long AlpacaTimeMS { get; set; }
         public long YahooTimeMS { get; set; }
         public long FinraTimeMS { get; set; }
@@ -130,6 +132,7 @@ namespace PT.Models.RequestModels
         public decimal EarningsPerShare { get; set; }
         public DateTime? NextEarningsDate { get; set; }
         public DateTime? PrevEarningsDate { get; set; }
+        public decimal AveragePrice200Day { get; set; }
         public decimal AveragePrice100Day { get; set; }
         public decimal AveragePrice50Day { get; set; }
         public decimal AveragePrice30Day { get; set; }
