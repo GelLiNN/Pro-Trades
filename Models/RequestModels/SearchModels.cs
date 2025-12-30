@@ -24,6 +24,7 @@ namespace PT.Models.RequestModels
         public string PriceFairValue { get; set; }
         public decimal RPriceToEarnings { get; set; }
         public decimal RPriceToBook { get; set; }
+        public string MarketCap { get; set; }
         public int GRUHistoryDays { get; set; }
         public decimal ADXComposite { get; set; }
         public decimal OBVComposite { get; set; }
@@ -130,6 +131,14 @@ namespace PT.Models.RequestModels
         public decimal PriceToEarnings { get; set; }
         public decimal PriceToFairValue { get; set; }
         public decimal EarningsPerShare { get; set; }
+        public decimal BookValuePrice { get; set; }
+        public decimal FairValuePrice { get; set; }
+        public decimal AverageEPS { get; set; }
+        public decimal AveragePE { get; set; }
+        public decimal GrowthEPS { get; set; }
+        public decimal GrowthPE { get; set; }
+        public decimal DivRate { get; set; }
+        public decimal DivYield { get; set; }
         public DateTime? NextEarningsDate { get; set; }
         public DateTime? PrevEarningsDate { get; set; }
         public decimal AveragePrice200Day { get; set; }
@@ -145,14 +154,6 @@ namespace PT.Models.RequestModels
         public decimal VolumeSlope { get; set; }
         public decimal PriceSlope { get; set; }
         public decimal VwapSlope { get; set; }
-        public decimal BookValuePrice { get; set; }
-        public decimal FairValuePrice { get; set; }
-        public decimal AverageEPS { get; set; }
-        public decimal AveragePE { get; set; }
-        public decimal GrowthEPS { get; set; }
-        public decimal GrowthPE { get; set; }
-        public decimal DivRate { get; set; }
-        public decimal DivYield { get; set; }
         public string? Message { get; set; }
     }
 

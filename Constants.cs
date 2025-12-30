@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore.Metadata;
+
 namespace PT
 {
     public static class Constants
@@ -36,6 +38,9 @@ namespace PT
         public const string ALPACA_SECRET_KEY = "APCA-API-SECRET-KEY";
         public static readonly string DEFAULT_RED = "Red";
         public static readonly string DEFAULT_GREEN = "Green";
+        public static readonly string DEFAULT_DATA_PROVIDERS = "YahooFinance, Alpaca, FINRA, TipRanks";
+        public static readonly string FORMAT_ROUND_2 = "0.00";
+        public static readonly string FORMAT_CURRENCY = "C2";
         public const int DEFAULT_HISTORY_DAYS = 300; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 300
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const decimal TARGET_AVG_WEEK_DIFF_PERCENT = 0.03M;
@@ -56,6 +61,7 @@ namespace PT
         public const decimal FIVE = 5.0M;
         public const decimal THREE = 3.0M;
         public const decimal TWO = 2.0M;
+        public const decimal ONE = 1.0M;
         public const decimal FIB = 0.618M;
         public const decimal HALF = 0.5M;
         public const decimal THIRD = 0.3333333M;
@@ -66,23 +72,28 @@ namespace PT
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
-        public const decimal CORE_SIGNAL_MOD = 3.7M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_PRIME_GATE = 83.0M;
-        public const decimal CORE_HS1_MOD = THIRD; // 0 or 0.2 default, handicapped mode CORE_BONUS * half
-        public const decimal CORE_HS2_MOD = -1 * HALF; // -.5, 0, 0.5 default, handicapped mode 1
-        public const decimal CORE_HS3_MOD = CORE_BONUS - 1; // CORE_BONUS - 1 default, handicapped mode CORE_BONUS - half
+        public const decimal CORE_SIGNAL_MOD = 4.0M; // Uber bullish macros 1, Uber bearish macros 7
+        public const decimal CORE_HS1_MOD = CORE_BONUS * HALF; // 0, 0.333, 0.5, 1.0 default, handicapped mode BONUS * half
+        public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 2; // -.5, 0, 0.5 default, handicapped mode 1
+        //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1; // CORE_EXP_MODE
+        public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 2; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
+        //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1; // CORE_EXP_MODE
+
         public const decimal CORE_HS4_MOD = 0.0M;
-        public const decimal CORE_HS5_MOD = CORE_BONUS * HALF;
+        public const decimal CORE_HS5_MOD = CORE_BONUS * HALF; // BONUS * 0.5 default, handicapped mode BONUS - 1
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
+        public const bool CORE_EXP_MOD_ENABLED = true; // Experimental HS1/HS2/HS3 extra post GRU composite mods mode
 
         // GRU composite gate constants
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
-        public const int OBV_LOOKBACK_DAYS = 42; // Was 42 before 7.20.2025, tried 37 until 9.4.2025
+        public const int OBV_LOOKBACK_DAYS = 37; // Was 42 before 7.20.2025, tried 37 until 9.4.2025
         public const decimal FUND_NER_INVERSE_MULTIPLIER_PERCENT = 0.07M;
         public const decimal FUND_NER_MAJOR_LIMIT_PERCENT = 0.5M;
         public const decimal FUND_NER_MINOR_LIMIT_PERCENT = 0.2M;
         public const decimal FUND_EPS_MOD_UPPER_LIMIT = 37.0M;
         public const decimal FUND_PE_MOD_UPPER_LIMIT = 33.0M;
+        public const decimal FUND_PE_MOD_LOWER_LIMIT = -20.0M;
         public const int FUND_HANDICAP = 21; // For when YahooQuotesApi is broken
 
         // Dollar volume and price disqualification limits
@@ -90,6 +101,7 @@ namespace PT
         public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 650000.0M;
         public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 375000.0M;
         public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
+        public static readonly decimal DEFAULT_MCAP_D_LIMIT = ONE_BILLION * FIFTH;
         public static readonly int DEFAULT_MIN_PASS_30D_LIMIT = 24;
         public static readonly int DEFAULT_MIN_PASS_10D_LIMIT = 8;
 
