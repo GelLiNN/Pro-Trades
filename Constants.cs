@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore.Metadata;
-
 namespace PT
 {
     public static class Constants
@@ -75,25 +73,27 @@ namespace PT
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_SIGNAL_MOD = 4.0M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_HS1_MOD = CORE_BONUS * HALF; // 0, 0.333, 0.5, 1.0 default, handicapped mode BONUS * half
-        public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 2; // -.5, 0, 0.5 default, handicapped mode 1
+        public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // -.5, 0, 0.5 default, handicapped mode 1
         //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1; // CORE_EXP_MODE
-        public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 2; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
+        public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.5M; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
         //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1; // CORE_EXP_MODE
 
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF; // BONUS * 0.5 default, handicapped mode BONUS - 1
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
+        public const decimal CORE_EXP_MOD_SNAP = 84.0M;
         public const bool CORE_EXP_MOD_ENABLED = true; // Experimental HS1/HS2/HS3 extra post GRU composite mods mode
 
         // GRU composite gate constants
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
         public const int OBV_LOOKBACK_DAYS = 37; // Was 42 before 7.20.2025, tried 37 until 9.4.2025
+        public const decimal BBANDS_COMP_MID_LIMIT = 70 + (CORE_BONUS * HALF);
         public const decimal FUND_NER_INVERSE_MULTIPLIER_PERCENT = 0.07M;
         public const decimal FUND_NER_MAJOR_LIMIT_PERCENT = 0.5M;
         public const decimal FUND_NER_MINOR_LIMIT_PERCENT = 0.2M;
         public const decimal FUND_EPS_MOD_UPPER_LIMIT = 37.0M;
         public const decimal FUND_PE_MOD_UPPER_LIMIT = 33.0M;
-        public const decimal FUND_PE_MOD_LOWER_LIMIT = -20.0M;
+        public const decimal FUND_PE_MOD_LOWER_LIMIT = -17.0M;
         public const int FUND_HANDICAP = 21; // For when YahooQuotesApi is broken
 
         // Dollar volume and price disqualification limits
@@ -101,7 +101,7 @@ namespace PT
         public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 650000.0M;
         public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 375000.0M;
         public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
-        public static readonly decimal DEFAULT_MCAP_D_LIMIT = ONE_BILLION * FIFTH;
+        public static readonly decimal DEFAULT_MCAP_D_LIMIT = .075M; // 75 million (in billions)
         public static readonly int DEFAULT_MIN_PASS_30D_LIMIT = 24;
         public static readonly int DEFAULT_MIN_PASS_10D_LIMIT = 8;
 
