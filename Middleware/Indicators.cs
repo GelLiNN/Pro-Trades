@@ -1584,10 +1584,12 @@ namespace PT.Middleware
             bool bbandsMajorBuySignal = false;
             bool bbandsMinorSellSignal = false;
             bool bbandsMajorSellSignal = false;
+            bool crossAboveMiddleBand = false;
             int daysSinceMinorBuySignal = -1;
             int daysSinceMajorBuySignal = -1;
             int daysSinceMinorSellSignal = -1;
             int daysSinceMajorSellSignal = -1;
+            int daysSinceCrossAboveMiddleBand = -1;
             List<Skender.Stock.Indicators.Quote> ochlvList = supplement.ToList();
             List<decimal> prices = new List<decimal>();
             for (int i = 0; i < ochlvList.Count; i++)
@@ -1604,12 +1606,16 @@ namespace PT.Middleware
                     daysSinceMinorBuySignal = daysToCalculate - i;
                 }
 
-                if (hasPrevPrice && curPrice >= middleYList[i] && prices[i - 1] < middleYList[i - 1] && hasBreakout)
+                if (hasPrevPrice && curPrice >= middleYList[i] && prices[i - 1] < middleYList[i - 1])
                 {
-                    // Major buy signal for crossing above the middle band during breakout
-                    bbandsMajorBuySignal = true;
-                    daysSinceMajorBuySignal = daysToCalculate - i;
-
+                    if (hasBreakout)
+                    {
+                        // Major buy signal for crossing above the middle band during breakout
+                        bbandsMajorBuySignal = true;
+                        daysSinceMajorBuySignal = daysToCalculate - i;
+                    }
+                    crossAboveMiddleBand = true;
+                    daysSinceCrossAboveMiddleBand = daysToCalculate - i;
                     if (bbandsMinorSellSignal)
                     {
                         // Undo minor sell signal if cross back above middle band
@@ -1622,7 +1628,8 @@ namespace PT.Middleware
                     // Minor sell signal if cross below middle band
                     bbandsMinorSellSignal = true;
                     daysSinceMinorSellSignal = daysToCalculate - i;
-
+                    crossAboveMiddleBand = false;
+                    daysSinceCrossAboveMiddleBand = -1;
                     if (bbandsMajorBuySignal)
                     {
                         // Undo major buy signal if cross back below middle band
@@ -1647,6 +1654,7 @@ namespace PT.Middleware
             decimal priceSlope = GetSlope(bbandsXList, prices);
             bool allSlopesPositive = lowerSlope > 0 && middleSlope > 0 && upperSlope > 0;
             bool allSlopesNegative = lowerSlope < -.05M && middleSlope < -.05M && upperSlope < -.05M;
+            int middleBandCrossMultiplier = daysSinceCrossAboveMiddleBand > 0 ? daysToCalculate - daysSinceCrossAboveMiddleBand : 0;
 
             // Base value from percentage diff from the upper band if above middle band (bullish conditions)
             // Base value from percentage diff from the lower band if below middle band (rebound conditions)
@@ -1774,11 +1782,10 @@ namespace PT.Middleware
             composite += majorSellSignalPenalty;
             composite += minorSellSignalPenalty;
             composite += composite > 50 && allSlopesNegative ? Constants.CORE_PENALTY * 2 - 1 : 0;
+            composite += composite < 50 && crossAboveMiddleBand && !bbandsMajorBuySignal ? Constants.CORE_BONUS * middleBandCrossMultiplier : 0;
             composite += bandRangeModifier > 0 ? bandRangeModifier : 0;
-            composite += composite > 60 &&
-                lowerSlope < -0.1M && !bbandsMinorBuySignal && !bbandsMajorBuySignal ? Constants.CORE_PENALTY + 1 : 0;
-            composite += composite > 60 &&
-                lowerSlope < -0.1M && middleSlope < -0.1M ? Constants.CORE_PENALTY - 1 : 0;
+            composite += composite > 70 && lowerSlope < -0.1M && middleSlope < -0.1M ? Constants.CORE_PENALTY - 1 : 0;
+            composite += composite > 70 && lowerSlope < -0.1M && !bbandsMajorBuySignal && !bbandsMinorBuySignal ? Constants.CORE_PENALTY + 1 : 0;
             composite += composite > 70 && bandRangeModifier < 0 ? bandRangeModifier : 0;
 
             composite = Math.Min(composite, 100); // cap BBANDS composite at 100, no extra weight
