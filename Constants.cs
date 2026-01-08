@@ -71,18 +71,19 @@ namespace PT
         public const decimal CORE_BONUS = (decimal)Math.PI;
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_PRIME_GATE = 83.0M;
+        public const decimal CORE_PRIME_RND_LIMIT = 82.65M;
         public const decimal CORE_SIGNAL_MOD = 4.0M; // Uber bullish macros 1, Uber bearish macros 7
-        public const decimal CORE_HS1_MOD = CORE_BONUS * HALF; // 0, 0.333, 0.5, 1.0 default, handicapped mode BONUS * half
-        public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // -.5, 0, 0.5 default, handicapped mode 1
-        //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1; // CORE_EXP_MODE
-        public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.5M; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
-        //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1; // CORE_EXP_MODE
+        public const decimal CORE_HS1_MOD = ONE; // 0, 0.333, 0.5, 1.0 default, handicapped mode BONUS * half
+        public const decimal CORE_HS2_MOD = CORE_BONUS - 1; // -.5, 0, 0.5 default, handicapped mode 1
+        //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
+        public const decimal CORE_HS3_MOD = CORE_BONUS - 1; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
+        //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
 
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF; // BONUS * 0.5 default, handicapped mode BONUS - 1
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
         public const decimal CORE_EXP_MOD_SNAP = 84.0M;
-        public const bool CORE_EXP_MOD_ENABLED = true; // Experimental HS1/HS2/HS3 extra post GRU composite mods mode
+        public const bool CORE_EXP_MOD_ENABLED = false; // Experimental HS1/HS2/HS3 extra post GRU composite mods mode
 
         // GRU composite gate constants
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
