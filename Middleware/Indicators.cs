@@ -1684,7 +1684,7 @@ namespace PT.Middleware
                 }
                 else
                 {
-                    baseValue += ((100 - percentageDiffBullish - 18) / baseValueDivider) - 1;
+                    baseValue += ((100 - percentageDiffBullish - 18) / baseValueDivider);
                     baseValue += !recentPositivity || bbandsMinorSellSignal ? Constants.CORE_PENALTY - 1 : 0;
                     baseValue += lastPrice > historicalBandsMidpoint ? Constants.CORE_PENALTY - 1 : Constants.CORE_BONUS;
 
@@ -1715,7 +1715,7 @@ namespace PT.Middleware
                 baseValue = Math.Min(baseValue, 50);
                 baseValue += baseValue == 50 && recentPositivity ? Constants.CORE_BONUS : 0;
             }
-            baseValue = Math.Max(baseValue, Constants.CORE_BONUS * Constants.HALF); // Prevent negative baseValue
+            baseValue = Math.Max(baseValue, Constants.CORE_BONUS - 3); // Prevent negative baseValue
 
             // Bonus for bullish consolidation of the bands or rebound conditions
             decimal consolidationReboundBonus = 0;
@@ -1736,7 +1736,7 @@ namespace PT.Middleware
                 && priceSlope > -.05M ? Constants.CORE_BONUS * 2 + 1 : 0;
             customSlopeBonusRel += upperSlope < 0 && positiveAndNegativeSlopes
                 && priceSlope > -.05M ? Constants.CORE_BONUS + 2 : 0;
-            customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .02M) ? Constants.CORE_BONUS + 1 : 0;
+            customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .03M) ? Constants.CORE_BONUS + 1 : 0;
             if (lastPrice <= historicalBandsMidpoint + (historicalBandsMidpoint * .02M))
             {
                 customSlopeBonusRel += allSlopesPositive ? Constants.CORE_BONUS + 1 : 0;
