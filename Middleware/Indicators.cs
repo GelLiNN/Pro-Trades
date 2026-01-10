@@ -1736,7 +1736,7 @@ namespace PT.Middleware
                 && priceSlope > -.05M ? Constants.CORE_BONUS * 2 + 1 : 0;
             customSlopeBonusRel += upperSlope < 0 && positiveAndNegativeSlopes
                 && priceSlope > -.05M ? Constants.CORE_BONUS + 2 : 0;
-            customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .03M) ? Constants.CORE_BONUS + 1 : 0;
+            customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .01M) ? Constants.CORE_BONUS + 1 : 0;
             if (lastPrice <= historicalBandsMidpoint + (historicalBandsMidpoint * .02M))
             {
                 customSlopeBonusRel += allSlopesPositive ? Constants.CORE_BONUS + 1 : 0;
