@@ -39,9 +39,6 @@ namespace PT
         public static readonly string DEFAULT_DATA_PROVIDERS = "YahooFinance, Alpaca, FINRA, TipRanks";
         public static readonly string FORMAT_ROUND_2 = "0.00";
         public static readonly string FORMAT_CURRENCY = "C2";
-        public const int DEFAULT_HISTORY_DAYS = 300; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 300
-        public const int DEFAULT_LOOKBACK_DAYS = 7;
-        public const decimal TARGET_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
         // Numbers
         public const decimal TEN_THOUSAND = 10000.0M;
@@ -66,6 +63,8 @@ namespace PT
         public const decimal FIFTH = 0.2M;
 
         #region Core Model Constants
+        public const int DEFAULT_HISTORY_DAYS = 300; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 300
+        public const int DEFAULT_LOOKBACK_DAYS = 7;
         //TODO: if 82.9 or higher round up to 83.0 Prime
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
@@ -73,7 +72,8 @@ namespace PT
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_PRIME_RND_LIMIT = 82.75M;
         public const decimal CORE_SIGNAL_MOD = 3.7M; // Uber bullish macros 1, Uber bearish macros 7
-        public const decimal CORE_HS1_MOD = HALF; // 0, 0.333, 0.5, 1.0 default, handicapped mode BONUS * half
+        public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
+        public const decimal CORE_HS1_MOD = FIFTH; // 0, 0.2, 0.333, 0.5, 1.0 default, handicapped mode BONUS * half
         public const decimal CORE_HS2_MOD = CORE_BONUS - 1; // -.5, 0, 0.5 default, handicapped mode 1
         //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
         public const decimal CORE_HS3_MOD = CORE_BONUS - 2; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
@@ -97,12 +97,13 @@ namespace PT
         public const decimal FUND_PE_MOD_LOWER_LIMIT = -20.0M;
         public const int FUND_HANDICAP = 21; // For when YahooQuotesApi is broken
 
-        // Dollar volume and price disqualification limits
+        // Dollar volume, price, and other default disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 875000.0M;
         public static readonly decimal DEFAULT_VOLUME_USD_10D_LIMIT = 650000.0M;
         public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 375000.0M;
         public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
-        public static readonly decimal DEFAULT_MCAP_D_LIMIT = .075M; // 75 million (in billions)
+        public static readonly decimal DEFAULT_MCAP_D_LIMIT = .1M; // .1M = 100 million, .075M = 75 million (in billions)
+        public static readonly int DEFAULT_HISTORY_DAYS_LIMIT = 200; // Depends on DEFAULT_HISTORY_DAYS + Aggregator
         public static readonly int DEFAULT_MIN_PASS_30D_LIMIT = 24;
         public static readonly int DEFAULT_MIN_PASS_10D_LIMIT = 8;
 

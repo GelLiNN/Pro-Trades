@@ -219,8 +219,9 @@ namespace PT.Middleware
         {
             decimal mcap = Convert.ToDecimal(scoreResult.MarketCap.Split(" ")[0]);
             bool qualifiedMcap = (scoreResult.ParameterSet == Constants.HS5 && mcap == 0) || mcap > Constants.DEFAULT_MCAP_D_LIMIT;
+            bool qualifiedHistDays = scoreResult.GRUHistoryDays >= Constants.DEFAULT_HISTORY_DAYS_LIMIT;
             return
-                (!scoreResult.IsQualifiedVolume || !qualifiedMcap ||
+                (!scoreResult.IsQualifiedVolume || !qualifiedMcap || !qualifiedHistDays ||
                 (Convert.ToDecimal(scoreResult.PriceLast.Substring(1)) < Constants.DEFAULT_PENNY_PRICE_D_LIMIT ||
                 Convert.ToDecimal(scoreResult.PriceVwap.Substring(1)) < Constants.DEFAULT_PENNY_PRICE_D_LIMIT));
         }
@@ -228,9 +229,10 @@ namespace PT.Middleware
         private static bool IsShortPrediction(CompositeScoreResult scoreResult)
         {
             return
-                (scoreResult.CompositeScoreValue < 40 &&
-                (scoreResult.ShortInterestComposite <= 50 && scoreResult.FundamentalsComposite <= 60) &&
-                !(scoreResult.RatingsComposite == Constants.CORE_INVALID_COMP && scoreResult.FundamentalsComposite == Constants.CORE_INVALID_COMP));
+                scoreResult.CompositeScoreValue < 40 && scoreResult.RatingsComposite < 50 &&
+                scoreResult.ShortInterestComposite < 50 && scoreResult.FundamentalsComposite < 50 &&
+                !(scoreResult.RatingsComposite == Constants.CORE_INVALID_COMP &&
+                scoreResult.FundamentalsComposite == Constants.CORE_INVALID_COMP);
         }
 
         // Calculate final prediction composite score decimal, and prediction parameter set HS type string
@@ -1768,7 +1770,7 @@ namespace PT.Middleware
             bandRangeModifier += lastPrice < historicalBandsMidpoint ? Constants.CORE_BONUS + 1 : 0;
             bandRangeModifier += lastPrice < averageLowerPrice ? Constants.CORE_BONUS + 1 : 0;
             bandRangeModifier += bandRangeModifier == 0 &&
-                lastPrice > historicalBandsMidpoint && lastPrice > averageLowerPrice ? Constants.CORE_PENALTY - 2: 0;
+                lastPrice > historicalBandsMidpoint && lastPrice > averageLowerPrice ? Constants.CORE_PENALTY * 2 : 0;
 
             //Get time-scaled buy and sell signal bonus and penalty
             decimal minorBuySignalBonus = bbandsMinorBuySignal ? Constants.CORE_BONUS + (daysToCalculate - daysSinceMinorBuySignal) + 1 : 0;

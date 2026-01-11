@@ -294,8 +294,8 @@ namespace PT.Middleware
 
         public static decimal GetBasicPriceTarget(decimal curPrice, bool isShort)
         {
-            decimal priceDiff = isShort ? curPrice * Constants.TARGET_AVG_WEEK_DIFF_PERCENT * -1 :
-                curPrice * Constants.TARGET_AVG_WEEK_DIFF_PERCENT;
+            decimal priceDiff = isShort ? curPrice * Constants.CORE_AVG_WEEK_DIFF_PERCENT * -1 :
+                curPrice * Constants.CORE_AVG_WEEK_DIFF_PERCENT;
             decimal backtestingSupportedTarget = curPrice + priceDiff;
             return backtestingSupportedTarget;
         }
