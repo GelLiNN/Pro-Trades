@@ -103,7 +103,7 @@ namespace PT
         public static readonly decimal DEFAULT_VOLUME_USD_30D_LIMIT = 375000.0M;
         public static readonly decimal DEFAULT_PENNY_PRICE_D_LIMIT = 2.5M;
         public static readonly decimal DEFAULT_MCAP_D_LIMIT = .1M; // .1M = 100 million, .075M = 75 million (in billions)
-        public static readonly int DEFAULT_HISTORY_DAYS_LIMIT = 200; // Depends on DEFAULT_HISTORY_DAYS + Aggregator
+        public static readonly int DEFAULT_HISTORY_DAYS_LIMIT = 145; // 145, 200 Depends on DEFAULT_HISTORY_DAYS + Aggregator
         public static readonly int DEFAULT_MIN_PASS_30D_LIMIT = 24;
         public static readonly int DEFAULT_MIN_PASS_10D_LIMIT = 8;
 
