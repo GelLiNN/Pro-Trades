@@ -1668,6 +1668,7 @@ namespace PT.Middleware
             bool priceAboveUpperBand = lastPrice > upperYList[upperYList.Count - 1];
             bool priceMoreThan10AboveMiddle = lastPrice + (lastPrice * .1M) > middleYList[middleYList.Count - 1];
             bool priceBelowLowerBand = lastPrice < lowerYList[lowerYList.Count - 1];
+            bool priceLessThanBandsMidpoint = lastPrice <= historicalBandsMidpoint + (historicalBandsMidpoint * .02M);
             int middleBandCrossMultiplier = daysSinceCrossAboveMiddleBand > 0 ?
                 daysToCalculate - daysSinceCrossAboveMiddleBand - 1: 0;
 
@@ -1682,18 +1683,18 @@ namespace PT.Middleware
                 decimal percentageDiffBullish = GetPercentDiff(middleYList[middleYList.Count - 1], lastPrice);
                 if (priceAboveUpperBand) // Pity points if price above upper band (lowest base value condition)
                 {
-                    baseValue += Math.Min(percentageDiffBullish + (Constants.CORE_BONUS - 3), 15);
+                    baseValue += Math.Min(percentageDiffBullish + (Constants.CORE_BONUS - 2), 15);
                     baseValue += recentPositivity ? 2 : -2;
                     baseValue += bbandsMinorSellSignal || lastPrice > historicalBandsMidpoint ?
-                        Constants.CORE_PENALTY : 0;
+                        Constants.CORE_PENALTY : 1;
                 }
                 else
                 {
-                    baseValue += ((100 - percentageDiffBullish - 20) / baseValueDivider);
+                    baseValue += ((100 - percentageDiffBullish - 19) / baseValueDivider);
                     baseValue += recentPositivity ? 2 : -2;
                     baseValue += percentageDiffBullish > 15 ? Constants.CORE_PENALTY : 0;
                     baseValue += bbandsMinorSellSignal ? Constants.CORE_PENALTY - 1 : 0;
-                    baseValue += lastPrice > historicalBandsMidpoint ? Constants.CORE_PENALTY - 1 : Constants.CORE_BONUS;
+                    baseValue += priceLessThanBandsMidpoint ? Constants.CORE_BONUS : Constants.CORE_PENALTY - 1;
 
                     // Penalty for being more than 10 percent from the middle band when above bands midpoint
                     baseValue += lastPrice > historicalBandsMidpoint && priceMoreThan10AboveMiddle ?
@@ -1716,7 +1717,7 @@ namespace PT.Middleware
                 {
                     baseValue += ((100 - percentageDiffRebound) / baseValueDivider) + 1;
                     baseValue += percentageDiffRebound < 10 ? Constants.CORE_BONUS + 1 : 0;
-                    baseValue += lastPrice > historicalBandsMidpoint ? Constants.CORE_PENALTY : Constants.CORE_BONUS;
+                    baseValue += priceLessThanBandsMidpoint ? Constants.CORE_BONUS : Constants.CORE_PENALTY;
                 }
                 // Cap base value at 50 with small bonus for max
                 baseValue = Math.Min(baseValue, 50);
@@ -1744,14 +1745,8 @@ namespace PT.Middleware
             customSlopeBonusRel += upperSlope < 0 && positiveAndNegativeSlopes
                 && priceSlope > -.05M ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .01M) ? Constants.CORE_BONUS + 1 : 0;
-            if (lastPrice <= historicalBandsMidpoint + (historicalBandsMidpoint * .02M))
-            {
-                customSlopeBonusRel += allSlopesPositive ? Constants.CORE_BONUS + 1 : 0;
-            }
-            else
-            {
-                customSlopeBonusRel += allSlopesPositive ? Constants.CORE_BONUS - 1 : 0;
-            }
+            customSlopeBonusRel += priceLessThanBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS + 1 : 0;
+            customSlopeBonusRel += !priceLessThanBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS - 1 : 0;
 
             // Bonus for custom slope considitons 2, individualized with slope multipliers
             decimal customSlopeBonusInd = 0;
@@ -1769,14 +1764,17 @@ namespace PT.Middleware
                 Constants.CORE_BONUS + 2 : 0;
             noSellSignalsBonus = !bbandsMajorSellSignal && !bbandsMinorSellSignal && priceAboveMiddleBand ?
                 Constants.CORE_BONUS - 1 : noSellSignalsBonus;
+            noSellSignalsBonus = !bbandsMajorSellSignal && bbandsMinorSellSignal && recentPositivity ?
+                Constants.CORE_BONUS - 1.5M : noSellSignalsBonus;
 
             // Modifier for bullish or bearish band range conditions relative to current price
             decimal bandRangeModifier = 0;
-            bandRangeModifier += upperYList[upperYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS + 1 : 0;
-            bandRangeModifier += lastPrice < historicalBandsMidpoint ? Constants.CORE_BONUS + 1 : 0;
+            bandRangeModifier += lowerYList[lowerYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS : -1;
+            bandRangeModifier += upperYList[upperYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS : 0;
+            bandRangeModifier += priceLessThanBandsMidpoint ? Constants.CORE_BONUS + 2 : -1;
             bandRangeModifier += lastPrice < averageLowerPrice ? Constants.CORE_BONUS + 2 : 0;
             bandRangeModifier += bandRangeModifier == 0 &&
-                lastPrice > historicalBandsMidpoint && lastPrice > averageLowerPrice ? Constants.CORE_PENALTY * 2 : 0;
+                !priceLessThanBandsMidpoint && lastPrice > averageLowerPrice ? Constants.CORE_PENALTY * 2 : 0;
 
             //Get time-scaled buy and sell signal bonus and penalty
             decimal minorBuySignalBonus = bbandsMinorBuySignal ? Constants.CORE_BONUS + (daysToCalculate - daysSinceMinorBuySignal) + 1 : 0;
