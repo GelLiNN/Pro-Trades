@@ -146,12 +146,12 @@ namespace PT.Middleware
             decimal postCompositeMod = 0; // Only if HS1, HS2, HS3
             if (paramType.Type == Constants.HS1 || paramType.Type == Constants.HS2 || paramType.Type == Constants.HS3)
             {
-                postCompositeMod += scoreResult.Fundamentals.BookValuePrice <= 0 &&
-                    scoreResult.RPriceToBook <= 0 && scoreResult.RPriceToEarnings <= 0 ? Constants.CORE_PENALTY - 1 : 0;
+                postCompositeMod += scoreResult.RPriceToBook <= 0 && scoreResult.RPriceToEarnings <= 0 ? Constants.CORE_PENALTY + 1 : 0;
+                postCompositeMod += scoreResult.RPriceToBook > 11 || scoreResult.RPriceToEarnings > 36 ? Constants.CORE_PENALTY + 1 : 0;
                 postCompositeMod += scoreResult.Fundamentals.BookValuePrice > 0 &&
                     (scoreResult.Fundamentals.PriceToFairValue > 0 && scoreResult.Fundamentals.PriceToFairValue < 2.0M) &&
                     (scoreResult.RPriceToBook > 0 && scoreResult.RPriceToBook < 2.5M) &&
-                    (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? Constants.HALF : 0;
+                    (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? 1 : 0;
             } // HS5 with gate
             else if (paramType.Type == Constants.HS5)
             {
@@ -1686,7 +1686,7 @@ namespace PT.Middleware
                     baseValue += Math.Min(percentageDiffBullish + (Constants.CORE_BONUS - 2), 15);
                     baseValue += recentPositivity ? 2 : -2;
                     baseValue += bbandsMinorSellSignal || lastPrice > historicalBandsMidpoint ?
-                        Constants.CORE_PENALTY : 1;
+                        Constants.CORE_PENALTY : 0;
                 }
                 else
                 {
@@ -1740,22 +1740,22 @@ namespace PT.Middleware
             // Bonus for custom slope conditions 1, relative to other statistics
             bool positiveAndNegativeSlopes = (lowerSlope > 0 || middleSlope > 0 || upperSlope > 0) &&
                 (lowerSlope < 0 || middleSlope < 0 || upperSlope < 0);
-            decimal customSlopeBonusRel = differenceSlope > .01M && positiveAndNegativeSlopes
-                && priceSlope > -.05M ? Constants.CORE_BONUS * 2 + 1 : 0;
+            decimal customSlopeBonusRel = differenceSlope > .05M && positiveAndNegativeSlopes
+                && priceSlope > -.05M ? Constants.CORE_BONUS * 2 : 0;
             customSlopeBonusRel += upperSlope < 0 && positiveAndNegativeSlopes
-                && priceSlope > -.05M ? Constants.CORE_BONUS + 1 : 0;
+                && priceSlope > -.05M ? Constants.CORE_BONUS : 0;
             customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .01M) ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusRel += priceLessThanBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusRel += !priceLessThanBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS - 1 : 0;
 
             // Bonus for custom slope considitons 2, individualized with slope multipliers
             decimal customSlopeBonusInd = 0;
-            customSlopeBonusInd += lowerSlope > 0.01M ? Constants.CORE_BONUS : 0;
+            customSlopeBonusInd += lowerSlope > 0.01M ? Constants.CORE_BONUS - 1 : 0;
             customSlopeBonusInd += lowerSlope > 0.01M && recentPositivity && !bbandsMajorSellSignal ?
                 (lowerSlope * lowerSlopeMultiplier) + Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusInd += upperSlope > 0.01M && recentPositivity && !bbandsMajorSellSignal ?
                 Constants.CORE_BONUS + 2 : 0;
-            customSlopeBonusInd += upperSlope > 0.01M ? Constants.CORE_BONUS : 0;
+            customSlopeBonusInd += upperSlope > 0.01M ? Constants.CORE_BONUS - 1 : 0;
             customSlopeBonusInd += middleSlope > 0.01M ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusInd += middleSlope > 0.01M && (!priceAboveMiddleBand || lastPrice < historicalBandsMidpoint) ?
                 (middleSlope * middleSlopeMultiplier) + Constants.CORE_BONUS + 1 : 0;
@@ -1765,7 +1765,7 @@ namespace PT.Middleware
             noSellSignalsBonus = !bbandsMajorSellSignal && !bbandsMinorSellSignal && priceAboveMiddleBand ?
                 Constants.CORE_BONUS - 1 : noSellSignalsBonus;
             noSellSignalsBonus = !bbandsMajorSellSignal && bbandsMinorSellSignal && recentPositivity ?
-                Constants.CORE_BONUS - 1.5M : noSellSignalsBonus;
+                Constants.CORE_BONUS - 2 : noSellSignalsBonus;
 
             // Modifier for bullish or bearish band range conditions relative to current price
             decimal bandRangeModifier = 0;
@@ -1793,15 +1793,16 @@ namespace PT.Middleware
             composite += customSlopeBonusInd;
             composite += noSellSignalsBonus;
             composite = Math.Min(composite, Constants.BBANDS_COMP_MID_LIMIT);
+            composite += composite <= Constants.BBANDS_COMP_MID_LIMIT && crossAboveMiddleBand && !bbandsMajorBuySignal ?
+                Constants.CORE_BONUS * middleBandCrossMultiplier : 0;
             composite += bandRangeModifier;
-            composite += composite < 70 && crossAboveMiddleBand && !bbandsMajorBuySignal ? Constants.CORE_BONUS * middleBandCrossMultiplier : 0;
             composite = Math.Min(composite, Constants.BBANDS_COMP_UPPER_LIMIT);
             composite += minorBuySignalBonus;
             composite += majorBuySignalBonus;
             composite += majorSellSignalPenalty;
             composite += minorSellSignalPenalty;
-            composite += composite > 50 && allSlopesNegative ? Constants.CORE_PENALTY - 1 : 0;
-            composite += composite > 50 && keySlopesNegative ? Constants.CORE_PENALTY * 2 : 0;
+            composite += composite > 30 && allSlopesNegative ? Constants.CORE_PENALTY - 1 : 0;
+            composite += composite > 30 && keySlopesNegative ? Constants.CORE_PENALTY * 2 : 0;
 
             composite = Math.Min(composite, 100); // cap BBANDS composite at 100, no extra weight
             return Math.Max(0, composite); // limit BBANDS composite at 0, no negatives
