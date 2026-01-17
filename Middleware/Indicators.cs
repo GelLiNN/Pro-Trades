@@ -1532,7 +1532,7 @@ namespace PT.Middleware
                 }
             }
             averageLowerPrice = averageLowerPrice / calculationsCount;
-            decimal historicalBandsMidpoint = (highestUpperPrice + lowestMiddlePrice) / Constants.TWO;
+            decimal historicalBandsMidpoint = (highestUpperPrice + lowestMiddlePrice + lowestMiddlePrice) / Constants.THREE;
 
             int daysCalulated = 0;
             for (int i = results.Count - daysToCalculate; i < results.Count; i++)
@@ -1769,8 +1769,8 @@ namespace PT.Middleware
 
             // Modifier for bullish or bearish band range conditions relative to current price
             decimal bandRangeModifier = 0;
-            bandRangeModifier += lowerYList[lowerYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS : -1;
-            bandRangeModifier += upperYList[upperYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS : 0;
+            bandRangeModifier += lowerYList[lowerYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS - 1 : -1;
+            bandRangeModifier += upperYList[upperYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS - 1 : 0;
             bandRangeModifier += priceLessThanBandsMidpoint ? Constants.CORE_BONUS + 2 : -1;
             bandRangeModifier += lastPrice < averageLowerPrice ? Constants.CORE_BONUS + 2 : 0;
             bandRangeModifier += bandRangeModifier == 0 &&
@@ -1793,12 +1793,13 @@ namespace PT.Middleware
             composite += customSlopeBonusInd;
             composite += noSellSignalsBonus;
             composite = Math.Min(composite, Constants.BBANDS_COMP_MID_LIMIT);
+            composite += bandRangeModifier;
+            composite += composite < 70 && crossAboveMiddleBand && !bbandsMajorBuySignal ? Constants.CORE_BONUS * middleBandCrossMultiplier : 0;
+            composite = Math.Min(composite, Constants.BBANDS_COMP_UPPER_LIMIT);
             composite += minorBuySignalBonus;
             composite += majorBuySignalBonus;
             composite += majorSellSignalPenalty;
             composite += minorSellSignalPenalty;
-            composite += bandRangeModifier;
-            composite += composite < 70 && crossAboveMiddleBand && !bbandsMajorBuySignal ? Constants.CORE_BONUS * middleBandCrossMultiplier : 0;
             composite += composite > 50 && allSlopesNegative ? Constants.CORE_PENALTY - 1 : 0;
             composite += composite > 50 && keySlopesNegative ? Constants.CORE_PENALTY * 2 : 0;
 

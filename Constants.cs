@@ -89,6 +89,7 @@ namespace PT
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
         public const int OBV_LOOKBACK_DAYS = 42; // Was 42 before 7.20.2025, tried 37 until 9.4.2025
         public const decimal BBANDS_COMP_MID_LIMIT = 70 + (CORE_BONUS * HALF);
+        public const decimal BBANDS_COMP_UPPER_LIMIT = CORE_PRIME_GATE - (CORE_BONUS * HALF);
         public const decimal FUND_NER_INVERSE_MULTIPLIER_PERCENT = 0.07M;
         public const decimal FUND_NER_MAJOR_LIMIT_PERCENT = 0.5M;
         public const decimal FUND_NER_MINOR_LIMIT_PERCENT = 0.2M;
