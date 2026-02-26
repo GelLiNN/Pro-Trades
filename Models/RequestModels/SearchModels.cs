@@ -39,8 +39,10 @@ namespace PT.Models.RequestModels
         public string? ParameterSet { get; set; }
         public string? AssetDescription { get; set; }
         public bool IsQualifiedVolume { get; set; }
-        public bool IsLongTermBullish { get; set; }
-        public bool IsShortTermBullish { get; set; }
+        public bool IsBullishLongSMA { get; set; }
+        public bool IsBullishDiffSMA { get; set; }
+        public bool IsBullishBandSMA { get; set; }
+        public decimal PCM { get; set; }
         public long AlpacaTimeMS { get; set; }
         public long YahooTimeMS { get; set; }
         public long FinraTimeMS { get; set; }

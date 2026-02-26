@@ -76,7 +76,7 @@ namespace PT
         public const decimal CORE_HS1_MOD = 0; // 0, 0.2, 0.333, 0.5, 1.0 default, handicapped mode BONUS * half
         public const decimal CORE_HS2_MOD = CORE_BONUS - 1; // -.5, 0, 0.5 default, handicapped mode 1
         //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
-        public const decimal CORE_HS3_MOD = CORE_BONUS - 2; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
+        public const decimal CORE_HS3_MOD = CORE_BONUS * HALF; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
         //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
 
         public const decimal CORE_HS4_MOD = 0.0M;
