@@ -154,10 +154,10 @@ namespace PT.Middleware
                 postCompositeMod += scoreResult.Fundamentals.BookValuePrice > 0 &&
                     (scoreResult.Fundamentals.PriceToFairValue > 0 && scoreResult.Fundamentals.PriceToFairValue < 2.0M) &&
                     (scoreResult.RPriceToBook > 0 && scoreResult.RPriceToBook < 2.5M) &&
-                    (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? (Constants.CORE_BONUS - 2) : 0;
+                    (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? (Constants.CORE_BONUS - 2.55M) : 0;
                 postCompositeMod += scoreResult.IsBullishLongSMA ? (Constants.CORE_BONUS - 3) : 0;
-                postCompositeMod += scoreResult.IsBullishDiffSMA ? (Constants.CORE_BONUS - 2.75M) : 0;
-                postCompositeMod += scoreResult.IsBullishBandSMA ? (Constants.CORE_BONUS - 2.75M) : 0;
+                postCompositeMod += scoreResult.IsBullishDiffSMA ? (Constants.CORE_BONUS - 2.85M) : 0;
+                postCompositeMod += scoreResult.IsBullishBandSMA ? (Constants.CORE_BONUS - 2.85M) : 0;
             } // HS5
             else if (paramType.Type == Constants.HS5)
             {
@@ -165,6 +165,7 @@ namespace PT.Middleware
                 postCompositeMod += scoreResult.IsBullishDiffSMA ? (Constants.CORE_BONUS - 2.33M) : 0;
                 postCompositeMod += scoreResult.IsBullishBandSMA ? (Constants.CORE_BONUS - 2.33M) : 0;
             }
+            postCompositeMod += !scoreResult.IsBullishDiffSMA && !scoreResult.IsBullishBandSMA ? -.5M : 0;
             scoreResult.PCM = postCompositeMod;
             scoreResult.CompositeScoreValue += postCompositeMod;
 
@@ -274,7 +275,7 @@ namespace PT.Middleware
                 compositeScoreFinal = (adxComposite + bbandsComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 decimal hs3Mod = Constants.CORE_HS3_MOD;
-                if (Constants.CORE_EXP_MOD_ENABLED) // EXPERIMENTAL
+                if (Constants.CORE_EXP_MOD_ENABLED) // EXPERIMENTAL (extreme circumstances)
                 {
                     hs3Mod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
                         && fr.FundamentalsComposite >= 50 && hr.RatingsComposite >= 50 && sr.ShortInterestComposite >= 60 ?
@@ -293,7 +294,7 @@ namespace PT.Middleware
                 compositeScoreFinal = (adxComposite + aroonComposite + bbandsComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 decimal hs2Mod = Constants.CORE_HS2_MOD;
-                if (Constants.CORE_EXP_MOD_ENABLED) // EXPERIMENTAL
+                if (Constants.CORE_EXP_MOD_ENABLED) // EXPERIMENTAL (extreme circumstances)
                 {
                     hs2Mod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
                         && fr.FundamentalsComposite >= 50 && hr.RatingsComposite >= 50 && sr.ShortInterestComposite >= 60 ?
@@ -312,7 +313,7 @@ namespace PT.Middleware
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 decimal hs1Mod = Constants.CORE_HS1_MOD;
-                if (Constants.CORE_EXP_MOD_ENABLED) // EXPERIMENTAL
+                if (Constants.CORE_EXP_MOD_ENABLED) // EXPERIMENTAL (extreme circumstances)
                 {
                     hs1Mod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && macdComposite >= 75
                         && fr.FundamentalsComposite >= 60 && hr.RatingsComposite >= 60 && sr.ShortInterestComposite >= 70 ?
@@ -1703,8 +1704,9 @@ namespace PT.Middleware
                 {
                     baseValue += ((100 - percentageDiffBullish - 18) / baseValueDivider);
                     baseValue += recentPositivity ? 2 : -2;
-                    baseValue += percentageDiffBullish > 15 ? Constants.CORE_PENALTY : Constants.CORE_BONUS;
-                    baseValue += percentageDiffBullish > 15 && lastPrice > historicalBandsMidpoint ? Constants.CORE_PENALTY : 0;
+                    baseValue += percentageDiffBullish <= 7 ? 1 : 0;
+                    baseValue += percentageDiffBullish > 12.5M ? Constants.CORE_PENALTY : Constants.CORE_BONUS - 2;
+                    baseValue += percentageDiffBullish > 12.5M && lastPrice > historicalBandsMidpoint ? Constants.CORE_PENALTY : 0;
                     baseValue += bbandsMinorSellSignal ? Constants.CORE_PENALTY - 1 : 0;
                     baseValue += priceLessThanBandsMidpoint ? Constants.CORE_BONUS : Constants.CORE_PENALTY - 1;
                 }
@@ -1723,7 +1725,7 @@ namespace PT.Middleware
                 }
                 else
                 {
-                    baseValue += ((100 - percentageDiffRebound) / baseValueDivider);
+                    baseValue += ((100 - percentageDiffRebound - 1) / baseValueDivider);
                     baseValue += percentageDiffRebound < 10 ? Constants.CORE_BONUS : 0;
                     baseValue += priceLessThanBandsMidpoint ? Constants.CORE_BONUS : Constants.CORE_PENALTY;
                 }
@@ -1732,8 +1734,8 @@ namespace PT.Middleware
                 baseValue += baseValue == 50 && recentPositivity ? Constants.CORE_BONUS : Constants.CORE_PENALTY + 2;
 
                 // Penalize base value for crossing below middle band recently
-                baseValue += crossBelowMiddleBand && daysSinceCrossBelowMiddleBand < 7 ?
-                    Constants.CORE_PENALTY - (8 - daysSinceCrossBelowMiddleBand) : 0;
+                baseValue += crossBelowMiddleBand && daysSinceCrossBelowMiddleBand < 5 ?
+                    Constants.CORE_PENALTY - (7 - daysSinceCrossBelowMiddleBand) : 0;
             }
             baseValue = Math.Max(baseValue, Constants.CORE_BONUS - 3); // Prevent negative baseValue
 

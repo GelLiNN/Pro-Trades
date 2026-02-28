@@ -70,20 +70,20 @@ namespace PT
         public const decimal CORE_BONUS = (decimal)Math.PI;
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_PRIME_GATE = 83.0M;
-        public const decimal CORE_PRIME_RND_LIMIT = 82.70M;
-        public const decimal CORE_SIGNAL_MOD = 3.7M; // Uber bullish macros 1, Uber bearish macros 7
+        public const decimal CORE_PRIME_RND_LIMIT = 82.80M;
+        public const decimal CORE_SIGNAL_MOD = 3.65M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
         public const decimal CORE_HS1_MOD = 0; // 0, 0.2, 0.333, 0.5, 1.0 default, handicapped mode BONUS * half
-        public const decimal CORE_HS2_MOD = CORE_BONUS - 1; // -.5, 0, 0.5 default, handicapped mode 1
-        //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
+        public const decimal CORE_HS2_MOD = CORE_BONUS - 1; // 0, BONUS - 2, BONUS - 1 default, handicapped mode BONUS - half
         public const decimal CORE_HS3_MOD = CORE_BONUS * HALF; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
-        //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
 
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF - HALF; // BONUS * 0.5 default, handicapped mode BONUS - 1
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
         public const decimal CORE_EXP_MOD_SNAP = 84.0M;
-        public const bool CORE_EXP_MOD_ENABLED = false; // Experimental HS1/HS2/HS3 extra post GRU composite mods mode
+        public const bool CORE_EXP_MOD_ENABLED = false; // Experimental HS1/HS2/HS3 extra post GRU composite mods mode (extreme circumstances)
+        //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
+        //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
 
         // GRU composite gate constants
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
