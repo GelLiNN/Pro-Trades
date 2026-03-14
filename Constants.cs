@@ -71,7 +71,7 @@ namespace PT
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_PRIME_RND_LIMIT = 82.80M;
-        public const decimal CORE_SIGNAL_MOD = 3.65M; // Uber bullish macros 1, Uber bearish macros 7
+        public const decimal CORE_SIGNAL_MOD = 3.7M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
         public const decimal CORE_HS1_MOD = 0; // 0, 0.2, 0.333, 0.5, 1.0 default, handicapped mode BONUS * half
         public const decimal CORE_HS2_MOD = CORE_BONUS - 1; // 0, BONUS - 2, BONUS - 1 default, handicapped mode BONUS - half
@@ -90,6 +90,7 @@ namespace PT
         public const int OBV_LOOKBACK_DAYS = 42; // Was 42 before 7.20.2025, tried 37 until 9.4.2025
         public const decimal BBANDS_COMP_MID_LIMIT = 70 + (CORE_BONUS * HALF);
         public const decimal BBANDS_COMP_UPPER_LIMIT = CORE_PRIME_GATE - (CORE_BONUS * HALF);
+        public const int BBANDS_BELOW_MIDDLE_CUTOFF_DAYS = 4; // When crossing below middle band gets stale without breakout
         public const decimal FUND_NER_INVERSE_MULTIPLIER_PERCENT = 0.07M;
         public const decimal FUND_NER_MAJOR_LIMIT_PERCENT = 0.5M;
         public const decimal FUND_NER_MINOR_LIMIT_PERCENT = 0.2M;
