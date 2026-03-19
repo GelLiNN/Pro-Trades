@@ -224,5 +224,25 @@ namespace PT.Core
             else
                 return 0;
         }
+
+        /// <summary>
+        /// Get random integer between upper and lower bounds inclusive.
+        /// Return 0 if the lower bound is higher (incorrect), and return the integer if equal.
+        /// </summary>
+        /// <param name="lowerBoundInclusive"></param>
+        /// <param name="upperBoundInclusive"></param>
+        /// <returns></returns>
+        public static int GetRandomInt(int lowerBoundInclusive, int upperBoundInclusive)
+        {
+            if (lowerBoundInclusive > upperBoundInclusive)
+                return 0;
+            else if (lowerBoundInclusive == upperBoundInclusive)
+                return lowerBoundInclusive;
+            else
+            {
+                Random random = new Random();
+                return random.Next(lowerBoundInclusive, upperBoundInclusive + 1);
+            }
+        }
     }
 }

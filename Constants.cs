@@ -65,28 +65,28 @@ namespace PT
         #region Core Model Constants
         public const int DEFAULT_HISTORY_DAYS = 295; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 295
         public const int DEFAULT_LOOKBACK_DAYS = 7;
-        //TODO: if 82.9 or higher round up to 83.0 Prime
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_PRIME_GATE = 83.0M;
-        public const decimal CORE_PRIME_RND_LIMIT = 82.80M;
+        public const decimal CORE_PRIME_RND_LIMIT = 82.80M; // If CS 82.8 or higher, round up to Prime
         public const decimal CORE_SIGNAL_MOD = 4.3M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
-        public const decimal CORE_HS1_MOD = CORE_BONUS - 2; // 0, 0.2, 0.333, 0.5, 1.0 default, handicapped mode BONUS * half
+
+        public const decimal CORE_HS1_MOD = CORE_BONUS - 2; // 0, 0.2, 0.333, 0.777, BONUS - 2 default, handicapped mode BONUS * half
         public const decimal CORE_HS2_MOD = CORE_BONUS - 0.75M; // 0, BONUS - 2, BONUS - 1 default, handicapped mode BONUS - half
         public const decimal CORE_HS3_MOD = CORE_BONUS - 1; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
-
-        public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF - 0.25M; // BONUS * 0.5 default, handicapped mode BONUS - 1
-        public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
-        public const decimal CORE_EXP_MOD_SNAP = 84.0M;
-        public const bool CORE_EXP_MOD_ENABLED = false; // Experimental HS1/HS2/HS3 extra post GRU composite mods mode (extreme circumstances)
+        public const decimal CORE_HS4_MOD = 0.0M;
+        public const decimal CORE_HS6_MOD = CORE_PENALTY * 2 + 1;
+        public const decimal CORE_EXP_MOD_SNAP = 83.5M;
+        public const bool CORE_EXT_MODE_ENABLED = false; // Extra post GRU composite mods mode (extreme circumstances)
         //public const decimal CORE_HS1_MOD = CORE_BONUS + 1; // CORE_EXP_MODE MAX
-        //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE MAX
-        //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.85M; // CORE_EXP_MODE MAX
+        //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXT_MODE MAX
+        //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.85M; // CORE_EXT_MODE MAX
+        //public const decimal CORE_HS5_MOD = CORE_BONUS - 1; // CORE_EXT_MODE MAX
 
-        // GRU composite gate constants
+        // GRU module composite gates and other constants
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
         public const int OBV_LOOKBACK_DAYS = 40; // Was 42 before 7.20.2025, tried 37 until 9.4.2025
         public const decimal BBANDS_COMP_MID_LIMIT = 70 + (CORE_BONUS * HALF);
@@ -98,7 +98,8 @@ namespace PT
         public const decimal FUND_EPS_MOD_UPPER_LIMIT = 37.0M;
         public const decimal FUND_PE_MOD_UPPER_LIMIT = 33.0M;
         public const decimal FUND_PE_MOD_LOWER_LIMIT = -20.0M;
-        public const int FUND_HANDICAP = 21; // For when YahooQuotesApi is broken
+        public const bool FUND_HANDICAP_MODE_ENABLED = false; // Mode used when YahooFinance API fails to get fundamentals data
+        public const int FUND_HANDICAP = 21; // Constant applied during handicap mode
 
         // Dollar volume, price, and other default disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 875000.0M;

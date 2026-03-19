@@ -1,3 +1,4 @@
+using PT.Core;
 using PT.Models.CoreModels;
 using PT.Models.RequestModels;
 using PT.Services;
@@ -260,6 +261,17 @@ namespace PT.Middleware
                 //HS5 - FINANCIAL INSTRUMENTS, RatingsComposite error, 2nd Generation
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
+                decimal hs5Mod = Constants.CORE_HS3_MOD;
+                if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
+                {
+                    bool applyExtMod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
+                        && macdComposite >= 70 && fr.FundamentalsComposite >= 50 && sr.ShortInterestComposite >= 60;
+                    hs5Mod = applyExtMod ? Constants.CORE_HS5_MOD * 2 : Constants.CORE_HS5_MOD;
+                    compositeScoreFinal += hs5Mod;
+                    return (applyExtMod && compositeScoreFinal > Constants.CORE_PRIME_GATE ?
+                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MOD_SNAP) + (Maths.GetRandomInt(0, 21) * .01M) :
+                        compositeScoreFinal, Constants.HS5);
+                }
                 return (compositeScoreFinal + Constants.CORE_HS5_MOD, Constants.HS5);
             }
             else if (fr.FundamentalsComposite == Constants.CORE_INVALID_COMP && hr.RatingsComposite != Constants.CORE_INVALID_COMP)
@@ -275,13 +287,15 @@ namespace PT.Middleware
                 compositeScoreFinal = (adxComposite + bbandsComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 decimal hs3Mod = Constants.CORE_HS3_MOD;
-                if (Constants.CORE_EXP_MOD_ENABLED) // EXPERIMENTAL (extreme circumstances)
+                if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
                 {
-                    hs3Mod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
-                        && fr.FundamentalsComposite >= 50 && hr.RatingsComposite >= 50 && sr.ShortInterestComposite >= 60 ?
-                        Constants.CORE_HS3_MOD * 2 : Constants.CORE_HS3_MOD;
+                    bool applyExtMod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
+                        && fr.FundamentalsComposite >= 50 && hr.RatingsComposite >= 50 && sr.ShortInterestComposite >= 60;
+                    hs3Mod = applyExtMod ? Constants.CORE_HS3_MOD * 2 : Constants.CORE_HS3_MOD;
                     compositeScoreFinal += hs3Mod;
-                    return (compositeScoreFinal, Constants.HS3);
+                    return (applyExtMod && compositeScoreFinal > Constants.CORE_PRIME_GATE ?
+                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MOD_SNAP) + (Maths.GetRandomInt(0, 21) * .01M) :
+                        compositeScoreFinal, Constants.HS3);
                 }
                 else
                 {
@@ -294,13 +308,15 @@ namespace PT.Middleware
                 compositeScoreFinal = (adxComposite + aroonComposite + bbandsComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 decimal hs2Mod = Constants.CORE_HS2_MOD;
-                if (Constants.CORE_EXP_MOD_ENABLED) // EXPERIMENTAL (extreme circumstances)
+                if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
                 {
-                    hs2Mod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
-                        && fr.FundamentalsComposite >= 50 && hr.RatingsComposite >= 50 && sr.ShortInterestComposite >= 60 ?
-                        Constants.CORE_HS2_MOD * 2 : Constants.CORE_HS2_MOD;
+                    bool applyExtMod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
+                        && fr.FundamentalsComposite >= 50 && hr.RatingsComposite >= 50 && sr.ShortInterestComposite >= 60;
+                    hs2Mod = applyExtMod ? Constants.CORE_HS2_MOD * 2 : Constants.CORE_HS2_MOD;
                     compositeScoreFinal += hs2Mod;
-                    return (compositeScoreFinal, Constants.HS2);
+                    return (applyExtMod && compositeScoreFinal > Constants.CORE_PRIME_GATE ?
+                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MOD_SNAP) + (Maths.GetRandomInt(0, 21) * .01M) :
+                        compositeScoreFinal, Constants.HS2);
                 }
                 else
                 {
@@ -313,13 +329,15 @@ namespace PT.Middleware
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
                 decimal hs1Mod = Constants.CORE_HS1_MOD;
-                if (Constants.CORE_EXP_MOD_ENABLED) // EXPERIMENTAL (extreme circumstances)
+                if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
                 {
-                    hs1Mod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && macdComposite >= 75
-                        && fr.FundamentalsComposite >= 60 && hr.RatingsComposite >= 60 && sr.ShortInterestComposite >= 60 ?
-                        Constants.CORE_HS1_MOD * 2 : Constants.CORE_HS1_MOD;
+                    bool applyExtMod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && macdComposite >= 75
+                        && fr.FundamentalsComposite >= 60 && hr.RatingsComposite >= 60 && sr.ShortInterestComposite >= 60;
+                    hs1Mod = applyExtMod ? Constants.CORE_HS1_MOD * 2 : Constants.CORE_HS1_MOD;
                     compositeScoreFinal += hs1Mod;
-                    return (compositeScoreFinal, Constants.HS1);
+                    return (applyExtMod && compositeScoreFinal > Constants.CORE_PRIME_GATE ?
+                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MOD_SNAP) + (Maths.GetRandomInt(0, 21) * .01M) :
+                        compositeScoreFinal, Constants.HS1);
                 }
                 else
                 {
@@ -773,7 +791,7 @@ namespace PT.Middleware
                 // Add bonus if composite below fair and price inside SMA band
                 composite += composite < 50 && history.IsInsideSmaBand ? Constants.CORE_BONUS * 2 - 1 : 0;
                 // For handicapped mode
-                //composite += Constants.FUND_HANDICAP;
+                composite += Constants.FUND_HANDICAP_MODE_ENABLED ? Constants.FUND_HANDICAP : 0;
 
                 composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives
