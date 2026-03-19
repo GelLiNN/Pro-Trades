@@ -82,8 +82,9 @@ namespace PT
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2;
         public const decimal CORE_EXP_MOD_SNAP = 84.0M;
         public const bool CORE_EXP_MOD_ENABLED = false; // Experimental HS1/HS2/HS3 extra post GRU composite mods mode (extreme circumstances)
-        //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
-        //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE
+        //public const decimal CORE_HS1_MOD = CORE_BONUS + 1; // CORE_EXP_MODE MAX
+        //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXP_MODE MAX
+        //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.85M; // CORE_EXP_MODE MAX
 
         // GRU composite gate constants
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
