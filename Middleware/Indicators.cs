@@ -1722,9 +1722,9 @@ namespace PT.Middleware
                 {
                     baseValue += ((100 - percentageDiffBullish - 18.5M) / baseValueDivider);
                     baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1 : 0;
-                    baseValue += percentageDiffBullish <= 7 ? Constants.CORE_BONUS - 1.75M : 0;
-                    baseValue += percentageDiffBullish <= 12.5M ? Constants.CORE_BONUS - 2.33M : -1;
+                    baseValue += percentageDiffBullish <= 7 ? Constants.CORE_BONUS - 2 : 0;
                     baseValue += percentageDiffBullish <= 12.5M && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2 : 0;
+                    baseValue += percentageDiffBullish > 12.5M ? Constants.CORE_PENALTY + 2 : 0;
                     baseValue += !priceBelowBandsMidpoint ? Constants.CORE_PENALTY + 0.5M : 0;
                     baseValue += bbandsMinorSellSignal ? Constants.CORE_PENALTY : 0;
                 }
@@ -1746,10 +1746,10 @@ namespace PT.Middleware
                 {
                     baseValue += ((100 - percentageDiffRebound - 0.5M) / baseValueDivider);
                     baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS : 0;
-                    baseValue += noRecentCrossBelowMiddle ? Constants.CORE_BONUS - 2 : 0;
-                    baseValue += percentageDiffRebound <= 10 ? Constants.CORE_BONUS - 1.5M: 0;
-                    baseValue += percentageDiffRebound <= 15 ? Constants.CORE_BONUS - 2.25M : -1;
-                    baseValue += percentageDiffRebound <= 15 && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2 : 0;
+                    baseValue += percentageDiffRebound <= 9 ? Constants.CORE_BONUS - 1: 0;
+                    baseValue += percentageDiffRebound <= 14 && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2 : 0;
+                    baseValue += percentageDiffRebound <= 14 && noRecentCrossBelowMiddle ? Constants.CORE_BONUS - 2 : 0;
+                    baseValue += percentageDiffRebound > 14 ? Constants.CORE_PENALTY + 2 : 0;
                     baseValue += !priceBelowBandsMidpoint ? Constants.CORE_PENALTY + 1 : 0;
                 }
                 // Cap base value at 50 with small bonus for max
@@ -1759,8 +1759,7 @@ namespace PT.Middleware
                 // Penalize base value for crossing below middle band recently
                 baseValue += !noRecentCrossBelowMiddle ? Constants.CORE_PENALTY - (7 - daysSinceCrossBelowMiddleBand) : 0;
             }
-
-            baseValue += recentPositivity ? 1 : -1; // Small modifier just for recent positivity
+            baseValue += recentPositivity ? Constants.CORE_BONUS - 2 : Constants.CORE_PENALTY + 2;
             baseValue = Math.Max(baseValue, Constants.CORE_BONUS - 3); // Prevent negative baseValue
 
             // Bonus for bullish consolidation of the bands or rebound conditions
@@ -1833,7 +1832,7 @@ namespace PT.Middleware
             composite += noSellSignalsBonus;
             composite = Math.Min(composite, Constants.BBANDS_COMP_MID_LIMIT);
             composite += composite <= Constants.BBANDS_COMP_MID_LIMIT && crossAboveMiddleBand && !bbandsMajorBuySignal ?
-                Constants.CORE_BONUS * middleBandCrossMultiplier : 0;
+                Constants.CORE_BONUS * middleBandCrossMultiplier : 0; // Non-breakout middle cross modifier
             composite += bandRangeModifier;
             composite = Math.Min(composite, Constants.BBANDS_COMP_UPPER_LIMIT);
             composite += minorBuySignalBonus;
@@ -1841,10 +1840,8 @@ namespace PT.Middleware
             composite += majorSellSignalPenalty;
             composite += minorSellSignalPenalty;
             composite += composite > 30 && allSlopesNegative ? Constants.CORE_PENALTY - 1 : 0;
-            composite += composite > 30 && keySlopesNegative ? Constants.CORE_PENALTY * 2 : 0;
-            composite += composite > 70 && !recentPositivity && !priceBelowBandsMidpoint ? Constants.CORE_PENALTY + 1: 0;
+            composite += composite > 30 && keySlopesNegative && !allSlopesNegative ? Constants.CORE_PENALTY - 1 : 0;
             composite += (Constants.CORE_BONUS - 3);
-
             composite = Math.Min(composite, 100); // cap BBANDS composite at 100, no extra weight
             return Math.Max(0, composite); // limit BBANDS composite at 0, no negatives
         }
