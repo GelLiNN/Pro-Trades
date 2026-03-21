@@ -1,3 +1,4 @@
+using PT.Core;
 using PT.Models.CoreModels;
 using PT.Services;
 using Skender.Stock.Indicators;
@@ -75,7 +76,7 @@ namespace PT.Middleware
                 }
 
                 var adxAdjusted = adxResults.Take(i);
-                decimal compScore = Indicators.GetADXComposite(adxAdjusted, Constants.DEFAULT_LOOKBACK_DAYS);
+                decimal compScore = GRU.GetADXComposite(adxAdjusted, Constants.DEFAULT_LOOKBACK_DAYS);
                 if (compScore >= 85 && !disqualified)
                 {
                     result.TotalPrimes++;

@@ -70,13 +70,13 @@ namespace PT
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_PRIME_RND_LIMIT = 82.80M; // If CS 82.8 or higher, round up to Prime
-        public const decimal CORE_SIGNAL_MOD = 4.3M; // Uber bullish macros 1, Uber bearish macros 7
+        public const decimal CORE_SIGNAL_MOD = 4.0M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
-        public const decimal CORE_HS1_MOD = CORE_BONUS - 2; // 0, 0.2, 0.333, 0.777, BONUS - 2 default, handicapped mode BONUS * half
-        public const decimal CORE_HS2_MOD = CORE_BONUS - 0.75M; // 0, BONUS - 2, BONUS - 1 default, handicapped mode BONUS - half
-        public const decimal CORE_HS3_MOD = CORE_BONUS - 1; // BONUS * HALF, BONUS - 1 default, handicapped mode BONUS - half
-        public const decimal CORE_HS5_MOD = CORE_BONUS * HALF - 0.25M; // BONUS * 0.5 default, handicapped mode BONUS - 1
+        public const decimal CORE_HS1_MOD = 0.77M; // 0, 0.2, 0.33, 0.77, BONUS - 2 default, handicapped mode BONUS * half
+        public const decimal CORE_HS2_MOD = CORE_BONUS - 1; // 0, BONUS - 2, BONUS - 1 default, handicapped mode BONUS - half
+        public const decimal CORE_HS3_MOD = CORE_BONUS - 1.33M; // BONUS * HALF, BONUS - 1.33 default, handicapped mode BONUS - half
+        public const decimal CORE_HS5_MOD = CORE_BONUS * HALF; // BONUS * 0.5 default, handicapped mode BONUS - 1
         public const decimal CORE_HS4_MOD = 0.0M;
         public const decimal CORE_HS6_MOD = CORE_PENALTY * 2 + 1;
         public const decimal CORE_EXP_MOD_SNAP = 83.5M;

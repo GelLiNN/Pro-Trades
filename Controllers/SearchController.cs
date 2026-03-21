@@ -1,10 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
+using PT.Core;
 using PT.Middleware;
 using PT.Models.RequestModels;
 using PT.Services;
 
 namespace PT.Controllers
 {
+    /// <summary>
+    /// Main controller for interacting with the GRU compositing ML AI system.
+    /// </summary>
     public class SearchController : Controller
     {
         private readonly ILogger<SearchController> _logger;
@@ -33,7 +37,7 @@ namespace PT.Controllers
         public CompositeScoreResult GetCompositeScore(string symbol)
         {
             symbol = symbol.ToUpper();
-            return Indicators.GetCompositeScoreResult(symbol, _rm);
+            return Predictor.GetCompositeScoreResult(symbol, _rm);
         }
 
         // For getting backtesting data for single composite

@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using NodaTime;
+using PT.Core;
 using PT.Models.RequestModels;
 using PT.Services;
 using Skender.Stock.Indicators;
@@ -87,7 +88,7 @@ namespace PT.Middleware
                     };
                 }
 
-                var score = Indicators.GetCompositeScoreResult(symbol, rm);
+                var score = Predictor.GetCompositeScoreResult(symbol, rm);
                 //var score = Indicators.GetCompositeScoreResult(symbol, quote, rm);
                 if (score.CompositeScoreValue > 0)
                     companyStat.CompositeScoreResult = score;
@@ -137,8 +138,8 @@ namespace PT.Middleware
                 .WithHistoryStartDate(zonedTimeInstant)
                 .Build();
 
-            Result<History> result = await yahooQuotes.GetHistoryAsync(symbol);
-            History history = result.Value;
+            Result<YahooQuotesApi.History> result = await yahooQuotes.GetHistoryAsync(symbol);
+            YahooQuotesApi.History history = result.Value;
 
             ImmutableArray<Tick> ticks = history.Ticks;
             return ticks.ToList();

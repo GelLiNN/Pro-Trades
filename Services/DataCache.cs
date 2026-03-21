@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Primitives;
+using PT.Core;
 using PT.Middleware;
 using PT.Models.RequestModels;
 using YahooQuotesApi;
@@ -98,7 +99,7 @@ namespace PT.Services
 
                 // Remove before updating and re-adding
                 RemoveCachedSymbol(cacheKey);
-                CompositeScoreResult result = Indicators.GetCompositeScoreResult(symbol, _rm);
+                CompositeScoreResult result = Predictor.GetCompositeScoreResult(symbol, _rm);
 
                 // Save score to cache
                 if (result.ParameterSet != null)

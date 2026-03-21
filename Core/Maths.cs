@@ -1,5 +1,8 @@
 namespace PT.Core
 {
+    /// <summary>
+    /// Class containing custom mathematical functions.
+    /// </summary>
     public static class Maths
     {
         /// <summary>
