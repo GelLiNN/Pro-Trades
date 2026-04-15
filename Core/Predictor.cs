@@ -323,7 +323,8 @@ namespace PT.Core
         private static bool IsDisqualifiedPrediction(CompositeScoreResult scoreResult)
         {
             decimal mcap = Convert.ToDecimal(scoreResult.MarketCap.Split(" ")[0]);
-            bool qualifiedMcap = (scoreResult.ParameterSet == Constants.HS5 && mcap == 0) || mcap > Constants.DEFAULT_MCAP_D_LIMIT;
+            bool qualifiedMcap = (scoreResult.ParameterSet == Constants.HS5 && mcap == 0) || mcap > Constants.DEFAULT_MCAP_D_LIMIT
+                || Constants.FUND_HANDICAP_MODE_ENABLED;
             bool qualifiedHistDays = scoreResult.GRUHistoryDays >= Constants.DEFAULT_HISTORY_DAYS_LIMIT;
             return
                 (!scoreResult.IsQualifiedVolume || !qualifiedMcap || !qualifiedHistDays ||
@@ -351,17 +352,26 @@ namespace PT.Core
             decimal postCompositeMod = 0; // Only if HS1, HS2, HS3
             if (paramType.Type == Constants.HS1 || paramType.Type == Constants.HS2 || paramType.Type == Constants.HS3)
             {
-                postCompositeMod += scoreResult.RPriceToBook <= 0 ? (Constants.CORE_PENALTY + 2) : 0;
-                postCompositeMod += scoreResult.RPriceToEarnings <= 0 ? (Constants.CORE_PENALTY + 2) : 0;
-                postCompositeMod += scoreResult.RPriceToBook > 12 ? (Constants.CORE_PENALTY + 2) : 0;
-                postCompositeMod += scoreResult.RPriceToEarnings > 37 ? (Constants.CORE_PENALTY + 2) : 0;
-                postCompositeMod += scoreResult.Fundamentals.BookValuePrice > 0 &&
-                    (scoreResult.Fundamentals.PriceToFairValue > 0 && scoreResult.Fundamentals.PriceToFairValue < 2.0M) &&
-                    (scoreResult.RPriceToBook > 0 && scoreResult.RPriceToBook < 2.5M) &&
-                    (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? (Constants.CORE_BONUS - 2.5M) : 0;
-                postCompositeMod += scoreResult.IsBullishLongSMA ? (Constants.CORE_BONUS - 2.75M) : 0;
-                postCompositeMod += scoreResult.IsBullishDiffSMA ? (Constants.CORE_BONUS - 2.75M) : 0;
-                postCompositeMod += scoreResult.IsBullishBandSMA ? (Constants.CORE_BONUS - 2.5M) : 0;
+                if (!Constants.FUND_HANDICAP_MODE_ENABLED)
+                {
+                    postCompositeMod += scoreResult.RPriceToBook <= 0 ? (Constants.CORE_PENALTY + 2) : 0;
+                    postCompositeMod += scoreResult.RPriceToEarnings <= 0 ? (Constants.CORE_PENALTY + 2) : 0;
+                    postCompositeMod += scoreResult.RPriceToBook > 12 ? (Constants.CORE_PENALTY + 2) : 0;
+                    postCompositeMod += scoreResult.RPriceToEarnings > 37 ? (Constants.CORE_PENALTY + 2) : 0;
+                    postCompositeMod += scoreResult.Fundamentals.BookValuePrice > 0 &&
+                        (scoreResult.Fundamentals.PriceToFairValue > 0 && scoreResult.Fundamentals.PriceToFairValue < 2.0M) &&
+                        (scoreResult.RPriceToBook > 0 && scoreResult.RPriceToBook < 2.5M) &&
+                        (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? (Constants.CORE_BONUS - 2.5M) : 0;
+                    postCompositeMod += scoreResult.IsBullishLongSMA ? (Constants.CORE_BONUS - 2.75M) : 0;
+                    postCompositeMod += scoreResult.IsBullishDiffSMA ? (Constants.CORE_BONUS - 2.75M) : 0;
+                    postCompositeMod += scoreResult.IsBullishBandSMA ? (Constants.CORE_BONUS - 2.5M) : 0;
+                }
+                else
+                {
+                    postCompositeMod += scoreResult.IsBullishLongSMA ? (Constants.CORE_BONUS - 2.45M) : 0;
+                    postCompositeMod += scoreResult.IsBullishDiffSMA ? (Constants.CORE_BONUS - 2.45M) : 0;
+                    postCompositeMod += scoreResult.IsBullishBandSMA ? (Constants.CORE_BONUS - 2.45M) : 0;
+                }
             } // HS5
             else if (paramType.Type == Constants.HS5)
             {
@@ -370,7 +380,8 @@ namespace PT.Core
                 postCompositeMod += scoreResult.IsBullishBandSMA ? (Constants.CORE_BONUS - 2.25M) : 0;
             }
             postCompositeMod += !scoreResult.IsBullishDiffSMA && !scoreResult.IsBullishBandSMA ? -.5M : 0;
-            postCompositeMod += !scoreResult.IsBullishLongSMA && !scoreResult.IsBullishDiffSMA && !scoreResult.IsBullishBandSMA ? -.25M : 0;
+            postCompositeMod += !Constants.FUND_HANDICAP_MODE_ENABLED &&
+                !scoreResult.IsBullishLongSMA && !scoreResult.IsBullishDiffSMA && !scoreResult.IsBullishBandSMA ? -.25M : 0;
             postCompositeMod = Constants.CORE_EXT_MODE_ENABLED && postCompositeMod < 0 ? postCompositeMod * 0.66M : postCompositeMod;
             postCompositeMod = Constants.CORE_EXT_MODE_ENABLED && postCompositeMod > 1 ? postCompositeMod + 0.5M : postCompositeMod;
             return postCompositeMod;

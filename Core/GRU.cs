@@ -46,6 +46,7 @@ namespace PT.Core
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
                 decimal hs5Mod = Constants.CORE_HS3_MOD;
+                hs5Mod += Constants.FUND_HANDICAP_MODE_ENABLED ? 0.25M : 0;
                 if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
                 {
                     bool applyExtMod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
@@ -993,7 +994,7 @@ namespace PT.Core
                 }
                 else
                 {
-                    baseValue += ((100 - percentageDiffRebound - 1) / baseValueDivider);
+                    baseValue += ((100 - percentageDiffRebound - Constants.THIRD) / baseValueDivider);
                     baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS : 0;
                     baseValue += percentageDiffRebound <= 9 ? Constants.CORE_BONUS - 1 : 0;
                     baseValue += percentageDiffRebound <= 14 && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2 : 0;
@@ -1300,7 +1301,8 @@ namespace PT.Core
                     && history.AverageVolUsd10Day > (history.AverageVolUsd30Day + Constants.THIRTY_THOUSAND);
                 if (hasGoldenPath)
                 {
-                    goldenPathBonus += Constants.CORE_BONUS * 2;
+                    goldenPathBonus += Constants.FUND_HANDICAP_MODE_ENABLED ?
+                        Constants.CORE_BONUS * 3 - 1 : Constants.CORE_BONUS * 2;
                 }
 
                 // Get normalized price slope and volume slope bonus
@@ -1338,7 +1340,7 @@ namespace PT.Core
                 // Custom fair value after GRU comp
                 decimal customFairValue = CalcCustomFairValue(history.TodayVwap, fairValuePrice, bookValuePrice,
                     fiftyTwoWeekLow, averagePE, epsTrailing, composite);
-                decimal priceToFairValue = history.TodayVwap / customFairValue;
+                decimal priceToFairValue = Constants.FUND_HANDICAP_MODE_ENABLED ? 0 : history.TodayVwap / customFairValue;
 
                 // Final GRU gates
                 composite += composite > 60 && priceToFairValue > 5 ? Constants.CORE_PENALTY * 2 : 0;
@@ -1690,6 +1692,9 @@ namespace PT.Core
 
         private static decimal CalcCustomFairValue(decimal tvwp, decimal fvp, decimal bvp, decimal ftlp, decimal ape, decimal epst, decimal fcs)
         {
+            if (Constants.FUND_HANDICAP_MODE_ENABLED)
+                return 0;
+
             decimal customFairValue = 0;
             decimal customFairValueCount = 0;
             bool shouldUseBookValue = fvp != 0 || bvp != 0;

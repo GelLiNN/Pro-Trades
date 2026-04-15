@@ -63,18 +63,18 @@ namespace PT
         public const decimal FIFTH = 0.2M;
 
         #region Core Model Constants
-        public const int DEFAULT_HISTORY_DAYS = 295; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 295
+        public const int DEFAULT_HISTORY_DAYS = 292; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 295
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_PRIME_RND_LIMIT = 82.80M; // If CS 82.8 or higher, round up to Prime
-        public const decimal CORE_SIGNAL_MOD = 4.0M; // Uber bullish macros 1, Uber bearish macros 7
+        public const decimal CORE_SIGNAL_MOD = 3.8M; // Uber bullish macros 1, Uber bearish macros 7
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
-        public const decimal CORE_HS1_MOD = 0.77M; // 0, 0.2, 0.33, 0.77, BONUS - 2 default, handicapped mode BONUS * half
-        public const decimal CORE_HS2_MOD = CORE_BONUS - 1; // 0, BONUS - 2, BONUS - 1 default, handicapped mode BONUS - half
+        public const decimal CORE_HS1_MOD = 0.22M; // 0, 0.22, 0.33, 0.77, BONUS - 2 default, handicapped mode BONUS * half
+        public const decimal CORE_HS2_MOD = CORE_BONUS - 1.88M; // 0, BONUS - 2, BONUS - 1 default, handicapped mode BONUS - half
         public const decimal CORE_HS3_MOD = CORE_BONUS - 1.33M; // BONUS * HALF, BONUS - 1.33 default, handicapped mode BONUS - half
         public const decimal CORE_HS5_MOD = CORE_BONUS * HALF; // BONUS * 0.5 default, handicapped mode BONUS - 1
         public const decimal CORE_HS4_MOD = 0.0M;
@@ -98,8 +98,9 @@ namespace PT
         public const decimal FUND_EPS_MOD_UPPER_LIMIT = 37.0M;
         public const decimal FUND_PE_MOD_UPPER_LIMIT = 33.0M;
         public const decimal FUND_PE_MOD_LOWER_LIMIT = -20.0M;
-        public const bool FUND_HANDICAP_MODE_ENABLED = false; // Mode used when YahooFinance API fails to get fundamentals data
+        public const bool FUND_HANDICAP_MODE_ENABLED = true; // Mode used when YahooFinance API fails to get fundamentals data
         public const int FUND_HANDICAP = 21; // Constant applied during handicap mode
+        // NOTE: remember you have to manually disqualify the earnings within attrition if FUND handicapped
 
         // Dollar volume, price, and other default disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 875000.0M;
