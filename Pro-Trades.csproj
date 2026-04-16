@@ -30,7 +30,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
     <PackageReference Include="TinyCsvParser" Version="2.7.1" />
-    <PackageReference Include="YahooQuotesApi" Version="7.0.6" />
+    <PackageReference Include="YahooQuotesApi" Version="7.0.7" />
   </ItemGroup>
 
   <ItemGroup>
