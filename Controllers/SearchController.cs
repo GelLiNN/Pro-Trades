@@ -68,6 +68,7 @@ namespace PT.Controllers
         [HttpGet("api/search/GetIncidenceView")]
         public IncidenceViewResult GetIncidenceView()
         {
+            IncidenceViewResult result = new IncidenceViewResult();
             HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
             int scoreCount = cachedSymbols.Count;
             if (scoreCount > 0)
@@ -93,7 +94,6 @@ namespace PT.Controllers
                 {
                     CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
 
-                    //
                     if (companyScore != null && companyScore.CompositeScoreRank.StartsWith(Constants.RANK_DISQUALIFIED))
                     {
                         disqualifiedCount++;
@@ -157,7 +157,7 @@ namespace PT.Controllers
                         }
                     }
                 }
-                return new IncidenceViewResult
+                result = new IncidenceViewResult
                 {
                     ScoreCount = scoreCount,
                     ScoreAttemptCount = _cache.ScrapedSymbolsAttempted,
@@ -191,8 +191,10 @@ namespace PT.Controllers
                     HS6Count = hs6Count,
                     HS6IncidenceRate = setTotalCount > 0 ? ((decimal)hs6Count / (decimal)setTotalCount) * 100 : 0
                 };
+                result.TotalLiquidityRate = result.PrimeIncidenceRate + result.GoodIncidenceRate
+                    + result.FairIncidenceRate + result.NeutralIncidenceRate;
             }
-            return new IncidenceViewResult();
+            return result;
         }
 
         // Main endpoint for getting all prediction scores in the entire set
@@ -281,6 +283,27 @@ namespace PT.Controllers
             {
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
                 if (companyScore != null && !companyScore.CompositeScoreRank.StartsWith(Constants.RANK_DISQUALIFIED)
+                    && companyScore.CompositeScoreRank.EndsWith(Constants.RANK_E))
+                {
+                    cachedEarnings.Add(companyScore);
+                }
+            }
+            cachedEarnings = cachedEarnings.OrderByDescending(x => x.CompositeScoreValue).ToList();
+            return cachedEarnings;
+        }
+
+        // Endpoint for getting all prime predictions with earnings during attrition
+        [HttpGet("api/search/GetPrimeEarnings")]
+        public List<CompositeScoreResult> GetPrimeEarnings()
+        {
+            List<CompositeScoreResult> cachedEarnings = new List<CompositeScoreResult>();
+
+            HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
+            foreach (string cacheKey in cachedSymbols)
+            {
+                CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
+                if (companyScore != null && !companyScore.CompositeScoreRank.StartsWith(Constants.RANK_DISQUALIFIED)
+                    && companyScore.CompositeScoreRank.StartsWith(Constants.RANK_PRIME)
                     && companyScore.CompositeScoreRank.EndsWith(Constants.RANK_E))
                 {
                     cachedEarnings.Add(companyScore);

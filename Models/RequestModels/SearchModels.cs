@@ -105,6 +105,7 @@ namespace PT.Models.RequestModels
         public decimal HS5IncidenceRate { get; set; }
         public int HS6Count { get; set; }
         public decimal HS6IncidenceRate { get; set; }
+        public decimal TotalLiquidityRate { get; set; }
     }
 
     public class ShortInterestResult

@@ -1,3 +1,4 @@
+using PT.Core;
 using PT.Models.RequestModels;
 using PT.Services;
 
@@ -124,8 +125,13 @@ namespace PT.Middleware
             }
 
             // Ensure combined set is randomized, then start loading cache with Get function
-            Random r = new Random();
-            var randomizedSymbols = symbols.OrderBy(x => r.Next());
+            IOrderedEnumerable<string> randomizedSymbols = null;
+            //int timesToRandomize = Maths.GetRandomInt(1, 10);
+            //for (int n = 0; n < timesToRandomize; n++)
+            //{
+                Random r = new Random();
+                randomizedSymbols = symbols.OrderBy(x => r.Next());
+            //}
             return randomizedSymbols.Take(limit).ToHashSet();
         }
     }

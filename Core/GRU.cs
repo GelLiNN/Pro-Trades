@@ -54,7 +54,7 @@ namespace PT.Core
                     hs5Mod = applyExtMod ? Constants.CORE_HS5_MOD * 2 : Constants.CORE_HS5_MOD;
                     compositeScoreFinal += hs5Mod;
                     return (applyExtMod && compositeScoreFinal > Constants.CORE_PRIME_GATE ?
-                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MOD_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
                         compositeScoreFinal, Constants.HS5);
                 }
                 return (compositeScoreFinal + Constants.CORE_HS5_MOD, Constants.HS5);
@@ -79,7 +79,7 @@ namespace PT.Core
                     hs3Mod = applyExtMod ? Constants.CORE_HS3_MOD * 2 : Constants.CORE_HS3_MOD;
                     compositeScoreFinal += hs3Mod;
                     return (applyExtMod && compositeScoreFinal > Constants.CORE_PRIME_GATE ?
-                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MOD_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
                         compositeScoreFinal, Constants.HS3);
                 }
                 else
@@ -100,7 +100,7 @@ namespace PT.Core
                     hs2Mod = applyExtMod ? Constants.CORE_HS2_MOD * 2 : Constants.CORE_HS2_MOD;
                     compositeScoreFinal += hs2Mod;
                     return (applyExtMod && compositeScoreFinal > Constants.CORE_PRIME_GATE ?
-                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MOD_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
                         compositeScoreFinal, Constants.HS2);
                 }
                 else
@@ -113,6 +113,7 @@ namespace PT.Core
                 //HS1 - PURE FORM, Original
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+                compositeScoreFinal += bbandsComposite <= 33 ? -1 : 0;
                 decimal hs1Mod = Constants.CORE_HS1_MOD;
                 if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
                 {
@@ -121,7 +122,7 @@ namespace PT.Core
                     hs1Mod = applyExtMod ? Constants.CORE_HS1_MOD * 2 : Constants.CORE_HS1_MOD;
                     compositeScoreFinal += hs1Mod;
                     return (applyExtMod && compositeScoreFinal > Constants.CORE_PRIME_GATE ?
-                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MOD_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                        Math.Min(compositeScoreFinal, Constants.CORE_EXP_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
                         compositeScoreFinal, Constants.HS1);
                 }
                 else
@@ -964,19 +965,19 @@ namespace PT.Core
                 decimal percentageDiffBullish = GetPercentDiff(middleYList[middleYList.Count - 1], lastPrice);
                 if (priceAboveUpperBand) // Pity points if price above upper band (lowest base value condition)
                 {
-                    baseValue += Math.Min(percentageDiffBullish + (Constants.CORE_BONUS - 2), 17);
-                    baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1 : 0;
+                    baseValue += Math.Min(percentageDiffBullish + (Constants.CORE_BONUS - 2.25M), 17);
+                    baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1.33M : 0;
                     baseValue += !priceBelowBandsMidpoint ? Constants.CORE_PENALTY + 1 : 0;
                 }
                 else
                 {
                     baseValue += ((100 - percentageDiffBullish - 19) / baseValueDivider);
-                    baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1 : 0;
-                    baseValue += percentageDiffBullish <= 7 ? Constants.CORE_BONUS - 2 : 0;
-                    baseValue += percentageDiffBullish <= 12.5M && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2 : 0;
-                    baseValue += percentageDiffBullish > 12.5M ? Constants.CORE_PENALTY + 2 : 0;
-                    baseValue += !priceBelowBandsMidpoint ? Constants.CORE_PENALTY + 0.5M : 0;
-                    baseValue += bbandsMinorSellSignal ? Constants.CORE_PENALTY : 0;
+                    baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1.33M : 0;
+                    baseValue += percentageDiffBullish <= 7 ? Constants.CORE_BONUS - 2.25M : 0;
+                    baseValue += percentageDiffBullish <= 12.5M && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2.25M : 0;
+                    baseValue += percentageDiffBullish > 12.5M ? Constants.CORE_PENALTY + 1 : 0;
+                    baseValue += !priceBelowBandsMidpoint ? Constants.CORE_PENALTY : 0;
+                    baseValue += bbandsMinorSellSignal ? Constants.CORE_PENALTY + 1 : 0;
                 }
 
                 // Cap base value at 40 with small bonus for max
