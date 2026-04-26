@@ -31,7 +31,7 @@ namespace PT.Middleware
             foreach (var symbol in scrapedSymbols)
             {
                 // Alpaca API price history
-                PTHistory ptHistory = HistoryHelper.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).GetAwaiter().GetResult();
+                PTHistory ptHistory = History.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).GetAwaiter().GetResult();
 
                 List<Quote> history = ptHistory.SkenderHistory.ToList();
                 if (history.Count > 250)

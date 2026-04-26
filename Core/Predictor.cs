@@ -18,7 +18,7 @@ namespace PT.Core
             Stopwatch sw = Stopwatch.StartNew();
 
             // Alpaca API price history
-            PTHistory ptHistory = HistoryHelper.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).GetAwaiter().GetResult();
+            PTHistory ptHistory = History.GetHistoryAsync(rm, symbol, Constants.DEFAULT_HISTORY_DAYS).GetAwaiter().GetResult();
 
             // Always fail the prediction if we fail to get history data
             if (ptHistory.SkenderHistory.Count() == 0) return new CompositeScoreResult();
@@ -68,12 +68,12 @@ namespace PT.Core
             var finalResult = GRU.ParametrizeComposites(fundResult, hfResult, shortResult, adxCompositeScore,
                 obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
 
-            var paramType = Predictor.GetParameterType(finalResult.hs);
+            var paramType = GetParameterType(finalResult.hs);
 
             // Price targets for buy, sell, and short
             decimal priceLast = quote?.PostMarketPrice ?? quote?.RegularMarketPrice ?? ptHistory.TodayClose;
-            decimal buyTarget = HistoryHelper.GetPriceBuyTarget(ptHistory, priceLast);
-            HistoryHelper.ComputePriceSellTargets(fundResult, ptHistory);
+            decimal buyTarget = History.GetPriceBuyTarget(ptHistory, priceLast);
+            History.ComputePriceSellTargets(fundResult, ptHistory);
             List<PTPriceTarget> priceTargets = ptHistory.PriceTargets.OrderByDescending(x => x.TargetPrice).ToList();
 
             string compositeScoreNotes = Predictor.GetCompositeScoreNotes(fundResult, hfResult, shortResult,
