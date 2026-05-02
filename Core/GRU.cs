@@ -45,7 +45,7 @@ namespace PT.Core
                 //HS5 - FINANCIAL INSTRUMENTS, RatingsComposite error, 2nd Generation
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
-                decimal hs5Mod = Constants.CORE_HS3_MOD;
+                decimal hs5Mod = Constants.CORE_HS5_MOD;
                 hs5Mod += Constants.FUND_HANDICAP_MODE_ENABLED ? 0.25M : 0;
                 if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
                 {
@@ -130,6 +130,148 @@ namespace PT.Core
                     return (compositeScoreFinal + hs1Mod, Constants.HS1);
                 }
             }
+        }
+
+        public static Dictionary<string, decimal> ParametrizeCompositesNew(FundamentalsResult fr,
+            HedgeFundsResult hr, ShortInterestResult sr, decimal adxComposite, decimal obvComposite,
+            decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
+        {
+            Dictionary<string, decimal> paramSetScores = new();
+
+            //HS6 - RAW SIGNALS, RatingsComposite error & FundamentalsComposite error, 4th Generation
+            if (fr.FundamentalsComposite == Constants.CORE_INVALID_COMP && hr.RatingsComposite == Constants.CORE_INVALID_COMP)
+            {
+                decimal hs6Score = (adxComposite + aroonComposite + obvComposite + macdComposite +
+                    sr.ShortInterestComposite + bbandsComposite) / 6;
+                hs6Score += Constants.CORE_HS6_MOD;
+                paramSetScores.Add(Constants.HS6, hs6Score);
+                return paramSetScores;
+            }
+
+            //HS5 - FINANCIAL INSTRUMENTS, RatingsComposite error, 2nd Generation
+            if (hr.RatingsComposite == Constants.CORE_INVALID_COMP && fr.FundamentalsComposite != Constants.CORE_INVALID_COMP)
+            {
+                decimal hs5Score = (adxComposite + aroonComposite + obvComposite + macdComposite +
+                    sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
+                decimal hs5Mod = Constants.CORE_HS5_MOD;
+                hs5Mod += Constants.FUND_HANDICAP_MODE_ENABLED ? 0.25M : 0;
+                hs5Score += bbandsComposite < 40 ? -.33M : 0;
+                hs5Score += obvComposite < 40 ? -.33M : 0;
+                hs5Score += obvComposite >= 55 && bbandsComposite >= 70 ? .44M : 0;
+                hs5Score += macdComposite >= 55 && bbandsComposite >= 70 ? .44M : 0;
+                if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
+                {
+                    bool applyExtMod = hs5Score <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
+                        && macdComposite >= 70 && fr.FundamentalsComposite >= 50 && sr.ShortInterestComposite >= 60;
+                    hs5Mod = applyExtMod ? Constants.CORE_HS5_MOD * 2 : Constants.CORE_HS5_MOD;
+                    hs5Score += hs5Mod;
+                    hs5Score = applyExtMod && hs5Score > Constants.CORE_PRIME_GATE ?
+                        Math.Min(hs5Score, Constants.CORE_EXP_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                        hs5Score;
+                }
+                else
+                {
+                    hs5Score += hs5Mod;
+                }
+                paramSetScores.Add(Constants.HS5, hs5Score);
+                return paramSetScores;
+            }
+
+            //HS4 - BBANDS ADX SWAP, 4th generation
+            decimal hs4Score = (bbandsComposite + aroonComposite + obvComposite + macdComposite +
+                sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+            decimal hs4Mod = Constants.CORE_HS4_MOD;
+            hs4Score += adxComposite <= 49 ? -.22M : 0;
+            hs4Score += adxComposite <= 30 ? -.55M : 0;
+            hs4Score += fr.FundamentalsComposite >= 50 && bbandsComposite >= 70 ? .77M : 0;
+            if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
+            {
+                bool applyExtMod = hs4Score <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
+                    && macdComposite >= 70 && fr.FundamentalsComposite >= 50 && sr.ShortInterestComposite >= 60;
+                hs4Mod = applyExtMod ? Constants.CORE_HS4_MOD * 2 : Constants.CORE_HS4_MOD;
+                hs4Score += hs4Mod;
+                hs4Score = applyExtMod && hs4Score > Constants.CORE_PRIME_GATE ?
+                    Math.Min(hs4Score, Constants.CORE_EXP_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                    hs4Score;
+            }
+            else
+            {
+                hs4Score += hs4Mod;
+            }
+            paramSetScores.Add(Constants.HS4, hs4Score);
+
+            //HS3 - BBANDS AROON SWAP, 3rd generation
+            decimal hs3Score = (adxComposite + bbandsComposite + obvComposite + macdComposite +
+                sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+            decimal hs3Mod = Constants.CORE_HS3_MOD;
+            hs3Score += aroonComposite <= 49 ? -.22M : 0;
+            hs3Score += aroonComposite <= 30 ? -.55M : 0;
+            hs3Score += fr.FundamentalsComposite >= 50 && bbandsComposite >= 70 ? .77M : 0;
+            if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
+            {
+                bool applyExtMod = hs3Score <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
+                    && fr.FundamentalsComposite >= 50 && hr.RatingsComposite >= 50 && sr.ShortInterestComposite >= 60;
+                hs3Mod = applyExtMod ? Constants.CORE_HS3_MOD * 2 : Constants.CORE_HS3_MOD;
+                hs3Score += hs3Mod;
+                hs3Score = applyExtMod && hs3Score > Constants.CORE_PRIME_GATE ?
+                    Math.Min(hs3Score, Constants.CORE_EXP_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                    hs3Score;
+            }
+            else
+            {
+                hs3Score += hs3Mod;
+            }
+            paramSetScores.Add(Constants.HS3, hs3Score);
+
+            //HS2 - BBANDS OBV SWAP, 2nd generation
+            decimal hs2Score = (adxComposite + aroonComposite + bbandsComposite + macdComposite +
+                sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+            decimal hs2Mod = Constants.CORE_HS2_MOD;
+            hs2Score += obvComposite <= 49 ? -.22M : 0;
+            hs2Score += obvComposite <= 30 ? -.55M : 0;
+            hs2Score += obvComposite >= 60 ? .33M : 0;
+            hs2Score += fr.FundamentalsComposite >= 50 && bbandsComposite >= 70 ? .77M : 0;
+            if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
+            {
+                bool applyExtMod = hs2Score <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
+                    && fr.FundamentalsComposite >= 50 && hr.RatingsComposite >= 50 && sr.ShortInterestComposite >= 60;
+                hs2Mod = applyExtMod ? Constants.CORE_HS2_MOD * 2 : Constants.CORE_HS2_MOD;
+                hs2Score += hs2Mod;
+                hs2Score = applyExtMod && hs2Score > Constants.CORE_PRIME_GATE ?
+                    Math.Min(hs2Score, Constants.CORE_EXP_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                    hs2Score;
+            }
+            else
+            {
+                hs2Score += hs2Mod;
+            }
+            paramSetScores.Add(Constants.HS2, hs2Score);
+
+            //HS1 - PURE FORM, Original 1st generation
+            decimal hs1Score = (adxComposite + aroonComposite + obvComposite + macdComposite +
+                sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
+            hs1Score += bbandsComposite <= 50 ? -.22M : 0;
+            hs1Score += bbandsComposite <= 30 ? -.55M : 0;
+            hs1Score += bbandsComposite > 50 ? .33M : 0;
+            hs1Score += fr.FundamentalsComposite >= 50 && bbandsComposite >= 70 ? .77M : 0;
+            decimal hs1Mod = Constants.CORE_HS1_MOD;
+            if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
+            {
+                bool applyExtMod = hs1Score <= Constants.CORE_PRIME_GATE && macdComposite >= 75
+                        && fr.FundamentalsComposite >= 60 && hr.RatingsComposite >= 60 && sr.ShortInterestComposite >= 60;
+                hs1Mod = applyExtMod ? Constants.CORE_HS1_MOD * 2 : Constants.CORE_HS1_MOD;
+                hs1Score += hs1Mod;
+                hs1Score = applyExtMod && hs1Score > Constants.CORE_PRIME_GATE ?
+                    Math.Min(hs1Score, Constants.CORE_EXP_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                    hs1Score;
+            }
+            else
+            {
+                hs1Score += hs1Mod;
+            }
+            paramSetScores.Add(Constants.HS1, hs1Score);
+
+            return paramSetScores;
         }
 
         public static decimal GetADXComposite(IEnumerable<AdxResult> resultSet, int daysToCalculate)
@@ -965,18 +1107,18 @@ namespace PT.Core
                 decimal percentageDiffBullish = GetPercentDiff(middleYList[middleYList.Count - 1], lastPrice);
                 if (priceAboveUpperBand) // Pity points if price above upper band (lowest base value condition)
                 {
-                    baseValue += Math.Min(percentageDiffBullish + (Constants.CORE_BONUS - 2.25M), 17);
+                    baseValue += Math.Min(percentageDiffBullish + (Constants.CORE_BONUS - 2.33M), 17);
                     baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1.33M : 0;
-                    baseValue += !priceBelowBandsMidpoint ? Constants.CORE_PENALTY + 1 : 0;
+                    baseValue += !priceBelowBandsMidpoint ? Constants.CORE_PENALTY : 0;
                 }
                 else
                 {
-                    baseValue += ((100 - percentageDiffBullish - 19) / baseValueDivider);
+                    baseValue += ((100 - percentageDiffBullish - 19.33M) / baseValueDivider);
                     baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1.33M : 0;
-                    baseValue += percentageDiffBullish <= 7 ? Constants.CORE_BONUS - 2.25M : 0;
-                    baseValue += percentageDiffBullish <= 12.5M && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2.25M : 0;
+                    baseValue += percentageDiffBullish <= 7 ? Constants.CORE_BONUS - 2.33M : 0;
+                    baseValue += percentageDiffBullish <= 12.5M && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2.33M : 0;
                     baseValue += percentageDiffBullish > 12.5M ? Constants.CORE_PENALTY + 1 : 0;
-                    baseValue += !priceBelowBandsMidpoint ? Constants.CORE_PENALTY : 0;
+                    baseValue += !priceBelowBandsMidpoint ? Constants.CORE_PENALTY - 1 : 0;
                     baseValue += bbandsMinorSellSignal ? Constants.CORE_PENALTY + 1 : 0;
                 }
 

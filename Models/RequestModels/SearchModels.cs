@@ -36,8 +36,9 @@ namespace PT.Models.RequestModels
         public decimal FundamentalsComposite { get; set; }
         public long TotalTimeMS { get; set; }
         public DateTime ScoreDate { get; set; }
-        public string? ParameterSet { get; set; }
         public string? AssetDescription { get; set; }
+        public string? ParameterSet { get; set; }
+        public Dictionary<string, decimal>? ParameterSetScores { get; set; }
         public bool IsQualifiedVolume { get; set; }
         public bool IsBullishLongSMA { get; set; }
         public bool IsBullishDiffSMA { get; set; }

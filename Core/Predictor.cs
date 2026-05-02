@@ -65,10 +65,11 @@ namespace PT.Core
             long tipRanksStopMs = sw.ElapsedMilliseconds;
             long tipRanksMs = tipRanksStopMs - finraStopMs;
 
-            var finalResult = GRU.ParametrizeComposites(fundResult, hfResult, shortResult, adxCompositeScore,
+            var paramSetScores = GRU.ParametrizeCompositesNew(fundResult, hfResult, shortResult, adxCompositeScore,
                 obvCompositeScore, macdCompositeScore, bbandsCompositeScore, aroonCompositeScore);
+            var maxScore = paramSetScores.OrderByDescending(kv => kv.Value).First();
 
-            var paramType = GetParameterType(finalResult.hs);
+            var paramType = GetParameterType(maxScore.Key);
 
             // Price targets for buy, sell, and short
             decimal priceLast = quote?.PostMarketPrice ?? quote?.RegularMarketPrice ?? ptHistory.TodayClose;
@@ -97,6 +98,7 @@ namespace PT.Core
 
             string? assetName = string.IsNullOrWhiteSpace(quote?.LongName) ?
                 hfResult.Name : quote?.LongName;
+            string parameterSet = $"{paramType.Type} {paramType.Set}";
 
             CompositeScoreResult scoreResult = new CompositeScoreResult
             {
@@ -105,7 +107,7 @@ namespace PT.Core
                 Exchange = quote?.FullExchangeName,
                 AssetType = fundResult.AssetType,
                 AssetSector = hfResult.Sector,
-                CompositeScoreValue = finalResult.cs,
+                CompositeScoreValue = maxScore.Value,
                 CompositeScoreNotes = compositeScoreNotes,
                 PriceOpen = ptHistory.TodayOpen.ToString(Constants.FORMAT_CURRENCY),
                 PriceClose = ptHistory.TodayClose.ToString(Constants.FORMAT_CURRENCY),
@@ -128,8 +130,9 @@ namespace PT.Core
                 ShortInterestComposite = shortResult.ShortInterestComposite,
                 FundamentalsComposite = fundResult.FundamentalsComposite,
                 ScoreDate = DateTime.Now,
-                ParameterSet = paramType.Type,
                 AssetDescription = minDescription,
+                ParameterSet = parameterSet,
+                ParameterSetScores = paramSetScores,
                 PriceTargets = priceTargets,
                 ShortInterest = shortResult,
                 Fundamentals = fundResult,
@@ -349,8 +352,8 @@ namespace PT.Core
         /// <returns></returns>
         public static decimal GetPostCompositeMod(CompositeScoreResult scoreResult, ParameterSetType paramType)
         {
-            decimal postCompositeMod = 0; // Only if HS1, HS2, HS3
-            if (paramType.Type == Constants.HS1 || paramType.Type == Constants.HS2 || paramType.Type == Constants.HS3)
+            decimal postCompositeMod = 0; // Only if HS1, HS2, HS3, HS4
+            if (paramType.Type == Constants.HS1 || paramType.Type == Constants.HS2 || paramType.Type == Constants.HS3 || paramType.Type == Constants.HS4)
             {
                 if (!Constants.FUND_HANDICAP_MODE_ENABLED)
                 {
