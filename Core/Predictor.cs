@@ -326,8 +326,9 @@ namespace PT.Core
         private static bool IsDisqualifiedPrediction(CompositeScoreResult scoreResult)
         {
             decimal mcap = Convert.ToDecimal(scoreResult.MarketCap.Split(" ")[0]);
-            bool qualifiedMcap = (scoreResult.ParameterSet == Constants.HS5 && mcap == 0) || mcap > Constants.DEFAULT_MCAP_D_LIMIT
-                || Constants.FUND_HANDICAP_MODE_ENABLED;
+            string predictionType = scoreResult.ParameterSet.Split(" ")[0];
+            bool qualifiedMcap = (predictionType == Constants.HS5 && mcap == 0) ||
+                mcap > Constants.DEFAULT_MCAP_D_LIMIT || Constants.FUND_HANDICAP_MODE_ENABLED;
             bool qualifiedHistDays = scoreResult.GRUHistoryDays >= Constants.DEFAULT_HISTORY_DAYS_LIMIT;
             return
                 (!scoreResult.IsQualifiedVolume || !qualifiedMcap || !qualifiedHistDays ||
