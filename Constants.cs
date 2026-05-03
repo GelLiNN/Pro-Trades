@@ -70,22 +70,17 @@ namespace PT
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_PRIME_RND_LIMIT = 82.80M; // If CS 82.8 or higher, round up to Prime
-        public const decimal CORE_SIGNAL_MOD = 3.88M; // Uber bullish markets 2.5, Uber bearish markets 4.5
+        public const decimal CORE_SIGNAL_MOD = 3.77M; // Uber bullish markets 2.5, Uber bearish markets 4.5
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
-        public const decimal CORE_HS1_MOD = .33M; // 0, .17, .33, .77, BONUS - 2 default, FUND handicap BONUS * half + half
-        public const decimal CORE_HS2_MOD = CORE_BONUS - 1.88M; // 0, .88, BONUS - 1.88, BONUS - 1 default, FUND handicap BONUS - half
-        public const decimal CORE_HS3_MOD = CORE_BONUS - 1.55M; // BONUS * HALF, BONUS - 1.55 default, FUND handicap BONUS - half
-        public const decimal CORE_HS4_MOD = .55M; // .44 default, FUND handicap BONUS - 1.5
-        public const decimal CORE_HS5_MOD = CORE_BONUS * HALF - .22M; // BONUS * 0.5 -.22 default, FUND handicap BONUS - 1
-        public const decimal CORE_HS6_MOD = CORE_PENALTY * 2 + 1; // unused
+        public const decimal CORE_HS1_MOD = .33M; // 0, .17, .33, .77, 1.11 default, 3.99 CORE_EXT_MODE MAX
+        public const decimal CORE_HS2_MOD = 1.44M; // 0, .88, 1.44, 1.99 default, 4.55 CORE_EXT_MODE MAX
+        public const decimal CORE_HS3_MOD = 1.11M; // 0, .77, 1.11, 1.55 default, 4.22 CORE_EXT_MODE MAX
+        public const decimal CORE_HS4_MOD = .88M; // 0, .55, .88, 1.33 default, 4.01 CORE_EXT_MODE MAX
+        public const decimal CORE_HS5_MOD = 1.55M; // .99, 1.55, 1.99 default, 2.22 CORE_EXT_MODE MAX
+        public const decimal CORE_HS6_MOD = -2.22M; // unused
         public const decimal CORE_EXP_MODE_SNAP = 83.5M;
         public const bool CORE_EXT_MODE_ENABLED = false; // Extra post GRU composite mods mode (extreme circumstances)
-        //public const decimal CORE_HS1_MOD = CORE_BONUS + 1; // CORE_EXP_MODE MAX
-        //public const decimal CORE_HS2_MOD = CORE_BONUS * TWO - 1.5M; // CORE_EXT_MODE MAX
-        //public const decimal CORE_HS3_MOD = CORE_BONUS * TWO - 1.85M; // CORE_EXT_MODE MAX
-        //public const decimal CORE_HS4_MOD = CORE_BONUS * TWO - 1.99M; // CORE_EXT_MODE MAX
-        //public const decimal CORE_HS5_MOD = CORE_BONUS - 1; // CORE_EXT_MODE MAX
 
         // GRU module composite gates and other constants
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;

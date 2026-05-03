@@ -17,7 +17,7 @@ namespace PT.Core
     public static class GRU
     {
         /// <summary>
-        /// Calculate final prediction composite score decimal, and prediction parameter set HS type string
+        /// Calculate final prediction composite score decimal and prediction parameter set HS type string
         /// </summary>
         /// <param name="fr"></param>
         /// <param name="hr"></param>
@@ -132,6 +132,18 @@ namespace PT.Core
             }
         }
 
+        /// <summary>
+        /// Calculate final prediction composite score decimal and prediction parameter set HS type string
+        /// </summary>
+        /// <param name="fr"></param>
+        /// <param name="hr"></param>
+        /// <param name="sr"></param>
+        /// <param name="adxComposite"></param>
+        /// <param name="obvComposite"></param>
+        /// <param name="macdComposite"></param> 
+        /// <param name="bbandsComposite"></param>
+        /// <param name="aroonComposite"></param>
+        /// <returns>Dictionary of prediction scores and their types</returns>
         public static Dictionary<string, decimal> ParametrizeCompositesNew(FundamentalsResult fr,
             HedgeFundsResult hr, ShortInterestResult sr, decimal adxComposite, decimal obvComposite,
             decimal macdComposite, decimal bbandsComposite, decimal aroonComposite)
@@ -250,8 +262,8 @@ namespace PT.Core
             //HS1 - PURE FORM, Original 1st generation
             decimal hs1Score = (adxComposite + aroonComposite + obvComposite + macdComposite +
                 sr.ShortInterestComposite + fr.FundamentalsComposite + hr.RatingsComposite) / 7;
-            hs1Score += bbandsComposite <= 50 ? -.22M : 0;
-            hs1Score += bbandsComposite <= 30 ? -.55M : 0;
+            hs1Score += bbandsComposite <= 50 ? -.33M : 0;
+            hs1Score += bbandsComposite <= 30 ? -.75M : 0;
             hs1Score += bbandsComposite > 50 ? .33M : 0;
             hs1Score += fr.FundamentalsComposite >= 50 && bbandsComposite >= 70 ? .77M : 0;
             decimal hs1Mod = Constants.CORE_HS1_MOD;
