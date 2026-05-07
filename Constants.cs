@@ -70,7 +70,7 @@ namespace PT
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_PRIME_RND_LIMIT = 82.80M; // If CS 82.8 or higher, round up to Prime
-        public const decimal CORE_SIGNAL_MOD = 3.77M; // Uber bullish markets 2.5, Uber bearish markets 4.5
+        public const decimal CORE_SIGNAL_MOD = 3.67M; // Default 3.67, Uber bullish markets 2.5, Uber bearish markets 4.5
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
         public const decimal CORE_HS1_MOD = .33M; // 0, .17, .33, .77, 1.11 default, 3.99 CORE_EXT_MODE MAX
@@ -79,7 +79,7 @@ namespace PT
         public const decimal CORE_HS4_MOD = .88M; // 0, .55, .88, 1.33 default, 4.01 CORE_EXT_MODE MAX
         public const decimal CORE_HS5_MOD = 1.55M; // .99, 1.55, 1.99 default, 2.22 CORE_EXT_MODE MAX
         public const decimal CORE_HS6_MOD = -2.22M; // unused
-        public const decimal CORE_EXP_MODE_SNAP = 83.5M;
+        public const decimal CORE_EXT_MODE_SNAP = 83.5M;
         public const bool CORE_EXT_MODE_ENABLED = false; // Extra post GRU composite mods mode (extreme circumstances)
 
         // GRU module composite gates and other constants
