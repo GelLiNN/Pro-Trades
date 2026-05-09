@@ -68,6 +68,7 @@ namespace PT.Controllers
         [HttpGet("api/search/GetIncidenceView")]
         public IncidenceViewResult GetIncidenceView()
         {
+            // TODO: make this a private helper function in DataCache.cs
             IncidenceViewResult result = new IncidenceViewResult();
             HashSet<string> cachedSymbols = _cache.GetCachedSymbols("yf-companies");
             int scoreCount = cachedSymbols.Count;
@@ -192,8 +193,11 @@ namespace PT.Controllers
                     HS6Count = hs6Count,
                     HS6IncidenceRate = setTotalCount > 0 ? ((decimal)hs6Count / (decimal)setTotalCount) * 100 : 0
                 };
-                result.TotalLiquidityRate = result.PrimeIncidenceRate + result.GoodIncidenceRate
-                    + result.FairIncidenceRate + result.NeutralIncidenceRate;
+                result.TotalLiquidityRate = 100 - result.DisqualifiedIncidenceRate;
+                result.TotalPositiveRate = result.PrimeIncidenceRate + result.GoodIncidenceRate + result.FairIncidenceRate
+                    + (result.NeutralIncidenceRate * Constants.HALF) + (result.EarningsIncidenceRate * Constants.THIRD);
+                result.TotalNegativeRate = result.ShortIncidenceRate + result.BadIncidenceRate
+                    + (result.NeutralIncidenceRate * Constants.HALF) + (result.EarningsIncidenceRate * Constants.THIRD);
             }
             return result;
         }

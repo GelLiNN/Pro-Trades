@@ -360,15 +360,19 @@ namespace PT.Core
                 {
                     postCompositeMod += scoreResult.RPriceToBook <= 0 ? (Constants.CORE_PENALTY + 2) : 0;
                     postCompositeMod += scoreResult.RPriceToEarnings <= 0 ? (Constants.CORE_PENALTY + 2) : 0;
-                    postCompositeMod += scoreResult.RPriceToBook > 12 ? (Constants.CORE_PENALTY + 1.8M) : 0;
-                    postCompositeMod += scoreResult.RPriceToEarnings > 37 ? (Constants.CORE_PENALTY + 1.6M) : 0;
-                    postCompositeMod += scoreResult.Fundamentals.BookValuePrice > 0 &&
+                    postCompositeMod += scoreResult.RPriceToBook > 11 ? (Constants.CORE_PENALTY + 1.7M) : 0;
+                    postCompositeMod += scoreResult.RPriceToEarnings > 35 ? (Constants.CORE_PENALTY + 1.5M) : 0;
+                    postCompositeMod += scoreResult.CompositeScoreValue < Constants.CORE_PCM_GATE &&
+                        scoreResult.Fundamentals.BookValuePrice > 0 &&
                         (scoreResult.Fundamentals.PriceToFairValue > 0 && scoreResult.Fundamentals.PriceToFairValue < 2.0M) &&
                         (scoreResult.RPriceToBook > 0 && scoreResult.RPriceToBook < 2.5M) &&
                         (scoreResult.RPriceToEarnings > 0 && scoreResult.RPriceToEarnings < 30.0M) ? (Constants.CORE_BONUS - 2.6M) : 0;
-                    postCompositeMod += scoreResult.IsBullishLongSMA ? (Constants.CORE_BONUS - 2.9M) : 0;
-                    postCompositeMod += scoreResult.IsBullishDiffSMA ? (Constants.CORE_BONUS - 2.7M) : 0;
-                    postCompositeMod += scoreResult.IsBullishBandSMA ? (Constants.CORE_BONUS - 2.7M) : 0;
+                    postCompositeMod += scoreResult.CompositeScoreValue < Constants.CORE_PCM_GATE &&
+                        scoreResult.IsBullishLongSMA ? (Constants.CORE_BONUS - 2.9M) : 0;
+                    postCompositeMod += scoreResult.CompositeScoreValue < Constants.CORE_PCM_GATE &&
+                        scoreResult.IsBullishDiffSMA ? (Constants.CORE_BONUS - 2.7M) : 0;
+                    postCompositeMod += scoreResult.CompositeScoreValue < Constants.CORE_PCM_GATE &&
+                        scoreResult.IsBullishBandSMA ? (Constants.CORE_BONUS - 2.7M) : 0;
                 }
                 else
                 {

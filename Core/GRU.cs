@@ -253,8 +253,8 @@ namespace PT.Core
             {
                 hs2Mod += obvComposite <= 49 ? -.22M : 0;
                 hs2Mod += obvComposite <= 30 ? -.55M : 0;
-                hs2Mod += obvComposite >= 60 ? .33M : 0;
-                hs2Mod += fr.FundamentalsComposite >= 55 && hr.RatingsComposite >= 55 && bbandsComposite >= 70 ? .66M : 0;
+                hs2Mod += obvComposite >= 60 ? .31M : 0;
+                hs2Mod += fr.FundamentalsComposite >= 55 && hr.RatingsComposite >= 55 && bbandsComposite >= 70 ? .61M : 0;
                 hs2Score += hs2Mod;
             }
             paramSetScores.Add(Constants.HS2, hs2Score);
@@ -277,8 +277,8 @@ namespace PT.Core
             {
                 hs1Mod += bbandsComposite <= 50 ? -.33M : 0;
                 hs1Mod += bbandsComposite <= 30 ? -.88M : 0;
-                hs1Mod += bbandsComposite >= 60 ? .33M : 0;
-                hs1Mod += fr.FundamentalsComposite >= 55 && hr.RatingsComposite >= 55 && bbandsComposite >= 70 ? .66M : 0;
+                hs1Mod += bbandsComposite >= 60 ? .31M : 0;
+                hs1Mod += fr.FundamentalsComposite >= 55 && hr.RatingsComposite >= 55 && bbandsComposite >= 70 ? .61M : 0;
                 hs1Score += hs1Mod;
             }
             paramSetScores.Add(Constants.HS1, hs1Score);
