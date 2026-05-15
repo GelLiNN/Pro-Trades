@@ -1125,7 +1125,7 @@ namespace PT.Core
                 }
                 else
                 {
-                    baseValue += ((100 - percentageDiffBullish - 19.33M) / baseValueDivider);
+                    baseValue += ((100 - percentageDiffBullish - 19) / baseValueDivider) - 1;
                     baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1.33M : 0;
                     baseValue += percentageDiffBullish <= 7 ? Constants.CORE_BONUS - 2.33M : 0;
                     baseValue += percentageDiffBullish <= 12.5M && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2.33M : 0;
@@ -1179,13 +1179,13 @@ namespace PT.Core
             consolidationReboundBonus += negativeSlopesRebound && noRecentCrossBelowMiddle &&
                 (recentPositivity || lastPrice > averageLowerPrice) ? Constants.CORE_BONUS * 2 - 1 : 0;
             consolidationReboundBonus += negativeSlopesRebound && noRecentCrossBelowMiddle ?
-                Constants.CORE_BONUS : 0;
+                Constants.CORE_BONUS - 0.5M : 0;
 
             // Bonus for custom slope conditions 1, relative to other statistics
             bool positiveAndNegativeSlopes = (lowerSlope > 0 || middleSlope > 0 || upperSlope > 0) &&
                 (lowerSlope < 0 || middleSlope < 0 || upperSlope < 0);
             decimal customSlopeBonusRel = differenceSlope > .05M && positiveAndNegativeSlopes
-                && priceSlope > -.05M ? Constants.CORE_BONUS * 2 : 0;
+                && priceSlope > -.05M ? Constants.CORE_BONUS * 2 - 1 : 0;
             customSlopeBonusRel += upperSlope < 0 && positiveAndNegativeSlopes && noRecentCrossBelowMiddle
                 && priceSlope > -.05M ? Constants.CORE_BONUS : 0;
             customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .01M) ? Constants.CORE_BONUS + 1 : 0;
@@ -1196,11 +1196,11 @@ namespace PT.Core
             decimal customSlopeBonusInd = 0;
             customSlopeBonusInd += lowerSlope > 0.01M ? Constants.CORE_BONUS - 1 : 0;
             customSlopeBonusInd += lowerSlope > 0.01M && recentPositivity && !bbandsMajorSellSignal ?
-                (lowerSlope * lowerSlopeMultiplier) + Constants.CORE_BONUS + 1 : 0;
+                (lowerSlope * lowerSlopeMultiplier) + Constants.CORE_BONUS + 0.5M : 0;
             customSlopeBonusInd += upperSlope > 0.01M && recentPositivity &&
-                !bbandsMajorSellSignal && noRecentCrossBelowMiddle ? Constants.CORE_BONUS + 2 : 0;
+                !bbandsMajorSellSignal && noRecentCrossBelowMiddle ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusInd += upperSlope > 0.01M ? Constants.CORE_BONUS - 1 : 0;
-            customSlopeBonusInd += middleSlope > 0.01M ? Constants.CORE_BONUS + 1 : 0;
+            customSlopeBonusInd += middleSlope > 0.01M ? Constants.CORE_BONUS + 0.5M : 0;
             customSlopeBonusInd += middleSlope > 0.01M && (!priceAboveMiddleBand || priceBelowBandsMidpoint) ?
                 (middleSlope * middleSlopeMultiplier) + Constants.CORE_BONUS + 1 : 0;
 
@@ -1213,9 +1213,9 @@ namespace PT.Core
             // Modifier for bullish or bearish band range conditions relative to current price
             decimal bandRangeModifier = 0;
             bandRangeModifier += lowerYList[lowerYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS - 1 : -1;
-            bandRangeModifier += upperYList[upperYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS : 0;
-            bandRangeModifier += priceBelowBandsMidpoint ? Constants.CORE_BONUS + 2 : -1;
-            bandRangeModifier += lastPrice < averageLowerPrice ? Constants.CORE_BONUS + 2 : 0;
+            bandRangeModifier += upperYList[upperYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS - 0.25M : 0;
+            bandRangeModifier += priceBelowBandsMidpoint ? Constants.CORE_BONUS + 2 : -2;
+            bandRangeModifier += lastPrice < averageLowerPrice ? Constants.CORE_BONUS + 1.75M : 0;
             bandRangeModifier += bandRangeModifier == 0 &&
                 !priceBelowBandsMidpoint && lastPrice > averageLowerPrice ? Constants.CORE_PENALTY * 2 : 0;
 
