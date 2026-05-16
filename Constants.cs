@@ -63,7 +63,7 @@ namespace PT
         public const decimal FIFTH = 0.2M;
 
         #region Core Model Constants
-        public const int DEFAULT_HISTORY_DAYS = 292; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 295
+        public const int DEFAULT_HISTORY_DAYS = 292; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 292
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
@@ -71,12 +71,12 @@ namespace PT
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_PCM_GATE = 87.7M;
         public const decimal CORE_PRIME_RND_LIMIT = 82.80M; // If CS 82.8 or higher, round up to Prime
-        public const decimal CORE_SIGNAL_MOD = 3.67M; // Default 3.67, Uber bullish markets 2.5, Uber bearish markets 4.5
+        public const decimal CORE_SIGNAL_MOD = 3.88M; // Default 3.67, Uber bullish markets 2.5, Uber bearish markets 4.5
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
         public const decimal CORE_HS1_MOD = .21M; // 0, .21, .44, .77, 1.11 default, 3.77 CORE_EXT_MODE MAX
-        public const decimal CORE_HS2_MOD = 1.37M; // 0, .88, 1.37, 1.99 default, 4.33 CORE_EXT_MODE MAX
-        public const decimal CORE_HS3_MOD = 1.11M; // 0, .67, 1.11, 1.33 default, 3.99 CORE_EXT_MODE MAX
+        public const decimal CORE_HS2_MOD = 1.42M; // 0, .88, 1.42, 1.99 default, 4.33 CORE_EXT_MODE MAX
+        public const decimal CORE_HS3_MOD = 1.22M; // 0, .77, 1.22, 1.33 default, 3.99 CORE_EXT_MODE MAX
         public const decimal CORE_HS4_MOD = .99M; // 0, .67, .99, 1.22 default, 3.88 CORE_EXT_MODE MAX
         public const decimal CORE_HS5_MOD = 1.47M; // .99, 1.47, 1.99 default, 2.55 CORE_EXT_MODE MAX
         public const decimal CORE_HS6_MOD = -2.22M; // unused

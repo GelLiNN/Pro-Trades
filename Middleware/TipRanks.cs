@@ -27,6 +27,7 @@ namespace PT.Middleware
         public static HashSet<int> InsiderBuyActions = new HashSet<int> { 2, 3 };
         public static HashSet<int> InsiderSellActions = new HashSet<int> { 1, 4 };
 
+        // TODO: refactor this so the GRU can be in GRU.cs
         public static HedgeFundsResult GetTipRanksResult(string symbol, RequestManager rm)
         {
             // Return a data object that contains:
@@ -158,7 +159,7 @@ namespace PT.Middleware
                     ratingsComposite += insiderBonus; // Add insider bonus from above
                     ratingsComposite += holdingBonus; // Add holding bonus from above
                     ratingsComposite += hedgeSentimentBonus; // Add hedge sentiment bonus from above
-
+                    ratingsComposite += ratingsComposite < 70 ? (Constants.CORE_BONUS - 2.55M) : 0;
                     ratingsComposite = Math.Min(ratingsComposite, 100); // cap composite at 100, no extra weight
                     ratingsComposite = Math.Max(ratingsComposite, 0); // limit composite at 0, no negatives
 

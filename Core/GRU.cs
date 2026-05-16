@@ -174,7 +174,7 @@ namespace PT.Core
                     hs5Mod = applyExtMod ? Constants.CORE_HS5_MOD * 2 : Constants.CORE_HS5_MOD;
                     hs5Score += hs5Mod;
                     hs5Score = applyExtMod && hs5Score > Constants.CORE_PRIME_GATE ?
-                        Math.Min(hs5Score, Constants.CORE_EXT_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                        Math.Min(hs5Score, Constants.CORE_EXT_MODE_SNAP) + (GetRandomInt(0, 17) * .01M) :
                         hs5Score;
                 }
                 else
@@ -200,7 +200,7 @@ namespace PT.Core
                 hs4Mod = applyExtMod ? Constants.CORE_HS4_MOD * 2 : Constants.CORE_HS4_MOD;
                 hs4Score += hs4Mod;
                 hs4Score = applyExtMod && hs4Score > Constants.CORE_PRIME_GATE ?
-                    Math.Min(hs4Score, Constants.CORE_EXT_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                    Math.Min(hs4Score, Constants.CORE_EXT_MODE_SNAP) + (GetRandomInt(0, 17) * .01M) :
                     hs4Score;
             }
             else
@@ -223,7 +223,7 @@ namespace PT.Core
                 hs3Mod = applyExtMod ? Constants.CORE_HS3_MOD * 2 : Constants.CORE_HS3_MOD;
                 hs3Score += hs3Mod;
                 hs3Score = applyExtMod && hs3Score > Constants.CORE_PRIME_GATE ?
-                    Math.Min(hs3Score, Constants.CORE_EXT_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                    Math.Min(hs3Score, Constants.CORE_EXT_MODE_SNAP) + (GetRandomInt(0, 17) * .01M) :
                     hs3Score;
             }
             else
@@ -246,7 +246,7 @@ namespace PT.Core
                 hs2Mod = applyExtMod ? Constants.CORE_HS2_MOD * 2 : Constants.CORE_HS2_MOD;
                 hs2Score += hs2Mod;
                 hs2Score = applyExtMod && hs2Score > Constants.CORE_PRIME_GATE ?
-                    Math.Min(hs2Score, Constants.CORE_EXT_MODE_SNAP) + (GetRandomInt(0, 21) * .01M) :
+                    Math.Min(hs2Score, Constants.CORE_EXT_MODE_SNAP) + (GetRandomInt(0, 17) * .01M) :
                     hs2Score;
             }
             else
@@ -922,7 +922,7 @@ namespace PT.Core
             composite += bullMajorBonus;
             composite += buySignalBonus;
             composite += composite > 50 ? sellSignalPenalty : 0;
-
+            composite += composite < 70 ? (Constants.CORE_BONUS - 2.55M) : 0;
             composite = Math.Max(composite, 0); //limit AROON composite at 0, no negatives
             return Math.Min(composite, 115); //cap AROON composite at 115, extra weight
         }
@@ -1126,8 +1126,8 @@ namespace PT.Core
                 else
                 {
                     baseValue += ((100 - percentageDiffBullish - 19) / baseValueDivider) - 1;
-                    baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1.33M : 0;
-                    baseValue += percentageDiffBullish <= 7 ? Constants.CORE_BONUS - 2.33M : 0;
+                    baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1.25M : 0;
+                    baseValue += percentageDiffBullish <= 7 ? Constants.CORE_BONUS - 2.25M : 0;
                     baseValue += percentageDiffBullish <= 12.5M && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2.33M : 0;
                     baseValue += percentageDiffBullish > 12.5M ? Constants.CORE_PENALTY + 1 : 0;
                     baseValue += !priceBelowBandsMidpoint ? Constants.CORE_PENALTY - 1 : 0;
@@ -1185,7 +1185,7 @@ namespace PT.Core
             bool positiveAndNegativeSlopes = (lowerSlope > 0 || middleSlope > 0 || upperSlope > 0) &&
                 (lowerSlope < 0 || middleSlope < 0 || upperSlope < 0);
             decimal customSlopeBonusRel = differenceSlope > .05M && positiveAndNegativeSlopes
-                && priceSlope > -.05M ? Constants.CORE_BONUS * 2 - 1 : 0;
+                && priceSlope > -.05M ? Constants.CORE_BONUS * 2 - 0.5M : 0;
             customSlopeBonusRel += upperSlope < 0 && positiveAndNegativeSlopes && noRecentCrossBelowMiddle
                 && priceSlope > -.05M ? Constants.CORE_BONUS : 0;
             customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .01M) ? Constants.CORE_BONUS + 1 : 0;
@@ -1194,13 +1194,13 @@ namespace PT.Core
 
             // Bonus for custom slope considitons 2, individualized with slope multipliers
             decimal customSlopeBonusInd = 0;
-            customSlopeBonusInd += lowerSlope > 0.01M ? Constants.CORE_BONUS - 1 : 0;
+            customSlopeBonusInd += lowerSlope > 0.01M ? Constants.CORE_BONUS - 0.5M : 0;
             customSlopeBonusInd += lowerSlope > 0.01M && recentPositivity && !bbandsMajorSellSignal ?
-                (lowerSlope * lowerSlopeMultiplier) + Constants.CORE_BONUS + 0.5M : 0;
+                (lowerSlope * lowerSlopeMultiplier) + Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusInd += upperSlope > 0.01M && recentPositivity &&
                 !bbandsMajorSellSignal && noRecentCrossBelowMiddle ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusInd += upperSlope > 0.01M ? Constants.CORE_BONUS - 1 : 0;
-            customSlopeBonusInd += middleSlope > 0.01M ? Constants.CORE_BONUS + 0.5M : 0;
+            customSlopeBonusInd += middleSlope > 0.01M ? Constants.CORE_BONUS + 0.75M : 0;
             customSlopeBonusInd += middleSlope > 0.01M && (!priceAboveMiddleBand || priceBelowBandsMidpoint) ?
                 (middleSlope * middleSlopeMultiplier) + Constants.CORE_BONUS + 1 : 0;
 
@@ -1214,10 +1214,11 @@ namespace PT.Core
             decimal bandRangeModifier = 0;
             bandRangeModifier += lowerYList[lowerYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS - 1 : -1;
             bandRangeModifier += upperYList[upperYList.Count - 1] < historicalBandsMidpoint ? Constants.CORE_BONUS - 0.25M : 0;
-            bandRangeModifier += priceBelowBandsMidpoint ? Constants.CORE_BONUS + 2 : -2;
-            bandRangeModifier += lastPrice < averageLowerPrice ? Constants.CORE_BONUS + 1.75M : 0;
+            bandRangeModifier += priceBelowBandsMidpoint && recentPositivity ? 2.88M : 0;
+            bandRangeModifier += priceBelowBandsMidpoint ? 2.55M : -1.1M;
+            bandRangeModifier += lastPrice < averageLowerPrice ? Constants.CORE_BONUS + 2 : 0;
             bandRangeModifier += bandRangeModifier == 0 &&
-                !priceBelowBandsMidpoint && lastPrice > averageLowerPrice ? Constants.CORE_PENALTY * 2 : 0;
+                !priceBelowBandsMidpoint && lastPrice > averageLowerPrice ? Constants.CORE_PENALTY * 2 + 1 : 0;
 
             //Get time-scaled buy and sell signal bonus and penalty
             decimal minorBuySignalBonus = bbandsMinorBuySignal ? Constants.CORE_BONUS + (daysToCalculate - daysSinceMinorBuySignal) + 1 : 0;
