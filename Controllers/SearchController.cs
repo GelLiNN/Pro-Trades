@@ -342,6 +342,14 @@ namespace PT.Controllers
             return topTwentyHS3;
         }
 
+        // Endpoint for getting top 20 HS4 predictions ordered descending
+        [HttpGet("api/search/GetTopTwentyHS4")]
+        public List<CompositeScoreResult> GetTopTwentyHS4YF()
+        {
+            var topTwentyHS4 = GetTopTwentyByParamSetType(Constants.HS4);
+            return topTwentyHS4;
+        }
+
         // Endpoint for getting top 20 HS5 predictions ordered descending
         [HttpGet("api/search/GetTopTwentyHS5")]
         public List<CompositeScoreResult> GetTopTwentyHS5YF()
@@ -360,7 +368,7 @@ namespace PT.Controllers
                 CompositeScoreResult companyScore = (CompositeScoreResult)_cache.Get(cacheKey);
                 if (companyScore != null && (companyScore.CompositeScoreRank == "PRIME" ||
                     companyScore.CompositeScoreRank == "GOOD" || companyScore.CompositeScoreRank == "FAIR")
-                    && companyScore.ParameterSet == paramSetType
+                    && companyScore.ParameterSet.StartsWith(paramSetType)
                     && companyScore.FundamentalsComposite != Constants.CORE_INVALID_COMP)
                 {
                     cachedTopTwenty.Add(companyScore);

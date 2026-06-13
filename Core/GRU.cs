@@ -1125,7 +1125,7 @@ namespace PT.Core
                 }
                 else
                 {
-                    baseValue += ((100 - percentageDiffBullish - 19) / baseValueDivider) - 1;
+                    baseValue += ((100 - percentageDiffBullish - 19) / baseValueDivider) - 0.5M;
                     baseValue += recentPositivity && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 1.25M : 0;
                     baseValue += percentageDiffBullish <= 7 ? Constants.CORE_BONUS - 2.25M : 0;
                     baseValue += percentageDiffBullish <= 12.5M && priceBelowBandsMidpoint ? Constants.CORE_BONUS - 2.33M : 0;
@@ -1164,7 +1164,7 @@ namespace PT.Core
                 // Penalize base value for crossing below middle band recently
                 baseValue += !noRecentCrossBelowMiddle ? Constants.CORE_PENALTY - (7 - daysSinceCrossBelowMiddleBand) : 0;
             }
-            baseValue += recentPositivity ? Constants.CORE_BONUS - 2 : Constants.CORE_PENALTY + 2;
+            baseValue += recentPositivity ? Constants.CORE_BONUS - 1.75M : Constants.CORE_PENALTY + 1.75M;
             baseValue = Math.Max(baseValue, Constants.CORE_BONUS - 3); // Prevent negative baseValue
 
             // Bonus for bullish consolidation of the bands or rebound conditions
@@ -1185,8 +1185,8 @@ namespace PT.Core
             bool positiveAndNegativeSlopes = (lowerSlope > 0 || middleSlope > 0 || upperSlope > 0) &&
                 (lowerSlope < 0 || middleSlope < 0 || upperSlope < 0);
             decimal customSlopeBonusRel = differenceSlope > .05M && positiveAndNegativeSlopes
-                && priceSlope > -.05M ? Constants.CORE_BONUS * 2 - 0.5M : 0;
-            customSlopeBonusRel += upperSlope < 0 && positiveAndNegativeSlopes && noRecentCrossBelowMiddle
+                && priceSlope > -.05M ? Constants.CORE_BONUS * 2 : 0;
+            customSlopeBonusRel += upperSlope > 0 && positiveAndNegativeSlopes && noRecentCrossBelowMiddle
                 && priceSlope > -.05M ? Constants.CORE_BONUS : 0;
             customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .01M) ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusRel += priceBelowBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS + 1 : 0;
@@ -1194,21 +1194,21 @@ namespace PT.Core
 
             // Bonus for custom slope considitons 2, individualized with slope multipliers
             decimal customSlopeBonusInd = 0;
-            customSlopeBonusInd += lowerSlope > 0.01M ? Constants.CORE_BONUS - 0.5M : 0;
+            customSlopeBonusInd += lowerSlope > 0.01M ? Constants.CORE_BONUS : 0;
             customSlopeBonusInd += lowerSlope > 0.01M && recentPositivity && !bbandsMajorSellSignal ?
-                (lowerSlope * lowerSlopeMultiplier) + Constants.CORE_BONUS + 1 : 0;
+                (lowerSlope * lowerSlopeMultiplier) + Constants.CORE_BONUS : 0;
             customSlopeBonusInd += upperSlope > 0.01M && recentPositivity &&
                 !bbandsMajorSellSignal && noRecentCrossBelowMiddle ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusInd += upperSlope > 0.01M ? Constants.CORE_BONUS - 1 : 0;
-            customSlopeBonusInd += middleSlope > 0.01M ? Constants.CORE_BONUS + 0.75M : 0;
+            customSlopeBonusInd += middleSlope > 0.01M ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusInd += middleSlope > 0.01M && (!priceAboveMiddleBand || priceBelowBandsMidpoint) ?
-                (middleSlope * middleSlopeMultiplier) + Constants.CORE_BONUS + 1 : 0;
+                (middleSlope * middleSlopeMultiplier) + Constants.CORE_BONUS : 0;
 
             decimal noSellSignalsBonus = !bbandsMajorSellSignal && !bbandsMinorSellSignal &&
                 priceAboveMiddleBand ? Constants.CORE_BONUS + 1 : 0;
             noSellSignalsBonus = !bbandsMajorSellSignal && !bbandsMinorSellSignal && noRecentCrossBelowMiddle ?
                 Constants.CORE_BONUS - 1 : noSellSignalsBonus;
-            noSellSignalsBonus += !bbandsMajorSellSignal && !bbandsMinorSellSignal && priceBelowBandsMidpoint ? 1 : 0;
+            noSellSignalsBonus += !bbandsMajorSellSignal && !bbandsMinorSellSignal && priceBelowBandsMidpoint ? 2 : 0;
 
             // Modifier for bullish or bearish band range conditions relative to current price
             decimal bandRangeModifier = 0;
