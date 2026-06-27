@@ -70,14 +70,14 @@ namespace PT
         public const int CORE_INVALID_COMP = -1; // To denote GRU composites which resulted in error
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_PCM_GATE = 87.7M;
-        public const decimal CORE_PRIME_RND_LIMIT = 82.80M; // If CS 82.8 or higher, round up to Prime
-        public const decimal CORE_SIGNAL_MOD = 3.67M; // Default 3.5, 3.67, Uber bullish markets 2.5, Uber bearish markets 4.5
+        public const decimal CORE_PRIME_RND_LIMIT = 82.90M; // If CS 82.9 or higher, round up to Prime
+        public const decimal CORE_SIGNAL_MOD = 3.5M; // Default 2.17, 2.77, 3.5, 3.77, 4.17, max bullmarket 2.0, max bearmarket 5.0
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
-        public const decimal CORE_HS1_MOD = .21M; // 0, .21, .44, .77, 1.11 default, 3.77 CORE_EXT_MODE MAX
-        public const decimal CORE_HS2_MOD = 1.33M; // 0, .88, 1.33, 1.99 default, 4.33 CORE_EXT_MODE MAX
-        public const decimal CORE_HS3_MOD = 1.33M; // 0, .77, 1.21, 1.33 default, 3.99 CORE_EXT_MODE MAX
-        public const decimal CORE_HS4_MOD = .77M; // 0, .67, .88, 1.22 default, 3.88 CORE_EXT_MODE MAX
+        public const decimal CORE_HS1_MOD = 0; // -.88, 0, .21, .44, .77, 1.11 default, 3.77 CORE_EXT_MODE MAX
+        public const decimal CORE_HS2_MOD = .88M; // 0, .88, 1.33, 1.99 default, 3.99 CORE_EXT_MODE MAX
+        public const decimal CORE_HS3_MOD = 1.33M; // 0, .88, 1.33, 1.88 default, 3.99 CORE_EXT_MODE MAX
+        public const decimal CORE_HS4_MOD = 0; // -.88, 0, .29, .47, .88, 1.22 default, 3.88 CORE_EXT_MODE MAX
         public const decimal CORE_HS5_MOD = 1.47M; // .99, 1.47, 1.99 default, 2.55 CORE_EXT_MODE MAX
         public const decimal CORE_HS6_MOD = -2.22M; // unused
         public const decimal CORE_EXT_MODE_SNAP = 83.5M;

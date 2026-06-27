@@ -1004,6 +1004,7 @@ namespace PT.Core
             List<decimal> differenceYList = differenceValueYList.ToList();
             decimal differenceSlope = GetSlope(bbandsXList, differenceYList);
 
+            //TODO: Unused for now, may remove
             decimal lowerSlopeMultiplier = GetSlopeMultiplier(lowerSlope);
             decimal middleSlopeMultiplier = GetSlopeMultiplier(middleSlope);
             decimal upperSlopeMultiplier = GetSlopeMultiplier(upperSlope);
@@ -1184,25 +1185,28 @@ namespace PT.Core
             // Bonus for custom slope conditions 1, relative to other statistics
             bool positiveAndNegativeSlopes = (lowerSlope > 0 || middleSlope > 0 || upperSlope > 0) &&
                 (lowerSlope < 0 || middleSlope < 0 || upperSlope < 0);
-            decimal customSlopeBonusRel = differenceSlope > .05M && positiveAndNegativeSlopes
-                && priceSlope > -.05M ? Constants.CORE_BONUS * 2 : 0;
-            customSlopeBonusRel += upperSlope > 0 && positiveAndNegativeSlopes && noRecentCrossBelowMiddle
-                && priceSlope > -.05M ? Constants.CORE_BONUS : 0;
-            customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .01M) ? Constants.CORE_BONUS + 1 : 0;
+            decimal customSlopeBonusRel = differenceSlope > .05M && positiveAndNegativeSlopes && priceSlope > -.05M ?
+                Constants.CORE_BONUS + 2 : 0;
+            customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .01M) ?
+                Constants.CORE_BONUS + 1 : 0;
+            customSlopeBonusRel += upperSlope < 0 && positiveAndNegativeSlopes && noRecentCrossBelowMiddle && priceSlope > -.05M ?
+                Constants.CORE_BONUS - 1 : 0;
             customSlopeBonusRel += priceBelowBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS + 1 : 0;
-            customSlopeBonusRel += !priceBelowBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS - 1 : 0;
+            customSlopeBonusRel += !priceBelowBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS - 1.5M : 0;
 
             // Bonus for custom slope considitons 2, individualized with slope multipliers
             decimal customSlopeBonusInd = 0;
             customSlopeBonusInd += lowerSlope > 0.01M ? Constants.CORE_BONUS : 0;
-            customSlopeBonusInd += lowerSlope > 0.01M && recentPositivity && !bbandsMajorSellSignal ?
-                (lowerSlope * lowerSlopeMultiplier) + Constants.CORE_BONUS : 0;
+            customSlopeBonusInd += lowerSlope > 1.0M && lowerSlope < 7.0M && recentPositivity && !bbandsMajorSellSignal ?
+                Constants.CORE_BONUS - 1.5M : 0;
+                //(lowerSlope * lowerSlopeMultiplier) + 1.5M : 0;
             customSlopeBonusInd += upperSlope > 0.01M && recentPositivity &&
                 !bbandsMajorSellSignal && noRecentCrossBelowMiddle ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusInd += upperSlope > 0.01M ? Constants.CORE_BONUS - 1 : 0;
-            customSlopeBonusInd += middleSlope > 0.01M ? Constants.CORE_BONUS + 1 : 0;
-            customSlopeBonusInd += middleSlope > 0.01M && (!priceAboveMiddleBand || priceBelowBandsMidpoint) ?
-                (middleSlope * middleSlopeMultiplier) + Constants.CORE_BONUS : 0;
+            customSlopeBonusInd += middleSlope > 0.01M ? Constants.CORE_BONUS : 0;
+            customSlopeBonusInd += middleSlope > 1.0M && middleSlope < 7.0M && (!priceAboveMiddleBand || priceBelowBandsMidpoint) ?
+                Constants.CORE_BONUS : 0;
+                //(middleSlope * middleSlopeMultiplier) + 1.5M : 0;
 
             decimal noSellSignalsBonus = !bbandsMajorSellSignal && !bbandsMinorSellSignal &&
                 priceAboveMiddleBand ? Constants.CORE_BONUS + 1 : 0;
