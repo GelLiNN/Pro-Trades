@@ -1190,21 +1190,21 @@ namespace PT.Core
             customSlopeBonusRel += lowerSlope > middleSlope + (Math.Abs(middleSlope) * .01M) ?
                 Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusRel += upperSlope < 0 && positiveAndNegativeSlopes && noRecentCrossBelowMiddle && priceSlope > -.05M ?
-                Constants.CORE_BONUS - 1 : 0;
+                Constants.CORE_BONUS : 0;
             customSlopeBonusRel += priceBelowBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS + 1 : 0;
-            customSlopeBonusRel += !priceBelowBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS - 1.5M : 0;
+            customSlopeBonusRel += !priceBelowBandsMidpoint && allSlopesPositive ? Constants.CORE_BONUS - 1 : 0;
 
             // Bonus for custom slope considitons 2, individualized with slope multipliers
             decimal customSlopeBonusInd = 0;
             customSlopeBonusInd += lowerSlope > 0.01M ? Constants.CORE_BONUS : 0;
-            customSlopeBonusInd += lowerSlope > 1.0M && lowerSlope < 7.0M && recentPositivity && !bbandsMajorSellSignal ?
-                Constants.CORE_BONUS - 1.5M : 0;
-                //(lowerSlope * lowerSlopeMultiplier) + 1.5M : 0;
+            customSlopeBonusInd += lowerSlope > 1.0M && lowerSlope < 9.0M && recentPositivity && !bbandsMajorSellSignal ?
+                (lowerSlope * lowerSlopeMultiplier) + 1.25M : 0;
+                //Constants.CORE_BONUS - 0.5M : 0;
             customSlopeBonusInd += upperSlope > 0.01M && recentPositivity &&
                 !bbandsMajorSellSignal && noRecentCrossBelowMiddle ? Constants.CORE_BONUS + 1 : 0;
             customSlopeBonusInd += upperSlope > 0.01M ? Constants.CORE_BONUS - 1 : 0;
             customSlopeBonusInd += middleSlope > 0.01M ? Constants.CORE_BONUS : 0;
-            customSlopeBonusInd += middleSlope > 1.0M && middleSlope < 7.0M && (!priceAboveMiddleBand || priceBelowBandsMidpoint) ?
+            customSlopeBonusInd += middleSlope > 1.0M && middleSlope < 9.0M && (!priceAboveMiddleBand || priceBelowBandsMidpoint) ?
                 Constants.CORE_BONUS : 0;
                 //(middleSlope * middleSlopeMultiplier) + 1.5M : 0;
 
