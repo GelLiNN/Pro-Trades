@@ -82,6 +82,7 @@ namespace PT.Controllers
                 int goodCount = 0;
                 int primeCount = 0;
                 int earningsCount = 0;
+                int liquidityCount = 0;
 
                 int setTotalCount = 0;
                 int hs1Count = 0;
@@ -126,6 +127,11 @@ namespace PT.Controllers
                     else if (companyScore != null && companyScore.CompositeScoreRank == Constants.RANK_PRIME)
                     {
                         primeCount++;
+                    }
+
+                    if (companyScore != null && companyScore.IsQualifiedVolume)
+                    {
+                        liquidityCount++;
                     }
 
                     if (companyScore != null && (companyScore.CompositeScoreRank == Constants.RANK_PRIME ||
@@ -193,7 +199,7 @@ namespace PT.Controllers
                     HS6Count = hs6Count,
                     HS6IncidenceRate = setTotalCount > 0 ? ((decimal)hs6Count / (decimal)setTotalCount) * 100 : 0
                 };
-                result.TotalLiquidityRate = 100 - result.DisqualifiedIncidenceRate;
+                result.TotalLiquidityRate = ((decimal)liquidityCount / (decimal)scoreCount) * 100;
                 result.TotalPositiveRate = result.PrimeIncidenceRate + result.GoodIncidenceRate + result.FairIncidenceRate
                     + (result.NeutralIncidenceRate * Constants.HALF) + (result.EarningsIncidenceRate * Constants.THIRD);
                 result.TotalNegativeRate = result.ShortIncidenceRate + result.BadIncidenceRate
