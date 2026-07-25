@@ -71,21 +71,21 @@ namespace PT
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_PCM_GATE = 87.7M;
         public const decimal CORE_PRIME_RND_LIMIT = 82.90M; // If CS 82.9 or higher, round up to Prime
-        public const decimal CORE_SIGNAL_MOD = 3.92M; // Default 2.17, 2.77, 3.5, 3.77, 4.17, max bullmarket 2.0, max bearmarket 5.0
+        public const decimal CORE_SIGNAL_MOD = 3.92M; // Default 2.17, 2.77, 3.56, 3.74, 3.92, max bullmarket 2.0, max bearmarket 5.0
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
 
-        public const decimal CORE_HS1_MOD = .74M; // -.77, 0, .17, .74, 1.11 default, 3.77 CORE_EXT_MODE MAX
-        public const decimal CORE_HS2_MOD = 1.88M; // 0, .88, 1.21, 1.88 default, 3.99 CORE_EXT_MODE MAX
-        public const decimal CORE_HS3_MOD = 1.88M; // 0, .88, 1.33, 1.88 default, 3.99 CORE_EXT_MODE MAX
-        public const decimal CORE_HS4_MOD = .88M; // -.77, 0, .17, .47, .88, 1.22 default, 3.88 CORE_EXT_MODE MAX
-        public const decimal CORE_HS5_MOD = 1.47M; // .99, 1.47, 1.99 default, 2.55 CORE_EXT_MODE MAX
+        public const decimal CORE_HS1_MOD = .83M; // -.77, 0, .17, .65, .83, 1.11 default, 3.77 CORE_EXT_MODE MAX
+        public const decimal CORE_HS2_MOD = 1.56M; // 0, .88, 1.21, 1.56, 1.88 default, 3.99 CORE_EXT_MODE MAX
+        public const decimal CORE_HS3_MOD = 1.65M; // 0, .99, 1.33, 1.65, 1.88 default, 3.99 CORE_EXT_MODE MAX
+        public const decimal CORE_HS4_MOD = 1.22M; // -.77, 0, .47, .83, 1.22, 1.65 default, 3.88 CORE_EXT_MODE MAX
+        public const decimal CORE_HS5_MOD = 1.65M; // .99, 1.47, 1.65, 1.99 default, 2.55 CORE_EXT_MODE MAX
         public const decimal CORE_HS6_MOD = -2.22M; // unused
         public const decimal CORE_EXT_MODE_SNAP = 83.5M;
         public const bool CORE_EXT_MODE_ENABLED = false; // Extra post GRU composite mods mode (extreme circumstances)
 
         // GRU module composite gates and other constants
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
-        public const int OBV_LOOKBACK_DAYS = 40; // Was 42 before 7.20.2025, tried 37 until 9.4.2025
+        public const int OBV_LOOKBACK_DAYS = 38; // Min 37, max 43
         public const decimal BBANDS_COMP_MID_LIMIT = 70 + (CORE_BONUS * HALF);
         public const decimal BBANDS_COMP_UPPER_LIMIT = CORE_PRIME_GATE - (CORE_BONUS * HALF);
         public const int BBANDS_BELOW_MIDDLE_CUTOFF_DAYS = 3; // When crossing below middle band gets stale without breakout
