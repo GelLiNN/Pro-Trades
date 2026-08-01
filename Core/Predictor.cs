@@ -328,7 +328,7 @@ namespace PT.Core
             decimal mcap = Convert.ToDecimal(scoreResult.MarketCap.Split(" ")[0]);
             string predictionType = scoreResult.ParameterSet.Split(" ")[0];
             bool qualifiedMcap = (predictionType == Constants.HS5 && mcap == 0) ||
-                mcap > Constants.DEFAULT_MCAP_D_LIMIT || Constants.FUND_HANDICAP_MODE_ENABLED;
+                mcap > Constants.DEFAULT_MCAP_D_LIMIT || Constants.CORE_FUND_HANDICAP_MODE_ENABLED;
             bool qualifiedHistDays = scoreResult.GRUHistoryDays >= Constants.DEFAULT_HISTORY_DAYS_LIMIT;
             return
                 (!scoreResult.IsQualifiedVolume || !qualifiedMcap || !qualifiedHistDays ||
@@ -356,7 +356,7 @@ namespace PT.Core
             decimal postCompositeMod = 0; // Only if HS1, HS2, HS3, HS4
             if (paramType.Type == Constants.HS1 || paramType.Type == Constants.HS2 || paramType.Type == Constants.HS3 || paramType.Type == Constants.HS4)
             {
-                if (!Constants.FUND_HANDICAP_MODE_ENABLED)
+                if (!Constants.CORE_FUND_HANDICAP_MODE_ENABLED)
                 {
                     postCompositeMod += scoreResult.RPriceToBook <= 0 ? (Constants.CORE_PENALTY + 2) : 0;
                     postCompositeMod += scoreResult.RPriceToEarnings <= 0 ? (Constants.CORE_PENALTY + 2) : 0;
@@ -388,7 +388,7 @@ namespace PT.Core
                 postCompositeMod += scoreResult.IsBullishBandSMA ? (Constants.CORE_BONUS - 2.25M) : 0;
             }
             postCompositeMod += !scoreResult.IsBullishDiffSMA && !scoreResult.IsBullishBandSMA ? -.66M : 0;
-            postCompositeMod += !Constants.FUND_HANDICAP_MODE_ENABLED &&
+            postCompositeMod += !Constants.CORE_FUND_HANDICAP_MODE_ENABLED &&
                 !scoreResult.IsBullishLongSMA && !scoreResult.IsBullishDiffSMA && !scoreResult.IsBullishBandSMA ? -.33M : 0;
             postCompositeMod = Constants.CORE_EXT_MODE_ENABLED && postCompositeMod < 0 ? postCompositeMod * 0.66M : postCompositeMod;
             postCompositeMod = Constants.CORE_EXT_MODE_ENABLED && postCompositeMod > 1 ? postCompositeMod + 0.5M : postCompositeMod;

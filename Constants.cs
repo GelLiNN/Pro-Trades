@@ -73,15 +73,19 @@ namespace PT
         public const decimal CORE_PRIME_RND_LIMIT = 82.90M; // If CS 82.9 or higher, round up to Prime
         public const decimal CORE_SIGNAL_MOD = 3.92M; // Default 2.17, 2.77, 3.56, 3.74, 3.92, max bullmarket 2.0, max bearmarket 5.0
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
-
-        public const decimal CORE_HS1_MOD = .83M; // -.77, 0, .17, .65, .83, 1.11 default, 3.77 CORE_EXT_MODE MAX
-        public const decimal CORE_HS2_MOD = 1.56M; // 0, .88, 1.21, 1.56, 1.88 default, 3.99 CORE_EXT_MODE MAX
-        public const decimal CORE_HS3_MOD = 1.65M; // 0, .99, 1.33, 1.65, 1.88 default, 3.99 CORE_EXT_MODE MAX
-        public const decimal CORE_HS4_MOD = 1.22M; // -.77, 0, .47, .83, 1.22, 1.65 default, 3.88 CORE_EXT_MODE MAX
-        public const decimal CORE_HS5_MOD = 1.65M; // .99, 1.47, 1.65, 1.99 default, 2.55 CORE_EXT_MODE MAX
-        public const decimal CORE_HS6_MOD = -2.22M; // unused
         public const decimal CORE_EXT_MODE_SNAP = 83.5M;
         public const bool CORE_EXT_MODE_ENABLED = false; // Extra post GRU composite mods mode (extreme circumstances)
+        public const bool CORE_FUND_HANDICAP_MODE_ENABLED = false; // Mode used when YahooFinance API fails to get fundamentals data
+        // NOTE: remember to manually disqualify the earnings within attrition if FUND handicap enabled
+        // NOTE: remember to manually disqualify mcaps below 500 million if FUND handicap enabled
+        // NOTE: remember it is optional to adjust HS mods for FUND handicap mode
+
+        public const decimal CORE_HS1_MOD = .83M; // 0, .17, .65, .83, 1.11, 1.22 default, 3.11 CORE_EXT_MODE MAX
+        public const decimal CORE_HS2_MOD = 1.47M; // 0, .88, 1.33, 1.47, 1.56, 1.88 default, 3.33 CORE_EXT_MODE MAX
+        public const decimal CORE_HS3_MOD = 1.47M; // 0, .99, 1.33, 1.47, 1.65, 1.88 default, 3.33 CORE_EXT_MODE MAX
+        public const decimal CORE_HS4_MOD = 1.17M; // 0, .47, .83, 1.17, 1.33, 1.65 default, 3.33 CORE_EXT_MODE MAX
+        public const decimal CORE_HS5_MOD = 1.56M; // .99, 1.47, 1.56, 1.65, 1.92 default, 2.56 CORE_EXT_MODE MAX
+        public const decimal CORE_HS6_MOD = -2.22M; // -2.22, -.77 default, unused
 
         // GRU module composite gates and other constants
         public const decimal SHORT_HEALTHY_VOL_PERCENT = 17.0M;
@@ -95,10 +99,7 @@ namespace PT
         public const decimal FUND_EPS_MOD_UPPER_LIMIT = 37.0M;
         public const decimal FUND_PE_MOD_UPPER_LIMIT = 33.0M;
         public const decimal FUND_PE_MOD_LOWER_LIMIT = -20.0M;
-        public const bool FUND_HANDICAP_MODE_ENABLED = false; // Mode used when YahooFinance API fails to get fundamentals data
         public const decimal FUND_HANDICAP = 21.1M; // Constant applied during handicap mode, 17.7, 21.1 default
-        // NOTE: remember you have to manually disqualify the earnings within attrition if FUND handicapped
-        // NOTE: remember it is optional to adjust HS mods for FUND handicap mode
 
         // Dollar volume, price, and other default disqualification limits
         public static readonly decimal DEFAULT_VOLUME_USD_1D_LIMIT = 875000.0M;

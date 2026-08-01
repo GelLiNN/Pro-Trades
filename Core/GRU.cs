@@ -46,7 +46,7 @@ namespace PT.Core
                 compositeScoreFinal = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
                 decimal hs5Mod = Constants.CORE_HS5_MOD;
-                hs5Mod += Constants.FUND_HANDICAP_MODE_ENABLED ? 0.25M : 0;
+                hs5Mod += Constants.CORE_FUND_HANDICAP_MODE_ENABLED ? 0.25M : 0;
                 if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
                 {
                     bool applyExtMod = compositeScoreFinal <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
@@ -166,7 +166,7 @@ namespace PT.Core
                 decimal hs5Score = (adxComposite + aroonComposite + obvComposite + macdComposite +
                     sr.ShortInterestComposite + fr.FundamentalsComposite + bbandsComposite) / 7;
                 decimal hs5Mod = Constants.CORE_HS5_MOD;
-                hs5Mod += Constants.FUND_HANDICAP_MODE_ENABLED ? 0.25M : 0;
+                hs5Mod += Constants.CORE_FUND_HANDICAP_MODE_ENABLED ? 0.25M : 0;
                 if (Constants.CORE_EXT_MODE_ENABLED) // extreme circumstances mode
                 {
                     bool applyExtMod = hs5Score <= Constants.CORE_PRIME_GATE && bbandsComposite >= 70
@@ -1461,7 +1461,7 @@ namespace PT.Core
                     && history.AverageVolUsd10Day > (history.AverageVolUsd30Day + Constants.THIRTY_THOUSAND);
                 if (hasGoldenPath)
                 {
-                    goldenPathBonus += Constants.FUND_HANDICAP_MODE_ENABLED ?
+                    goldenPathBonus += Constants.CORE_FUND_HANDICAP_MODE_ENABLED ?
                         Constants.CORE_BONUS * 3 - 1 : Constants.CORE_BONUS * 2;
                 }
 
@@ -1492,7 +1492,7 @@ namespace PT.Core
                 // Add bonus if composite below fair and price inside SMA band
                 composite += composite < 50 && history.IsInsideSmaBand ? Constants.CORE_BONUS * 2 - 1 : 0;
                 // For handicapped mode
-                composite += Constants.FUND_HANDICAP_MODE_ENABLED ? Constants.FUND_HANDICAP : 0;
+                composite += Constants.CORE_FUND_HANDICAP_MODE_ENABLED ? Constants.FUND_HANDICAP : 0;
 
                 composite = Math.Min(composite, 100); // cap composite at 100, no extra weight
                 composite = Math.Max(composite, 0); // limit composite at 0, no negatives
@@ -1500,7 +1500,7 @@ namespace PT.Core
                 // Custom fair value after GRU comp
                 decimal customFairValue = CalcCustomFairValue(history.TodayVwap, fairValuePrice, bookValuePrice,
                     fiftyTwoWeekLow, averagePE, epsTrailing, composite);
-                decimal priceToFairValue = Constants.FUND_HANDICAP_MODE_ENABLED ? 0 : history.TodayVwap / customFairValue;
+                decimal priceToFairValue = Constants.CORE_FUND_HANDICAP_MODE_ENABLED ? 0 : history.TodayVwap / customFairValue;
 
                 // Final GRU gates
                 composite += composite > 60 && priceToFairValue > 5 ? Constants.CORE_PENALTY * 2 : 0;
@@ -1852,7 +1852,7 @@ namespace PT.Core
 
         private static decimal CalcCustomFairValue(decimal tvwp, decimal fvp, decimal bvp, decimal ftlp, decimal ape, decimal epst, decimal fcs)
         {
-            if (Constants.FUND_HANDICAP_MODE_ENABLED)
+            if (Constants.CORE_FUND_HANDICAP_MODE_ENABLED)
                 return 0;
 
             decimal customFairValue = 0;
