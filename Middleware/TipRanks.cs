@@ -42,10 +42,12 @@ namespace PT.Middleware
 
                 // OLD
                 //Dictionary<string, string> headers = new();
-                //headers.Add("Cookie", @"__cf_bm=3.Zb.tnW0m3kurXX1tnWG0vFPeOkGfxYiCWTKk9tVfA-1764367228-1.0.1.1-boj7o.sokeuUaSJAgtiTnUL1E3TF9ABmx03Wejjb3nrNxDHrH4eq91tDdJOpOWN1IfopanjjWn3CNUTZ_QjsDfCE1bMxST264IILOFhqVPQ; personal-message=none; tipranks-experiments=%7b%22Experiments%22%3a%5b%7b%22Name%22%3a%22general_A%22%2c%22Variant%22%3a%22v3%22%2c%22SendAnalytics%22%3afalse%7d%2c%7b%22Name%22%3a%22general_B%22%2c%22Variant%22%3a%22v3%22%2c%22SendAnalytics%22%3afalse%7d%2c%7b%22Name%22%3a%22general_C%22%2c%22Variant%22%3a%22v3%22%2c%22SendAnalytics%22%3afalse%7d%5d%7d; tipranks-experiments-slim=general_A%3av3%7cgeneral_B%3av3%7cgeneral_C%3av3; tr-experiments-version=1.14; tr-plan-id=0; tr-plan-name=free");
-                //headers.Add("Accept", @"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                //headers.Add("Cookie", @"_hjSessionUser_2550200=eyJpZCI6ImFhMjVlNmViLTgwMjgtNTYxNy04MWNkLTQ3YTYwNWE3ZTM4YiIsImNyZWF0ZWQiOjE3NDY0OTQ2ODg2NTQsImV4aXN0aW5nIjp0cnVlfQ==; _scor_uid=b11f4779b3414cdb94623cbdc7d03ed4; __gads=ID=0ae6b746aaf593f8:T=1760564605:RT=1760564913:S=ALNI_MY02AzcQSUxUD8mVLFZJwk_a5JKAg; __gpi=UID=0000129ed358f5dc:T=1760564605:RT=1760564913:S=ALNI_MY_JapGEmr7Ax1df2WvoCzUTdQ4zw; cf_clearance=dmm5NWyftgoqOM6O911Sx0_ey3omVJFrAese_jzEbaE-1764366602-1.2.1.1-kcXs9oTGcdgpkyUWFdKDh5FP7uFQPxAS6vTzNDBC6sSC_zO1NhAKBb2sFdvxNC.pkN4keTKh0Ar4mszxHQmzNi_g5eojkHB0KAcG0_dTOCbqtfR_vwQ_vR7dgrASGSfGsyJDweliddEfyHaYWOsA7YmmhQR5QdjmlMa59KduwEyZjrAr_F2SjuWAkWFVF_bpIZut7uJqH6.U3eAzv_2xYyzNNsHQw6O9R757PKGqvqI; TiPMix=46.592914712552925; x-ms-routing-name=self; tr-experiments-version=1.14; tipranks-experiments=%7b%22Experiments%22%3a%5b%7b%22Name%22%3a%22general_A%22%2c%22Variant%22%3a%22v4%22%2c%22SendAnalytics%22%3afalse%7d%2c%7b%22Name%22%3a%22general_B%22%2c%22Variant%22%3a%22v4%22%2c%22SendAnalytics%22%3afalse%7d%2c%7b%22Name%22%3a%22general_C%22%2c%22Variant%22%3a%22v9%22%2c%22SendAnalytics%22%3afalse%7d%5d%7d; tipranks-experiments-slim=general_A%3av4%7cgeneral_B%3av4%7cgeneral_C%3av9; __cf_bm=Sy1ckkgVMDYwq7bM1jYlpAFYqhPrTvLHsSglq9_oHdA-1790905606.6294906-1.0.1.1-.CYv.Msti_DID1_.1mNSwMOokXBjVUkoJmQr7NDoVGxNAHheK4fKhQJuVSOMZlxcSAi_MM3SblO6CWODLx5BvxrEeGM94OWHOq7bgodthgD7wdmdpxwGJberSQIT3bHF; personal-message=; tr-plan-id=0; tr-plan-name=free");
+                //headers.Add("Accept", @"application/json, text/html, text/plain, */*");
+                //headers.Add("Accept-Language", @"en-US,en;q=0.9");
+                //headers.Add("Referer", @"https://www.tipranks.com");
+
                 //headers.Add("Accept-Encoding", @"gzip, deflate, br, zstd");
-                //headers.Add("Accept-Language", @"en-US,en;q=0.5");
                 //headers.Add("Connection", @"keep-alive");
                 //headers.Add("Host", @"www.tipranks.com");
                 //headers.Add("Priority", @"u=0, i");
@@ -54,8 +56,9 @@ namespace PT.Middleware
                 //headers.Add("Sec-Fetch-Size", @"none");
                 //headers.Add("Sec-Fetch-User", @"?1");
                 //headers.Add("Upgrade-Insecure-Requests", @"1");
-                //headers.Add("User-Agent", @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.360");
+                //headers.Add("User-Agent", @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.360");
                 //string responseStr = rm.GetFromUri(TipRanksBaseUrl + "getData/" + symbol, headers);
+                //TipRanksDataResponse? trResponse = JsonConvert.DeserializeObject<TipRanksDataResponse>(responseStr);
 
                 if (trResponse == null)
                 {

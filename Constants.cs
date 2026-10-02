@@ -63,7 +63,7 @@ namespace PT
         public const decimal FIFTH = 0.2M;
 
         #region Core Model Constants
-        public const int DEFAULT_HISTORY_DAYS = 292; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 292
+        public const int DEFAULT_HISTORY_DAYS = 293; // Was 277 before 12.22.2025, 375 before 7.20.2025, trying 292
         public const int DEFAULT_LOOKBACK_DAYS = 7;
         public const decimal CORE_PENALTY = (decimal)(-1 * Math.PI);
         public const decimal CORE_BONUS = (decimal)Math.PI;
@@ -71,7 +71,7 @@ namespace PT
         public const decimal CORE_PRIME_GATE = 83.0M;
         public const decimal CORE_PCM_GATE = 87.7M;
         public const decimal CORE_PRIME_RND_LIMIT = 82.90M; // If CS 82.9 or higher, round up to Prime
-        public const decimal CORE_SIGNAL_MOD = 3.92M; // Default 2.17, 2.77, 3.56, 3.74, 3.92, max bullmarket 2.0, max bearmarket 5.0
+        public const decimal CORE_SIGNAL_MOD = 4.11M; // Default 2.17, 2.77, 3.56, 3.74, 3.92, max bullmarket 2.0, max bearmarket 5.0
         public const decimal CORE_AVG_WEEK_DIFF_PERCENT = 0.03M;
         public const decimal CORE_EXT_MODE_SNAP = 83.5M;
         public const bool CORE_EXT_MODE_ENABLED = false; // Extra post GRU composite mods mode (extreme circumstances)
@@ -80,10 +80,10 @@ namespace PT
         // NOTE: remember to manually disqualify mcaps below 500 million if FUND handicap enabled
         // NOTE: remember it is optional to adjust HS mods for FUND handicap mode
 
-        public const decimal CORE_HS1_MOD = .83M; // 0, .17, .65, .83, 1.11, 1.22 default, 3.11 CORE_EXT_MODE MAX
-        public const decimal CORE_HS2_MOD = 1.47M; // 0, .88, 1.33, 1.47, 1.56, 1.88 default, 3.33 CORE_EXT_MODE MAX
-        public const decimal CORE_HS3_MOD = 1.47M; // 0, .99, 1.33, 1.47, 1.65, 1.88 default, 3.33 CORE_EXT_MODE MAX
-        public const decimal CORE_HS4_MOD = 1.17M; // 0, .47, .83, 1.17, 1.33, 1.65 default, 3.33 CORE_EXT_MODE MAX
+        public const decimal CORE_HS1_MOD = 0.83M; // 0, .17, .65, .83, 1.11, 1.22 default, 3.11 CORE_EXT_MODE MAX
+        public const decimal CORE_HS2_MOD = 1.65M; // 0, .88, 1.33, 1.47, 1.56, 1.88 default, 3.33 CORE_EXT_MODE MAX
+        public const decimal CORE_HS3_MOD = 1.65M; // 0, .99, 1.33, 1.47, 1.65, 1.88 default, 3.33 CORE_EXT_MODE MAX
+        public const decimal CORE_HS4_MOD = 1.33M; // 0, .47, .83, 1.17, 1.33, 1.65 default, 3.33 CORE_EXT_MODE MAX
         public const decimal CORE_HS5_MOD = 1.56M; // .99, 1.47, 1.56, 1.65, 1.92 default, 2.56 CORE_EXT_MODE MAX
         public const decimal CORE_HS6_MOD = -2.22M; // -2.22, -.77 default, unused
 

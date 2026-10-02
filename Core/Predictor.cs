@@ -72,7 +72,7 @@ namespace PT.Core
             var paramType = GetParameterType(maxScore.Key);
 
             // Price targets for buy, sell, and short
-            decimal priceLast = quote?.PostMarketPrice ?? quote?.RegularMarketPrice ?? ptHistory.TodayClose;
+            decimal priceLast = quote?.PostMarketPrice > 0 ? quote.PostMarketPrice : quote?.RegularMarketPrice ?? ptHistory.TodayClose;
             decimal buyTarget = History.GetPriceBuyTarget(ptHistory, priceLast);
             History.ComputePriceSellTargets(fundResult, ptHistory);
             List<PTPriceTarget> priceTargets = ptHistory.PriceTargets.OrderByDescending(x => x.TargetPrice).ToList();
